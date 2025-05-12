@@ -1,97 +1,222 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Macro Friendly Food React Native App
 
-# Getting Started
+A mobile application for the Macro Friendly Food platform, providing users with healthy, macro-friendly recipes, meal planning functionality, and account management features on iOS and Android devices.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## 🚀 Features
 
-## Step 1: Start Metro
+- **Authentication System**: Secure login/registration with JWT integration
+- **Recipe Management**: Browse, search, and filter macro-friendly recipes
+- **Meal Planning**: Create and manage weekly meal plans
+- **Favorites System**: Save favorite recipes for quick access
+- **Nutrition Tracking**: Track macros (protein, carbs, fat) and calories
+- **Subscription Management**: Manage premium subscriptions
+- **Support System**: In-app ticket system for user support
+- **Offline Support**: Cache recipes and data for offline viewing
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 🛠️ Tech Stack
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- **React Native**: 0.73.1
+- **TypeScript**: Type-safe development
+- **Navigation**: React Navigation 6
+- **State Management**: Jotai
+- **Form Handling**: React Hook Form + Yup
+- **API Client**: Axios
+- **Data Fetching**: React Query
+- **UI Components**: React Native Paper, Vector Icons
+- **Storage**: AsyncStorage
 
-```sh
-# Using npm
-npm start
+## 📱 Screenshots
 
-# OR using Yarn
-yarn start
+<div align="center">
+  <img src="screenshots/login.png" width="200" alt="Login Screen">
+  <img src="screenshots/dashboard.png" width="200" alt="Dashboard">
+  <img src="screenshots/recipes.png" width="200" alt="Recipe List">
+  <img src="screenshots/meal-plan.png" width="200" alt="Meal Planning">
+</div>
+
+## 🚦 Getting Started
+
+### Prerequisites
+
+- Node.js >= 18
+- Yarn or npm
+- React Native development environment
+- iOS: Xcode 15+
+- Android: Android Studio with Android SDK
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/your-org/mff-mobile.git
+cd mff-mobile
 ```
 
-## Step 2: Build and run your app
+2. Install dependencies:
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+```bash
+npm install
+# or
+yarn install
 ```
 
-### iOS
+3. Install iOS dependencies:
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
+```bash
+cd ios && pod install && cd ..
 ```
 
-Then, and every time you update your native dependencies, run:
+4. Configure environment:
 
-```sh
-bundle exec pod install
+```bash
+cp .env.example .env
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+Edit `.env` file with your API endpoints and configuration.
 
-```sh
-# Using npm
+### Running the App
+
+#### iOS
+
+```bash
 npm run ios
-
-# OR using Yarn
+# or
 yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+#### Android
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+```bash
+npm run android
+# or
+yarn android
+```
 
-## Step 3: Modify your app
+## 📁 Project Structure
 
-Now that you have successfully run the app, let's make changes!
+```
+src/
+├── components/       # Reusable UI components
+├── screens/         # Screen components
+├── navigation/      # Navigation configuration
+├── services/        # API services
+├── store/          # Jotai state management
+├── hooks/          # Custom React hooks
+├── types/          # TypeScript type definitions
+├── utils/          # Utility functions
+└── theme/          # Design system (colors, typography, etc.)
+```
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## 🎨 Design System
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+The app follows a comprehensive design system with:
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+- **Colors**: Primary (#F24F48), semantic colors for success/error/warning
+- **Typography**: Inter font family with defined size scales
+- **Spacing**: 4px base unit with consistent multipliers
+- **Components**: Reusable components following Material Design principles
 
-## Congratulations! :tada:
+## 🔐 Authentication Flow
 
-You've successfully run and modified your React Native App. :partying_face:
+The app implements a complete authentication flow:
 
-### Now what?
+1. **Login Screen**: Users enter credentials to authenticate
+2. **Token Storage**: JWT tokens are securely stored in AsyncStorage
+3. **Auto Authentication**: Tokens are automatically added to all API requests
+4. **Session Persistence**: Users remain logged in between app launches
+5. **Token Expiry**: 401 responses automatically clear auth and redirect to login
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+### Setup
 
-# Troubleshooting
+1. Copy `.env.example` to `.env` and configure your API URL:
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+```bash
+cp .env.example .env
+```
 
-# Learn More
+2. Edit `.env` with your API endpoint:
 
-To learn more about React Native, take a look at the following resources:
+```
+API_BASE_URL=https://your-api-endpoint.com
+```
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+3. Install dependencies:
+
+```bash
+npm install react-native-dotenv
+# or
+yarn add react-native-dotenv
+```
+
+### Auth State Management
+
+- Authentication state is managed using Jotai atoms
+- Bearer tokens are automatically included in all API requests
+- User data is cached locally for offline access
+- 401 responses trigger automatic logout
+
+## 🧪 Testing
+
+```bash
+# Run unit tests
+npm test
+
+# Run E2E tests (Detox)
+npm run test:e2e
+```
+
+## 📦 Building for Production
+
+### iOS
+
+```bash
+cd ios
+xcodebuild -workspace MFFMobile.xcworkspace -scheme MFFMobile -configuration Release
+```
+
+### Android
+
+```bash
+cd android
+./gradlew assembleRelease
+```
+
+## 🚀 Deployment
+
+### iOS
+
+1. Configure code signing in Xcode
+2. Archive the app
+3. Upload to App Store Connect
+
+### Android
+
+1. Generate signed APK/AAB
+2. Upload to Google Play Console
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 👥 Team
+
+- **Development Team**: MFF Mobile Development Team
+- **Design Team**: MFF Design Team
+- **Backend Team**: MFF Backend Team
+
+## 📞 Support
+
+For support, email support@macrofriendlyfood.com or create a ticket in the app.
+
+---
+
+Built with ❤️ for the Macro Friendly Food community

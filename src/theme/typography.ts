@@ -1,4 +1,4 @@
-import {TextStyle} from 'react-native';
+import { TextStyle } from 'react-native';
 
 export const fontSizes = {
   xs: 10,
@@ -26,6 +26,11 @@ export const lineHeights = {
 } as const;
 
 export const typography = {
+  // Font properties
+  fontSizes,
+  fontWeights,
+  lineHeights,
+
   // Headings
   h1: {
     fontSize: fontSizes.xxxl,

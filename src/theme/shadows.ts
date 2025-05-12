@@ -1,11 +1,11 @@
-import {Platform} from 'react-native';
+import { Platform } from 'react-native';
 
 export const shadows = {
   none: {},
   sm: Platform.select({
     ios: {
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 1},
+      shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.05,
       shadowRadius: 2,
     },
@@ -16,7 +16,7 @@ export const shadows = {
   md: Platform.select({
     ios: {
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 4},
+      shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.07,
       shadowRadius: 6,
     },
@@ -27,7 +27,7 @@ export const shadows = {
   lg: Platform.select({
     ios: {
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 10},
+      shadowOffset: { width: 0, height: 10 },
       shadowOpacity: 0.1,
       shadowRadius: 15,
     },
@@ -38,7 +38,7 @@ export const shadows = {
   xl: Platform.select({
     ios: {
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 20},
+      shadowOffset: { width: 0, height: 20 },
       shadowOpacity: 0.1,
       shadowRadius: 25,
     },
