@@ -1,6 +1,8 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '@env';
+import { isTokenExpired } from '../utils/tokenUtils';
+import { eventBus } from '@/utils/eventBus';
 
 const BASE_URL = API_BASE_URL || 'http://localhost:5000';
 
@@ -8,8 +10,6 @@ class ApiClient {
   private instance: AxiosInstance;
 
   constructor() {
-    console.log('Initializing API Client with URL:', BASE_URL);
-
     this.instance = axios.create({
       baseURL: BASE_URL,
       timeout: 10000,
@@ -22,13 +22,20 @@ class ApiClient {
     this.instance.interceptors.request.use(
       async config => {
         try {
-          console.log('🔍 Checking for auth token...');
           const authToken = await AsyncStorage.getItem('authToken');
 
           if (authToken) {
-            console.log('📦 Auth token found in AsyncStorage');
-            config.headers.Authorization = `Bearer ${authToken}`;
-            console.log('🔑 Bearer token added to request');
+            // Check if token is expired
+            if (isTokenExpired(authToken)) {
+              // Clear auth data
+              await AsyncStorage.multiRemove(['authToken', 'user']);
+              // Let the request proceed without token - it will fail with 401
+              // which will redirect to login
+            } else {
+              // Token is valid
+              config.headers.Authorization = `Bearer ${authToken}`;
+              console.log('🔑 Bearer token added to request');
+            }
           } else {
             console.log('❌ No auth token in AsyncStorage');
           }
@@ -72,11 +79,17 @@ class ApiClient {
         }
 
         if (error.response?.status === 401) {
-          // Handle unauthorized access
+          // Handle unauthorized access - token expired or invalid
           try {
+            // Clear auth data
             await AsyncStorage.multiRemove(['authToken', 'user']);
-            // You might want to emit an event or update global state here
-            // to trigger navigation to login screen
+            console.log('🔒 401 Unauthorized - cleared auth data');
+
+            // Emit auth error event to trigger login redirect
+            eventBus.emit(
+              'AUTH_ERROR',
+              'Your session has expired. Please log in again.',
+            );
           } catch (storageError) {
             console.error('Error clearing auth data:', storageError);
           }

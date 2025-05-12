@@ -1,6 +1,5 @@
 import { useAtom } from 'jotai';
 import { useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   authTokenAtom,
   userAtom,
@@ -9,47 +8,27 @@ import {
 } from '../store';
 import { authService } from '../services/auth';
 import { LoginRequest } from '../types/auth';
+import { isTokenExpired } from '../utils/tokenUtils';
 
 export const useAuth = () => {
   const [authToken, setAuthToken] = useAtom(authTokenAtom);
   const [user, setUser] = useAtom(userAtom);
-  const [isAuthenticated] = useAtom(isAuthenticatedAtom);
+  const [isAuthenticated, setIsAuthenticated] = useAtom(isAuthenticatedAtom);
   const [, addToast] = useAtom(addToastAtom);
 
   const login = useCallback(
     async (credentials: LoginRequest) => {
       try {
-        console.log('🔐 Starting login process...');
-
         // Call login endpoint
         const response = await authService.login(credentials);
-        console.log('✅ Login response received:', {
-          hasToken: !!response.token,
-          hasUser: !!response.user,
-        });
 
-        // Store token as plain string
+        // Store token
         const token = response.token;
 
-        // Save to AsyncStorage first
-        await AsyncStorage.setItem('authToken', token);
-        console.log('💾 Token saved to AsyncStorage');
-
-        // Then update atom
+        // Then update atoms
         setAuthToken(token);
-        console.log('📝 Token set in atom');
-
-        // Store user data
-        await AsyncStorage.setItem('user', JSON.stringify(response.user));
         setUser(response.user);
-        console.log('👤 User data stored');
-
-        // Verify storage
-        const storedToken = await AsyncStorage.getItem('authToken');
-        console.log(
-          '🔍 Verification - Stored token:',
-          storedToken ? 'Found' : 'Not found',
-        );
+        setIsAuthenticated(true);
 
         addToast({
           message: 'Login successful!',
@@ -60,6 +39,7 @@ export const useAuth = () => {
         return response;
       } catch (error: any) {
         console.error('❌ Login failed:', error);
+        setIsAuthenticated(false);
         addToast({
           message: error.response?.data?.message || 'Login failed',
           type: 'error',
@@ -68,34 +48,20 @@ export const useAuth = () => {
         throw error;
       }
     },
-    [setAuthToken, setUser, addToast],
+    [setAuthToken, setUser, setIsAuthenticated, addToast],
   );
 
   const logout = useCallback(async () => {
     try {
-      console.log('👋 Starting logout...');
-
-      // Clear token and user data
       setAuthToken(null);
       setUser(null);
-
-      // Clear AsyncStorage
-      await AsyncStorage.multiRemove(['authToken', 'user']);
-      console.log('✅ Auth data cleared');
-
-      addToast({
-        message: 'Logged out successfully',
-        type: 'success',
-        duration: 3000,
-      });
+      setIsAuthenticated(false);
     } catch (error) {
-      console.error('❌ Logout error:', error);
-      // Even if there's an error, clear local data
       setAuthToken(null);
       setUser(null);
-      await AsyncStorage.multiRemove(['authToken', 'user']);
+      setIsAuthenticated(false);
     }
-  }, [setAuthToken, setUser, addToast]);
+  }, [setAuthToken, setUser, setIsAuthenticated, addToast]);
 
   const updateProfile = useCallback(
     async (data: any) => {
@@ -137,35 +103,38 @@ export const useAuth = () => {
 
   const checkAuthStatus = useCallback(async () => {
     try {
-      console.log('🔍 Checking auth status...');
-      const storedToken = await AsyncStorage.getItem('authToken');
-      const storedUser = await AsyncStorage.getItem('user');
+      if (authToken && user) {
+        // Check if token is expired
+        if (isTokenExpired(authToken)) {
+          console.log('❌ Token expired, logging out');
+          await logout();
+          return;
+        }
 
-      if (storedToken && storedUser) {
-        console.log('✅ Found stored auth data');
-        setAuthToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        setIsAuthenticated(true);
 
         // Verify token is still valid by making a test request
         try {
           await authService.getProfile();
-          console.log('✅ Token is valid');
         } catch (error) {
-          console.log('❌ Token is invalid, clearing auth');
+          console.log('❌ Token is invalid, logging out');
           await logout();
         }
       } else {
         console.log('❌ No stored auth data found');
+        setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('❌ Error checking auth status:', error);
+      setIsAuthenticated(false);
     }
-  }, [setAuthToken, setUser, logout]);
+  }, [authToken, user, setIsAuthenticated, logout]);
 
   return {
     user,
     authToken,
     isAuthenticated,
+    isTokenValid: authToken ? !isTokenExpired(authToken) : false,
     login,
     logout,
     updateProfile,
