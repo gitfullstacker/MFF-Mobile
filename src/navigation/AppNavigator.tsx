@@ -6,6 +6,8 @@ import { RootStackParamList } from './types';
 import { isAuthenticatedAtom } from '../store';
 import { AuthNavigator } from './AuthNavigator';
 import { MainNavigator } from './MainNavigator';
+import { RecipeNavigator } from './RecipeNavigator';
+import { MealPlanNavigator } from './MealPlanNavigator';
 // import BarcodeScannerScreen from '../screens/mobile/BarcodeScannerScreen';
 // import RecipePhotoCaptureScreen from '../screens/mobile/RecipePhotoCaptureScreen';
 
@@ -20,6 +22,8 @@ export const AppNavigator = () => {
         {isAuthenticated ? (
           <>
             <Stack.Screen name="Main" component={MainNavigator} />
+            <Stack.Screen name="MealPlanStack" component={MealPlanNavigator} />
+            <Stack.Screen name="RecipeStack" component={RecipeNavigator} />
             {/* <Stack.Screen
               name="BarcodeScanner"
               component={BarcodeScannerScreen}

@@ -119,7 +119,7 @@ const DashboardScreen: React.FC = () => {
       onPress={() =>
         navigation.navigate('RecipeStack', {
           screen: 'RecipeDetail',
-          params: { recipeId: item._id },
+          params: { recipeId: item.slug },
         } as any)
       }>
       <RecipeCard recipe={item} onPress={() => {}} variant="compact" />
@@ -133,7 +133,7 @@ const DashboardScreen: React.FC = () => {
         onPress={() =>
           navigation.navigate('RecipeStack', {
             screen: 'RecipeDetail',
-            params: { recipeId: item._id },
+            params: { recipeId: item.slug },
           } as any)
         }
         onFavorite={() => toggleFavorite(item._id)}

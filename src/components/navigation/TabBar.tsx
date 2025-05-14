@@ -88,8 +88,8 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     backgroundColor: colors.white,
-    height: Platform.OS === 'ios' ? 56 : 64,
-    paddingBottom: Platform.OS === 'ios' ? 0 : spacing.xs,
+    height: Platform.OS === 'ios' ? 80 : 64,
+    paddingBottom: Platform.OS === 'ios' ? 24 : spacing.xs,
     ...shadows.sm,
   },
   tab: {

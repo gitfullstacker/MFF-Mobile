@@ -21,7 +21,7 @@ export const fontWeights = {
 export const lineHeights = {
   tight: 1.2,
   normal: 1.4,
-  relaxed: 1.5,
+  relaxed: 1.2,
   loose: 1.6,
 } as const;
 

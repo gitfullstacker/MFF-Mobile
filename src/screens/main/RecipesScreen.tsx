@@ -116,7 +116,7 @@ const RecipesScreen: React.FC = () => {
       <View style={[styles.recipeCardContainer, isLeft && styles.leftCard]}>
         <RecipeCard
           recipe={item}
-          onPress={() => handleRecipePress(item._id)}
+          onPress={() => handleRecipePress(item.slug)}
           onFavorite={() => toggleFavorite(item._id)}
           variant="compact"
         />

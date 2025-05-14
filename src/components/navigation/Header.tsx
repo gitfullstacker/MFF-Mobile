@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+  StatusBar,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, typography, spacing, shadows } from '../../theme';
@@ -85,11 +92,12 @@ export const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white,
+    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 50, // More padding for iOS
     paddingHorizontal: spacing.md,
+    height: Platform.OS === 'ios' ? 100 : 56 + (StatusBar.currentHeight || 0),
     ...shadows.sm,
   },
   transparent: {
