@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -28,43 +28,65 @@ import {
   borderRadius,
 } from '../../theme';
 import { AuthStackParamList } from '../../navigation/types';
+import Icon from 'react-native-vector-icons/Feather';
 
 type LoginScreenNavigationProp = StackNavigationProp<
   AuthStackParamList,
   'Login'
 >;
 
-const schema = yup.object().shape({
-  username: yup.string().required('Username is required'),
-  password: yup.string().required('Password is required'),
-});
-
-interface LoginFormData {
+// Strictly define the form data structure
+type LoginFormData = {
   username: string;
   password: string;
-}
+  rememberMe: boolean;
+};
+
+// Define the validation schema with explicit typing
+const loginSchema = yup
+  .object({
+    username: yup.string().required('Username is required'),
+    password: yup.string().required('Password is required'),
+    rememberMe: yup.boolean().defined(),
+  })
+  .required();
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { login } = useAuth();
+  const { login, savedCredentials } = useAuth();
   const [loading, setLoading] = useState(false);
 
+  // Use explicit typing for the form
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginFormData>({
-    resolver: yupResolver(schema),
+    resolver: yupResolver(loginSchema) as any,
     defaultValues: {
       username: '',
       password: '',
+      rememberMe: false,
     },
   });
+
+  // Load saved credentials if they exist
+  useEffect(() => {
+    if (savedCredentials) {
+      setValue('username', savedCredentials.username);
+      setValue('password', savedCredentials.password);
+      setValue('rememberMe', savedCredentials.rememberMe);
+    }
+  }, [savedCredentials, setValue]);
 
   const onSubmit = async (data: LoginFormData) => {
     try {
       setLoading(true);
-      await login(data);
+      await login(
+        { username: data.username, password: data.password },
+        data.rememberMe,
+      );
       // Navigation will be handled automatically by the navigation stack
       // when isAuthenticated becomes true
     } catch (error: any) {
@@ -138,11 +160,35 @@ const LoginScreen: React.FC = () => {
               )}
             />
 
-            <TouchableOpacity
-              style={styles.forgotPassword}
-              onPress={() => navigation.navigate('ForgotPassword')}>
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
+            <View style={styles.optionsRow}>
+              <Controller
+                control={control}
+                name="rememberMe"
+                render={({ field: { onChange, value } }) => (
+                  <TouchableOpacity
+                    style={styles.rememberMeContainer}
+                    onPress={() => onChange(!value)}
+                    activeOpacity={0.7}>
+                    <View
+                      style={[
+                        styles.checkbox,
+                        value ? styles.checkboxChecked : null,
+                      ]}>
+                      {value ? (
+                        <Icon name="check" size={16} color={colors.white} />
+                      ) : null}
+                    </View>
+                    <Text style={styles.rememberMeText}>Remember Me</Text>
+                  </TouchableOpacity>
+                )}
+              />
+
+              <TouchableOpacity
+                style={styles.forgotPassword}
+                onPress={() => navigation.navigate('ForgotPassword')}>
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
+            </View>
 
             <Button
               title="Get Started"
@@ -163,6 +209,7 @@ const LoginScreen: React.FC = () => {
           </View>
         </ScrollContainer>
       </KeyboardAvoidingView>
+      <LoadingOverlay visible={loading} message="Signing in..." />
     </PageContainer>
   );
 };
@@ -202,9 +249,36 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: spacing.md,
   },
+  optionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.gray[300],
+    marginRight: spacing.xs,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  rememberMeText: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+  },
   forgotPassword: {
     alignSelf: 'flex-end',
-    marginBottom: spacing.lg,
   },
   forgotPasswordText: {
     ...typography.bodyRegular,

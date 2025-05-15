@@ -5,6 +5,7 @@ import {
   userAtom,
   isAuthenticatedAtom,
   addToastAtom,
+  savedCredentialsAtom,
 } from '../store';
 import { authService } from '../services/auth';
 import { LoginRequest } from '../types/auth';
@@ -15,9 +16,10 @@ export const useAuth = () => {
   const [user, setUser] = useAtom(userAtom);
   const [isAuthenticated, setIsAuthenticated] = useAtom(isAuthenticatedAtom);
   const [, addToast] = useAtom(addToastAtom);
+  const [savedCredentials, setSavedCredentials] = useAtom(savedCredentialsAtom);
 
   const login = useCallback(
-    async (credentials: LoginRequest) => {
+    async (credentials: LoginRequest, rememberMe: boolean = false) => {
       try {
         // Call login endpoint
         const response = await authService.login(credentials);
@@ -29,6 +31,18 @@ export const useAuth = () => {
         setAuthToken(token);
         setUser(response.user);
         setIsAuthenticated(true);
+
+        // Save credentials if rememberMe is true
+        if (rememberMe) {
+          setSavedCredentials({
+            username: credentials.username,
+            password: credentials.password,
+            rememberMe,
+          });
+        } else {
+          // Clear saved credentials if remember me is turned off
+          setSavedCredentials(null);
+        }
 
         addToast({
           message: 'Login successful!',
@@ -48,7 +62,7 @@ export const useAuth = () => {
         throw error;
       }
     },
-    [setAuthToken, setUser, setIsAuthenticated, addToast],
+    [setAuthToken, setUser, setIsAuthenticated, setSavedCredentials, addToast],
   );
 
   const logout = useCallback(async () => {
@@ -56,12 +70,15 @@ export const useAuth = () => {
       setAuthToken(null);
       setUser(null);
       setIsAuthenticated(false);
+
+      // Don't clear savedCredentials on logout if rememberMe was true
+      // This allows for quick login next time
     } catch (error) {
       setAuthToken(null);
       setUser(null);
       setIsAuthenticated(false);
     }
-  }, [setAuthToken, setUser, setIsAuthenticated, addToast]);
+  }, [setAuthToken, setUser, setIsAuthenticated]);
 
   const updateProfile = useCallback(
     async (data: any) => {
@@ -134,6 +151,7 @@ export const useAuth = () => {
     user,
     authToken,
     isAuthenticated,
+    savedCredentials,
     isTokenValid: authToken ? !isTokenExpired(authToken) : false,
     login,
     logout,
