@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   Share,
+  FlatList,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -24,12 +25,13 @@ import {
   typography,
   spacing,
   borderRadius,
-  shadows,
   fontWeights,
 } from '../../theme';
 import { MealPlanStackParamList } from '../../navigation/types';
 import { MealPlan, MealSchedule, ScheduledRecipe } from '../../types/plan';
 import { Recipe } from '@/types/recipe';
+import { RecipeCard } from '@/components/recipe/RecipeCard';
+import { ShoppingListModal } from '@/components/modals/ShoppingListModal';
 
 type MealPlanDetailNavigationProp = StackNavigationProp<
   MealPlanStackParamList,
@@ -73,6 +75,9 @@ const MealPlanDetailScreen: React.FC = () => {
     fat: 0,
     calories: 0,
   });
+  const [showShoppingList, setShowShoppingList] = useState(false);
+  const [dayRecipes, setDayRecipes] = useState<Recipe[]>([]);
+  const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
 
   // Load the plan data on mount if needed
   useEffect(() => {
@@ -81,13 +86,15 @@ const MealPlanDetailScreen: React.FC = () => {
     } else {
       // Calculate macros on initial load
       calculateMacros();
+      extractRecipes();
     }
   }, []);
 
-  // Recalculate macros when selected day changes
+  // Recalculate macros and extract recipes when selected day changes
   useEffect(() => {
     if (mealPlan) {
       calculateDailyMacros();
+      extractDayRecipes();
     }
   }, [selectedDay, mealPlan]);
 
@@ -112,6 +119,55 @@ const MealPlanDetailScreen: React.FC = () => {
     return null;
   };
 
+  // Extract all recipes from the meal plan
+  const extractRecipes = () => {
+    if (!mealPlan) return;
+
+    const allExtractedRecipes: Recipe[] = [];
+    const validDayKeys = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
+
+    validDayKeys.forEach(dayKey => {
+      const daySchedule = mealPlan.schedule[dayKey as keyof MealSchedule];
+
+      if (!Array.isArray(daySchedule)) return;
+
+      daySchedule.forEach(item => {
+        const recipe = getRecipeObject(item);
+        if (recipe) {
+          // Check if recipe is already in the array to avoid duplicates
+          if (!allExtractedRecipes.some(r => r._id === recipe._id)) {
+            allExtractedRecipes.push(recipe);
+          }
+        }
+      });
+    });
+
+    setAllRecipes(allExtractedRecipes);
+    extractDayRecipes();
+  };
+
+  // Extract recipes for the currently selected day
+  const extractDayRecipes = () => {
+    if (!mealPlan) return;
+
+    const recipes: Recipe[] = [];
+    const daySchedule = mealPlan.schedule[selectedDay as keyof MealSchedule];
+
+    if (!Array.isArray(daySchedule)) {
+      setDayRecipes([]);
+      return;
+    }
+
+    daySchedule.forEach(item => {
+      const recipe = getRecipeObject(item);
+      if (recipe) {
+        recipes.push(recipe);
+      }
+    });
+
+    setDayRecipes(recipes);
+  };
+
   // Function to load plan data from API
   const loadPlanData = async () => {
     setLoading(true);
@@ -119,6 +175,7 @@ const MealPlanDetailScreen: React.FC = () => {
       const loadedPlan = await fetchPlan(planId);
       setMealPlan(loadedPlan);
       calculateMacros();
+      extractRecipes();
     } catch (error) {
       console.error('Error loading plan data:', error);
       Alert.alert(
@@ -327,11 +384,12 @@ const MealPlanDetailScreen: React.FC = () => {
 
   // Generate shopping list
   const handleGenerateShoppingList = () => {
-    // This would be implemented to generate a shopping list based on the recipes
-    Alert.alert(
-      'Coming Soon',
-      'Shopping list generation will be available in a future update.',
-    );
+    if (allRecipes.length === 0) {
+      Alert.alert('No Recipes', 'There are no recipes in this meal plan.');
+      return;
+    }
+
+    setShowShoppingList(true);
   };
 
   // View recipe details
@@ -343,65 +401,6 @@ const MealPlanDetailScreen: React.FC = () => {
         params: { recipeId },
       } as any,
     );
-  };
-
-  // Render scheduled recipes for the selected day
-  const renderScheduledRecipes = () => {
-    if (!mealPlan) return null;
-
-    const daySchedule = mealPlan.schedule[selectedDay as keyof MealSchedule];
-
-    // Check if it's actually an array
-    if (!Array.isArray(daySchedule)) {
-      return (
-        <View style={styles.emptyDayContainer}>
-          <Text style={styles.emptyDayText}>
-            No recipes scheduled for{' '}
-            {DAYS.find(day => day.key === selectedDay)?.label}.
-          </Text>
-        </View>
-      );
-    }
-
-    if (daySchedule.length === 0) {
-      return (
-        <View style={styles.emptyDayContainer}>
-          <Text style={styles.emptyDayText}>
-            No recipes scheduled for{' '}
-            {DAYS.find(day => day.key === selectedDay)?.label}.
-          </Text>
-        </View>
-      );
-    }
-
-    return daySchedule.map((item: ScheduledRecipe, index) => {
-      const recipeId = getRecipeId(item);
-      const recipe = getRecipeObject(item);
-
-      // If we couldn't extract a recipe object, show a loading state
-      if (!recipe) {
-        return (
-          <View key={`${recipeId || index}`} style={styles.recipeItem}>
-            <Text style={styles.recipeName}>Loading recipe...</Text>
-          </View>
-        );
-      }
-
-      return (
-        <TouchableOpacity
-          key={recipeId || index}
-          style={styles.recipeItem}
-          onPress={() => handleViewRecipe(recipeId)}>
-          <View style={styles.recipeInfo}>
-            <Text style={styles.recipeName}>{recipe.name}</Text>
-            <Text style={styles.recipeDetails}>
-              {recipe.total_time} min • {recipe.nutrition.calories} cal
-            </Text>
-          </View>
-          <Icon name="chevron-right" size={20} color={colors.gray[400]} />
-        </TouchableOpacity>
-      );
-    });
   };
 
   if (!mealPlan) {
@@ -504,7 +503,28 @@ const MealPlanDetailScreen: React.FC = () => {
               );
             },
           }}>
-          <View style={styles.mealsContainer}>{renderScheduledRecipes()}</View>
+          {dayRecipes.length === 0 ? (
+            <View style={styles.emptyDayContainer}>
+              <Text style={styles.emptyDayText}>
+                No recipes scheduled for{' '}
+                {DAYS.find(day => day.key === selectedDay)?.label}.
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={dayRecipes}
+              renderItem={({ item }) => (
+                <View style={styles.recipeCardContainer}>
+                  <RecipeCard
+                    recipe={item}
+                    onPress={() => handleViewRecipe(item.slug)}
+                  />
+                </View>
+              )}
+              keyExtractor={item => item._id}
+              scrollEnabled={false} // Since we're already in a ScrollView
+            />
+          )}
         </Section>
 
         <Section>
@@ -530,6 +550,12 @@ const MealPlanDetailScreen: React.FC = () => {
           </View>
         </Section>
       </ScrollView>
+
+      <ShoppingListModal
+        visible={showShoppingList}
+        onClose={() => setShowShoppingList(false)}
+        recipes={allRecipes}
+      />
 
       <LoadingOverlay visible={loading} message="Loading..." />
     </PageContainer>
@@ -610,9 +636,6 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: fontWeights.bold,
   },
-  mealsContainer: {
-    marginBottom: spacing.md,
-  },
   emptyDayContainer: {
     backgroundColor: colors.gray[50],
     padding: spacing.md,
@@ -624,27 +647,8 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
   },
-  recipeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    ...shadows.sm,
-  },
-  recipeInfo: {
-    flex: 1,
-  },
-  recipeName: {
-    ...typography.bodyLarge,
-    color: colors.text.primary,
-    fontWeight: fontWeights.medium,
-    marginBottom: spacing.xs,
-  },
-  recipeDetails: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
+  recipeCardContainer: {
+    marginBottom: spacing.md,
   },
   planManagementContainer: {
     flexDirection: 'row',

@@ -1,15 +1,23 @@
-export interface Ingredient {
+export type RecipeType =
+  | 'breakfast'
+  | 'lunch'
+  | 'dinner'
+  | 'snack'
+  | 'dessert'
+  | 'side-dish';
+
+export interface IngredientItem {
   uid: number;
   name: string;
   amount: string;
   unit: string;
-  notes?: string;
+  notes: string;
 }
 
 export interface IngredientGroup {
   group_name: string;
   group_uid: number;
-  items: Ingredient[];
+  items: IngredientItem[];
 }
 
 export interface InstructionStep {
@@ -24,26 +32,18 @@ export interface InstructionGroup {
 }
 
 export interface NutritionInfo {
+  serving_size: number;
+  serving_unit: string;
   calories: number;
-  protein: number;
   carbohydrates: number;
+  protein: number;
   fat: number;
 }
 
 export interface Tag {
-  id: number;
+  term_id: number;
   name: string;
-}
-
-export interface RecipeTags {
-  course: Tag[];
-  cuisine: Tag[];
-  keyword: Tag[];
-}
-
-export interface RecipeRating {
-  average: number;
-  count: number;
+  slug: string;
 }
 
 export interface Recipe {
@@ -57,15 +57,25 @@ export interface Recipe {
   cook_time: number;
   total_time: number;
   servings: number;
-  servings_unit?: string;
+  servings_unit: string;
   ingredients: IngredientGroup[];
   instructions: InstructionGroup[];
   nutrition: NutritionInfo;
-  tags: RecipeTags;
-  rating: RecipeRating;
-  is_favorite?: boolean;
-  created_at?: string;
-  updated_at?: string;
+  tags: {
+    term_id: number;
+    course: Tag[];
+    cuisine: Tag[];
+    keyword: Tag[];
+  };
+  rating: {
+    average: number;
+    count: number;
+  };
+  notes: string;
+  parent_post_id: number;
+  created_at: string;
+  updated_at: string;
+  is_favorite: boolean;
 }
 
 export interface RecipeFilters {

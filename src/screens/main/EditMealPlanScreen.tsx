@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  FlatList,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -16,6 +17,7 @@ import { Section } from '../../components/layout/Section';
 import { Input } from '../../components/forms/Input';
 import { Button } from '../../components/forms/Button';
 import { RecipePickerModal } from '../../components/modals/RecipePickerModal';
+import { RecipeCard } from '../../components/recipe/RecipeCard';
 import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
 import { usePlans } from '../../hooks/usePlans';
 import {
@@ -48,14 +50,6 @@ const DAYS = [
   { key: 'sa', label: 'Saturday' },
 ];
 
-// Meal types
-const MEAL_TYPES = [
-  { key: 'breakfast', label: 'Breakfast' },
-  { key: 'lunch', label: 'Lunch' },
-  { key: 'dinner', label: 'Dinner' },
-  { key: 'snack', label: 'Snack' },
-];
-
 const EditMealPlanScreen: React.FC = () => {
   const navigation = useNavigation<EditMealPlanNavigationProp>();
   const route = useRoute<EditMealPlanRouteProp>();
@@ -74,11 +68,11 @@ const EditMealPlanScreen: React.FC = () => {
     sa: [],
   });
   const [showRecipePicker, setShowRecipePicker] = useState(false);
-  const [currentMealType, setCurrentMealType] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(plan || null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [recipeMap, setRecipeMap] = useState<Record<string, Recipe>>({});
+  const [dayRecipes, setDayRecipes] = useState<Recipe[]>([]);
 
   // Load the plan data on mount
   useEffect(() => {
@@ -127,11 +121,47 @@ const EditMealPlanScreen: React.FC = () => {
       setSchedule(simplifiedSchedule);
       setRecipeMap(recipes);
       setInitialLoad(false);
+      updateDayRecipes(simplifiedSchedule, selectedDay, recipes);
     } else if (planId) {
       // If no plan was passed but we have an ID, fetch it
       loadPlanData();
     }
   }, [plan, planId]);
+
+  // Update day recipes when selected day changes
+  useEffect(() => {
+    if (!initialLoad) {
+      updateDayRecipes(schedule, selectedDay, recipeMap);
+    }
+  }, [selectedDay, initialLoad]);
+
+  // Function to update day recipes
+  const updateDayRecipes = (
+    currentSchedule: MealSchedule,
+    day: string,
+    recipes: Record<string, Recipe>,
+  ) => {
+    const daySchedule = currentSchedule[day as keyof MealSchedule];
+
+    if (!Array.isArray(daySchedule)) {
+      setDayRecipes([]);
+      return;
+    }
+
+    const dayRecipesList: Recipe[] = [];
+    daySchedule.forEach(item => {
+      const recipeId =
+        typeof item.recipe === 'string'
+          ? item.recipe
+          : (item.recipe as Recipe)._id;
+
+      if (recipes[recipeId]) {
+        dayRecipesList.push(recipes[recipeId]);
+      }
+    });
+
+    setDayRecipes(dayRecipesList);
+  };
 
   // Function to load plan data if needed
   const loadPlanData = async () => {
@@ -178,6 +208,7 @@ const EditMealPlanScreen: React.FC = () => {
 
         setSchedule(simplifiedSchedule);
         setRecipeMap(recipes);
+        updateDayRecipes(simplifiedSchedule, selectedDay, recipes);
       }
     } catch (error) {
       console.error('Error loading plan data:', error);
@@ -188,21 +219,19 @@ const EditMealPlanScreen: React.FC = () => {
     }
   };
 
-  // Function to open recipe picker for a specific meal type
-  const handleAddMeal = (mealType: string) => {
-    setCurrentMealType(mealType);
+  // Function to open recipe picker
+  const handleAddRecipe = () => {
     setShowRecipePicker(true);
   };
 
   // Function to handle recipe selection from the picker
   const handleRecipeSelect = (recipe: Recipe) => {
-    // Add the recipe to the schedule for the selected day
-
     // Store the recipe object for display purposes
-    setRecipeMap({
+    const updatedRecipeMap = {
       ...recipeMap,
       [recipe._id]: recipe,
-    });
+    };
+    setRecipeMap(updatedRecipeMap);
 
     const newScheduledRecipe: ScheduledRecipe = {
       recipe: recipe._id,
@@ -229,14 +258,17 @@ const EditMealPlanScreen: React.FC = () => {
     updatedSchedule[selectedDay as keyof MealSchedule] = daySchedule;
     setSchedule(updatedSchedule);
 
+    // Update day recipes
+    updateDayRecipes(updatedSchedule, selectedDay, updatedRecipeMap);
+
     // Close the picker
     setShowRecipePicker(false);
   };
 
   // Function to remove a recipe from the schedule
-  const handleRemoveRecipe = (dayKey: string, recipeId: string) => {
+  const handleRemoveRecipe = (recipeId: string) => {
     const updatedSchedule = { ...schedule };
-    const daySchedule = [...updatedSchedule[dayKey as keyof MealSchedule]];
+    const daySchedule = [...updatedSchedule[selectedDay as keyof MealSchedule]];
 
     const newDaySchedule = daySchedule.filter(item =>
       typeof item.recipe === 'string'
@@ -244,8 +276,11 @@ const EditMealPlanScreen: React.FC = () => {
         : (item.recipe as any)._id !== recipeId,
     );
 
-    updatedSchedule[dayKey as keyof MealSchedule] = newDaySchedule;
+    updatedSchedule[selectedDay as keyof MealSchedule] = newDaySchedule;
     setSchedule(updatedSchedule);
+
+    // Update day recipes
+    updateDayRecipes(updatedSchedule, selectedDay, recipeMap);
   };
 
   // Function to save the updated meal plan
@@ -292,57 +327,6 @@ const EditMealPlanScreen: React.FC = () => {
   // Get recipe counts by day
   const getRecipeCountByDay = (dayKey: string) => {
     return schedule[dayKey as keyof MealSchedule].length;
-  };
-
-  // Render scheduled recipes for the selected day
-  const renderScheduledRecipes = () => {
-    const dayRecipes = schedule[selectedDay as keyof MealSchedule];
-
-    if (dayRecipes.length === 0) {
-      return (
-        <View style={styles.emptyDayContainer}>
-          <Text style={styles.emptyDayText}>
-            No recipes scheduled for{' '}
-            {DAYS.find(day => day.key === selectedDay)?.label}. Add meals using
-            the buttons below.
-          </Text>
-        </View>
-      );
-    }
-
-    return dayRecipes.map(item => {
-      const recipeId =
-        typeof item.recipe === 'string'
-          ? item.recipe
-          : (item.recipe as any)._id;
-      const recipe = recipeMap[recipeId];
-
-      // If recipe details aren't loaded yet, show placeholder
-      if (!recipe) {
-        return (
-          <View key={recipeId || 'loading'} style={styles.recipeItem}>
-            <Text style={styles.recipeName}>Loading recipe...</Text>
-          </View>
-        );
-      }
-
-      return (
-        <View key={recipeId} style={styles.recipeItem}>
-          <View style={styles.recipeInfo}>
-            <Text style={styles.recipeName}>{recipe.name}</Text>
-            <Text style={styles.recipeDetails}>
-              {recipe.total_time} min • {recipe.nutrition.calories} cal
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.removeButton}
-            onPress={() => handleRemoveRecipe(selectedDay, recipeId)}>
-            <Icon name="x" size={20} color={colors.semantic.error} />
-          </TouchableOpacity>
-        </View>
-      );
-    });
   };
 
   if (initialLoad) {
@@ -404,21 +388,35 @@ const EditMealPlanScreen: React.FC = () => {
 
         <Section
           title={`${DAYS.find(day => day.key === selectedDay)?.label} Meals`}>
-          <View style={styles.mealsContainer}>{renderScheduledRecipes()}</View>
+          {dayRecipes.length === 0 ? (
+            <View style={styles.emptyDayContainer}>
+              <Text style={styles.emptyDayText}>
+                No recipes scheduled for{' '}
+                {DAYS.find(day => day.key === selectedDay)?.label}. Add recipes
+                using the button below.
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={dayRecipes}
+              renderItem={({ item }) => (
+                <View style={styles.recipeCardContainer}>
+                  <RecipeCard recipe={item} onPress={() => {}} />
+                </View>
+              )}
+              keyExtractor={item => item._id}
+              scrollEnabled={false} // Since we're already in a ScrollView
+            />
+          )}
 
-          <View style={styles.addMealsContainer}>
-            {MEAL_TYPES.map(mealType => (
-              <Button
-                key={mealType.key}
-                title={`Add ${mealType.label}`}
-                onPress={() => handleAddMeal(mealType.key)}
-                variant="outline"
-                size="small"
-                icon={<Icon name="plus" size={16} color={colors.primary} />}
-                style={styles.addMealButton}
-              />
-            ))}
-          </View>
+          <Button
+            title="Add Recipe"
+            onPress={handleAddRecipe}
+            variant="primary"
+            size="medium"
+            icon={<Icon name="plus" size={18} color={colors.white} />}
+            style={styles.addRecipeButton}
+          />
         </Section>
 
         <View style={styles.saveButtonContainer}>
@@ -430,15 +428,7 @@ const EditMealPlanScreen: React.FC = () => {
         visible={showRecipePicker}
         onClose={() => setShowRecipePicker(false)}
         onSelect={handleRecipeSelect}
-        selectedRecipes={schedule[selectedDay as keyof MealSchedule]
-          .map(item => {
-            const recipeId =
-              typeof item.recipe === 'string'
-                ? item.recipe
-                : (item.recipe as any)._id;
-            return recipeMap[recipeId];
-          })
-          .filter(Boolean)}
+        selectedRecipes={dayRecipes}
       />
 
       <LoadingOverlay visible={loading} message="Saving meal plan..." />
@@ -491,9 +481,6 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: fontWeights.bold,
   },
-  mealsContainer: {
-    marginBottom: spacing.md,
-  },
   emptyDayContainer: {
     backgroundColor: colors.gray[50],
     padding: spacing.md,
@@ -505,40 +492,11 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
   },
-  recipeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    ...shadows.sm,
+  recipeCardContainer: {
+    marginBottom: spacing.md,
   },
-  recipeInfo: {
-    flex: 1,
-  },
-  recipeName: {
-    ...typography.bodyLarge,
-    color: colors.text.primary,
-    fontWeight: fontWeights.medium,
-    marginBottom: spacing.xs,
-  },
-  recipeDetails: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-  },
-  removeButton: {
-    padding: spacing.xs,
-  },
-  addMealsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -spacing.xs,
-  },
-  addMealButton: {
-    margin: spacing.xs,
-    flex: 1,
-    minWidth: '45%',
+  addRecipeButton: {
+    marginBottom: spacing.md,
   },
   saveButtonContainer: {
     padding: spacing.md,

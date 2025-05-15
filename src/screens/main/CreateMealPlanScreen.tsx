@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  FlatList,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -25,7 +26,6 @@ import {
   typography,
   spacing,
   borderRadius,
-  shadows,
   fontWeights,
 } from '../../theme';
 import { MealPlanStackParamList } from '../../navigation/types';
@@ -35,6 +35,7 @@ import {
   ScheduledRecipe,
   CreateMealPlanRequest,
 } from '../../types/plan';
+import { RecipeCard } from '@/components/recipe/RecipeCard';
 
 type CreateMealPlanNavigationProp = StackNavigationProp<
   MealPlanStackParamList,
@@ -57,14 +58,6 @@ const DAYS = [
   { key: 'sa', label: 'Saturday' },
 ];
 
-// Meal types
-const MEAL_TYPES = [
-  { key: 'breakfast', label: 'Breakfast' },
-  { key: 'lunch', label: 'Lunch' },
-  { key: 'dinner', label: 'Dinner' },
-  { key: 'snack', label: 'Snack' },
-];
-
 const CreateMealPlanScreen: React.FC = () => {
   const navigation = useNavigation<CreateMealPlanNavigationProp>();
   const route = useRoute<CreateMealPlanRouteProp>();
@@ -83,7 +76,6 @@ const CreateMealPlanScreen: React.FC = () => {
     sa: [],
   });
   const [showRecipePicker, setShowRecipePicker] = useState(false);
-  const [currentMealType, setCurrentMealType] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [recipes, setRecipes] = useState<Record<string, Recipe>>({});
 
@@ -92,21 +84,13 @@ const CreateMealPlanScreen: React.FC = () => {
     setPlanName(`Meal Plan - ${format(new Date(), 'MMMM d')}`);
   }, []);
 
-  // Function to open recipe picker for a specific meal type
-  const handleAddMeal = (mealType: string) => {
-    setCurrentMealType(mealType);
+  // Function to open recipe picker
+  const handleAddRecipe = () => {
     setShowRecipePicker(true);
   };
 
   // Function to handle recipe selection from the picker
   const handleRecipeSelect = (recipe: Recipe) => {
-    // Add the recipe to the schedule for the selected day and meal type
-    const mealTypeKey = currentMealType as
-      | 'breakfast'
-      | 'lunch'
-      | 'dinner'
-      | 'snack';
-
     // Keep track of recipes for display
     setRecipes({
       ...recipes,
@@ -209,42 +193,25 @@ const CreateMealPlanScreen: React.FC = () => {
         <View style={styles.emptyDayContainer}>
           <Text style={styles.emptyDayText}>
             No recipes scheduled for{' '}
-            {DAYS.find(day => day.key === selectedDay)?.label}. Add meals using
-            the buttons below.
+            {DAYS.find(day => day.key === selectedDay)?.label}. Add recipes
+            using the button below.
           </Text>
         </View>
       );
     }
 
-    return dayRecipes.map(item => {
-      const recipe = recipes[item.recipe];
-
-      // If recipe details aren't loaded yet, show placeholder
-      if (!recipe) {
-        return (
-          <View key={item.recipe} style={styles.recipeItem}>
-            <Text style={styles.recipeName}>Loading recipe...</Text>
+    return (
+      <FlatList
+        data={dayRecipes.map(item => recipes[item.recipe]).filter(Boolean)}
+        renderItem={({ item, index }) => (
+          <View style={styles.recipeCardContainer}>
+            <RecipeCard recipe={item} onPress={() => {}} />
           </View>
-        );
-      }
-
-      return (
-        <View key={item.recipe} style={styles.recipeItem}>
-          <View style={styles.recipeInfo}>
-            <Text style={styles.recipeName}>{recipe.name}</Text>
-            <Text style={styles.recipeDetails}>
-              {recipe.total_time} min • {recipe.nutrition.calories} cal
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.removeButton}
-            onPress={() => handleRemoveRecipe(selectedDay, item.recipe)}>
-            <Icon name="x" size={20} color={colors.semantic.error} />
-          </TouchableOpacity>
-        </View>
-      );
-    });
+        )}
+        keyExtractor={item => item._id}
+        showsVerticalScrollIndicator={false}
+      />
+    );
   };
 
   return (
@@ -304,19 +271,14 @@ const CreateMealPlanScreen: React.FC = () => {
           title={`${DAYS.find(day => day.key === selectedDay)?.label} Meals`}>
           <View style={styles.mealsContainer}>{renderScheduledRecipes()}</View>
 
-          <View style={styles.addMealsContainer}>
-            {MEAL_TYPES.map(mealType => (
-              <Button
-                key={mealType.key}
-                title={`Add ${mealType.label}`}
-                onPress={() => handleAddMeal(mealType.key)}
-                variant="outline"
-                size="small"
-                icon={<Icon name="plus" size={16} color={colors.primary} />}
-                style={styles.addMealButton}
-              />
-            ))}
-          </View>
+          <Button
+            title="Add Recipe"
+            onPress={handleAddRecipe}
+            variant="primary"
+            size="medium"
+            icon={<Icon name="plus" size={18} color={colors.white} />}
+            style={styles.addRecipeButton}
+          />
         </Section>
 
         <View style={styles.saveButtonContainer}>
@@ -397,40 +359,11 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
   },
-  recipeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    ...shadows.sm,
+  recipeCardContainer: {
+    marginBottom: spacing.md,
   },
-  recipeInfo: {
-    flex: 1,
-  },
-  recipeName: {
-    ...typography.bodyLarge,
-    color: colors.text.primary,
-    fontWeight: fontWeights.medium,
-    marginBottom: spacing.xs,
-  },
-  recipeDetails: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-  },
-  removeButton: {
-    padding: spacing.xs,
-  },
-  addMealsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -spacing.xs,
-  },
-  addMealButton: {
-    margin: spacing.xs,
-    flex: 1,
-    minWidth: '45%',
+  addRecipeButton: {
+    marginBottom: spacing.md,
   },
   saveButtonContainer: {
     padding: spacing.md,

@@ -12,9 +12,6 @@ import {
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 
-// Make sure vector icons are available
-Icon.loadFont();
-
 interface InputProps extends Omit<TextInputProps, 'onChangeText'> {
   label?: string;
   placeholder?: string;

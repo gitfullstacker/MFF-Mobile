@@ -1,14 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { BottomSheet } from './BottomSheet';
 import { Input } from '../forms/Input';
+import { RecipeCard } from '../recipe/RecipeCard';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { Recipe } from '../../types/recipe';
 import { useRecipes } from '../../hooks/useRecipes';
@@ -47,31 +41,25 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
     return selectedRecipes.some(r => r._id === recipe._id);
   };
 
-  const renderRecipe = ({ item }: { item: Recipe }) => (
-    <TouchableOpacity
-      style={[styles.recipeItem, isSelected(item) && styles.selectedRecipe]}
-      onPress={() => onSelect(item)}>
-      <View style={styles.recipeContent}>
-        <Text style={styles.recipeTitle} numberOfLines={2}>
-          {item.name}
-        </Text>
-        <Text style={styles.recipeInfo}>
-          {item.total_time} min • {item.nutrition.calories} cal
-        </Text>
+  const renderRecipe = ({ item, index }: { item: Recipe; index: number }) => {
+    const isLeft = index % 2 === 0;
+    return (
+      <View style={[styles.recipeCardContainer, isLeft && styles.leftCard]}>
+        <RecipeCard
+          recipe={{
+            ...item,
+            is_favorite: isSelected(item),
+          }}
+          onPress={() => onSelect(item)}
+        />
       </View>
-      {isSelected(item) && (
-        <Icon name="check-circle" size={24} color={colors.primary} />
-      )}
-    </TouchableOpacity>
-  );
+    );
+  };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} height="75%">
+    <BottomSheet visible={visible} onClose={onClose} height="80%">
       <View style={styles.header}>
         <Text style={styles.title}>Select Recipe</Text>
-        <TouchableOpacity onPress={onClose}>
-          <Icon name="x" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
@@ -81,6 +69,7 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
           onChangeText={setSearchQuery}
           leftIcon="search"
           onSubmitEditing={handleSearch}
+          returnKeyType="search"
         />
       </View>
 
@@ -88,6 +77,8 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
         data={recipes}
         renderItem={renderRecipe}
         keyExtractor={item => item._id}
+        numColumns={2}
+        columnWrapperStyle={styles.columnWrapper}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       />
@@ -114,31 +105,14 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingBottom: spacing.lg,
   },
-  recipeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.sm,
-    backgroundColor: colors.background.light,
-    borderWidth: 1,
-    borderColor: colors.border.light,
+  columnWrapper: {
+    justifyContent: 'space-between',
   },
-  selectedRecipe: {
-    backgroundColor: colors.primary + '10',
-    borderColor: colors.primary,
+  recipeCardContainer: {
+    width: '48%',
+    marginBottom: spacing.md,
   },
-  recipeContent: {
-    flex: 1,
-  },
-  recipeTitle: {
-    ...typography.bodyLarge,
-    color: colors.text.primary,
-    fontWeight: typography.fontWeights.medium,
-  },
-  recipeInfo: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    marginTop: spacing.xs,
+  leftCard: {
+    marginRight: spacing.sm,
   },
 });

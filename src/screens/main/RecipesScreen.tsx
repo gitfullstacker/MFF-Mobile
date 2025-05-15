@@ -1,3 +1,5 @@
+// This is an example update for RecipesScreen.tsx where RecipeCard is likely used
+
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -100,6 +102,13 @@ const RecipesScreen: React.FC = () => {
     [applyFilters],
   );
 
+  const handleFavoriteToggle = useCallback(
+    async (recipeId: string, isFavorite: boolean) => {
+      await toggleFavorite(recipeId);
+    },
+    [toggleFavorite],
+  );
+
   const getFilterCount = () => {
     let count = 0;
     Object.entries(filters).forEach(([key, value]) => {
@@ -111,14 +120,14 @@ const RecipesScreen: React.FC = () => {
   };
 
   const renderRecipe = ({ item, index }: { item: Recipe; index: number }) => {
-    const isLeft = index % 2 === 0;
     return (
-      <View style={[styles.recipeCardContainer, isLeft && styles.leftCard]}>
+      <View style={styles.recipeCardContainer}>
         <RecipeCard
           recipe={item}
           onPress={() => handleRecipePress(item.slug)}
-          onFavorite={() => toggleFavorite(item._id)}
-          variant="compact"
+          onFavoriteToggle={(recipeId, isFavorite) =>
+            handleFavoriteToggle(recipeId, isFavorite)
+          }
         />
       </View>
     );
@@ -205,8 +214,7 @@ const RecipesScreen: React.FC = () => {
         data={recipes}
         renderItem={renderRecipe}
         keyExtractor={item => item._id}
-        numColumns={2}
-        columnWrapperStyle={styles.columnWrapper}
+        numColumns={1} // Changed from 2 to 1 for horizontal cards
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -262,15 +270,8 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingTop: spacing.sm,
   },
-  columnWrapper: {
-    justifyContent: 'space-between',
-  },
   recipeCardContainer: {
-    flex: 0.48,
     marginBottom: spacing.md,
-  },
-  leftCard: {
-    marginRight: spacing.sm,
   },
   footerLoader: {
     paddingVertical: spacing.lg,
