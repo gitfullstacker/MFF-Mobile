@@ -91,6 +91,27 @@ const MealPlanDetailScreen: React.FC = () => {
     }
   }, [selectedDay, mealPlan]);
 
+  // Helper function to extract recipe ID from a scheduled recipe item
+  const getRecipeId = (item: ScheduledRecipe): string => {
+    if (typeof item.recipe === 'string') {
+      return item.recipe;
+    } else if (item.recipe && typeof item.recipe === 'object') {
+      return (item.recipe as Recipe)._id;
+    }
+    // Fallback
+    return '';
+  };
+
+  // Helper function to extract recipe object from a scheduled recipe item
+  const getRecipeObject = (item: ScheduledRecipe): Recipe | null => {
+    if (typeof item.recipe === 'string') {
+      return null;
+    } else if (item.recipe && typeof item.recipe === 'object') {
+      return item.recipe as Recipe;
+    }
+    return null;
+  };
+
   // Function to load plan data from API
   const loadPlanData = async () => {
     setLoading(true);
@@ -121,16 +142,27 @@ const MealPlanDetailScreen: React.FC = () => {
   const calculateDailyMacros = () => {
     if (!mealPlan) return;
 
-    const dayRecipes = mealPlan.schedule[selectedDay as keyof MealSchedule];
+    const daySchedule = mealPlan.schedule[selectedDay as keyof MealSchedule];
+
+    // Check if it's actually an array
+    if (!Array.isArray(daySchedule)) {
+      setDailyMacros({
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        calories: 0,
+      });
+      return;
+    }
+
     let proteinTotal = 0;
     let carbsTotal = 0;
     let fatTotal = 0;
     let caloriesTotal = 0;
 
-    dayRecipes.forEach((item: ScheduledRecipe) => {
-      // Check if recipe is populated with data
-      if (item.recipe && typeof item.recipe !== 'string') {
-        const recipe = item.recipe as Recipe;
+    daySchedule.forEach((item: ScheduledRecipe) => {
+      const recipe = getRecipeObject(item);
+      if (recipe && recipe.nutrition) {
         proteinTotal += recipe.nutrition.protein;
         carbsTotal += recipe.nutrition.carbohydrates;
         fatTotal += recipe.nutrition.fat;
@@ -155,11 +187,18 @@ const MealPlanDetailScreen: React.FC = () => {
     let weeklyFat = 0;
     let weeklyCalories = 0;
 
-    Object.values(mealPlan.schedule).forEach(daySchedule => {
+    // Filter valid day keys to avoid non-array values like _id
+    const validDayKeys = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
+
+    validDayKeys.forEach(dayKey => {
+      const daySchedule = mealPlan.schedule[dayKey as keyof MealSchedule];
+
+      // Skip if not an array or undefined
+      if (!Array.isArray(daySchedule)) return;
+
       daySchedule.forEach((item: ScheduledRecipe) => {
-        // Check if recipe is populated with data
-        if (item.recipe && typeof item.recipe !== 'string') {
-          const recipe = item.recipe as Recipe;
+        const recipe = getRecipeObject(item);
+        if (recipe && recipe.nutrition) {
           weeklyProtein += recipe.nutrition.protein;
           weeklyCarbs += recipe.nutrition.carbohydrates;
           weeklyFat += recipe.nutrition.fat;
@@ -179,7 +218,10 @@ const MealPlanDetailScreen: React.FC = () => {
   // Get recipe counts by day
   const getRecipeCountByDay = (dayKey: string) => {
     if (!mealPlan) return 0;
-    return mealPlan.schedule[dayKey as keyof MealSchedule].length;
+
+    const daySchedule = mealPlan.schedule[dayKey as keyof MealSchedule];
+    // Check if it's actually an array
+    return Array.isArray(daySchedule) ? daySchedule.length : 0;
   };
 
   // Handle edit plan
@@ -246,20 +288,27 @@ const MealPlanDetailScreen: React.FC = () => {
       // Generate a text summary of the plan
       let planSummary = `${mealPlan.name}\n\n`;
 
+      // Only process valid day keys
+      const validDayKeys = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
+
       DAYS.forEach(day => {
-        const dayRecipes = mealPlan.schedule[day.key as keyof MealSchedule];
-        if (dayRecipes.length > 0) {
-          planSummary += `${day.label}:\n`;
+        if (!validDayKeys.includes(day.key)) return;
 
-          dayRecipes.forEach((item: ScheduledRecipe) => {
-            // Check if recipe is populated with data
-            if (item.recipe && typeof item.recipe !== 'string') {
-              planSummary += `- ${(item.recipe as Recipe).name}\n`;
-            }
-          });
+        const daySchedule = mealPlan.schedule[day.key as keyof MealSchedule];
 
-          planSummary += '\n';
-        }
+        // Skip if not an array or empty
+        if (!Array.isArray(daySchedule) || daySchedule.length === 0) return;
+
+        planSummary += `${day.label}:\n`;
+
+        daySchedule.forEach((item: ScheduledRecipe) => {
+          const recipe = getRecipeObject(item);
+          if (recipe) {
+            planSummary += `- ${recipe.name}\n`;
+          }
+        });
+
+        planSummary += '\n';
       });
 
       // Add weekly totals
@@ -300,9 +349,10 @@ const MealPlanDetailScreen: React.FC = () => {
   const renderScheduledRecipes = () => {
     if (!mealPlan) return null;
 
-    const dayRecipes = mealPlan.schedule[selectedDay as keyof MealSchedule];
+    const daySchedule = mealPlan.schedule[selectedDay as keyof MealSchedule];
 
-    if (dayRecipes.length === 0) {
+    // Check if it's actually an array
+    if (!Array.isArray(daySchedule)) {
       return (
         <View style={styles.emptyDayContainer}>
           <Text style={styles.emptyDayText}>
@@ -313,25 +363,35 @@ const MealPlanDetailScreen: React.FC = () => {
       );
     }
 
-    return dayRecipes.map((item: ScheduledRecipe) => {
-      // Make sure recipe is populated
-      if (!item.recipe || typeof item.recipe === 'string') {
+    if (daySchedule.length === 0) {
+      return (
+        <View style={styles.emptyDayContainer}>
+          <Text style={styles.emptyDayText}>
+            No recipes scheduled for{' '}
+            {DAYS.find(day => day.key === selectedDay)?.label}.
+          </Text>
+        </View>
+      );
+    }
+
+    return daySchedule.map((item: ScheduledRecipe, index) => {
+      const recipeId = getRecipeId(item);
+      const recipe = getRecipeObject(item);
+
+      // If we couldn't extract a recipe object, show a loading state
+      if (!recipe) {
         return (
-          <View
-            key={typeof item.recipe === 'string' ? item.recipe : 'loading'}
-            style={styles.recipeItem}>
+          <View key={`${recipeId || index}`} style={styles.recipeItem}>
             <Text style={styles.recipeName}>Loading recipe...</Text>
           </View>
         );
       }
 
-      const recipe = item.recipe as Recipe;
-
       return (
         <TouchableOpacity
-          key={recipe._id}
+          key={recipeId || index}
           style={styles.recipeItem}
-          onPress={() => handleViewRecipe(recipe._id)}>
+          onPress={() => handleViewRecipe(recipeId)}>
           <View style={styles.recipeInfo}>
             <Text style={styles.recipeName}>{recipe.name}</Text>
             <Text style={styles.recipeDetails}>
