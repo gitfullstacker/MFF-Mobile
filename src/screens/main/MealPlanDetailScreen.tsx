@@ -28,7 +28,7 @@ import {
   fontWeights,
 } from '../../theme';
 import { MealPlanStackParamList } from '../../navigation/types';
-import { MealPlan, MealSchedule, ScheduledRecipe } from '../../types/plan';
+import { Plan, PlanSchedule, ScheduledRecipe } from '../../types/plan';
 import { Recipe } from '@/types/recipe';
 import { RecipeCard } from '@/components/recipe/RecipeCard';
 import { ShoppingListModal } from '@/components/modals/ShoppingListModal';
@@ -62,7 +62,7 @@ const MealPlanDetailScreen: React.FC = () => {
 
   const [selectedDay, setSelectedDay] = useState<string>('su');
   const [loading, setLoading] = useState(false);
-  const [mealPlan, setMealPlan] = useState<MealPlan | null>(plan || null);
+  const [mealPlan, setMealPlan] = useState<Plan | null>(plan || null);
   const [dailyMacros, setDailyMacros] = useState({
     protein: 0,
     carbs: 0,
@@ -127,7 +127,7 @@ const MealPlanDetailScreen: React.FC = () => {
     const validDayKeys = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
 
     validDayKeys.forEach(dayKey => {
-      const daySchedule = mealPlan.schedule[dayKey as keyof MealSchedule];
+      const daySchedule = mealPlan.schedule[dayKey as keyof PlanSchedule];
 
       if (!Array.isArray(daySchedule)) return;
 
@@ -151,7 +151,7 @@ const MealPlanDetailScreen: React.FC = () => {
     if (!mealPlan) return;
 
     const recipes: Recipe[] = [];
-    const daySchedule = mealPlan.schedule[selectedDay as keyof MealSchedule];
+    const daySchedule = mealPlan.schedule[selectedDay as keyof PlanSchedule];
 
     if (!Array.isArray(daySchedule)) {
       setDayRecipes([]);
@@ -199,7 +199,7 @@ const MealPlanDetailScreen: React.FC = () => {
   const calculateDailyMacros = () => {
     if (!mealPlan) return;
 
-    const daySchedule = mealPlan.schedule[selectedDay as keyof MealSchedule];
+    const daySchedule = mealPlan.schedule[selectedDay as keyof PlanSchedule];
 
     // Check if it's actually an array
     if (!Array.isArray(daySchedule)) {
@@ -248,7 +248,7 @@ const MealPlanDetailScreen: React.FC = () => {
     const validDayKeys = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
 
     validDayKeys.forEach(dayKey => {
-      const daySchedule = mealPlan.schedule[dayKey as keyof MealSchedule];
+      const daySchedule = mealPlan.schedule[dayKey as keyof PlanSchedule];
 
       // Skip if not an array or undefined
       if (!Array.isArray(daySchedule)) return;
@@ -276,7 +276,7 @@ const MealPlanDetailScreen: React.FC = () => {
   const getRecipeCountByDay = (dayKey: string) => {
     if (!mealPlan) return 0;
 
-    const daySchedule = mealPlan.schedule[dayKey as keyof MealSchedule];
+    const daySchedule = mealPlan.schedule[dayKey as keyof PlanSchedule];
     // Check if it's actually an array
     return Array.isArray(daySchedule) ? daySchedule.length : 0;
   };
@@ -351,7 +351,7 @@ const MealPlanDetailScreen: React.FC = () => {
       DAYS.forEach(day => {
         if (!validDayKeys.includes(day.key)) return;
 
-        const daySchedule = mealPlan.schedule[day.key as keyof MealSchedule];
+        const daySchedule = mealPlan.schedule[day.key as keyof PlanSchedule];
 
         // Skip if not an array or empty
         if (!Array.isArray(daySchedule) || daySchedule.length === 0) return;

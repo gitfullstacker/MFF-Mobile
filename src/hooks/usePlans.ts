@@ -1,17 +1,17 @@
 import { useCallback, useState } from 'react';
 import { useAtom } from 'jotai';
 import {
-  mealPlansAtom,
-  selectedMealPlanAtom,
+  plansAtom,
+  selectedPlanAtom,
   currentWeekPlanAtom,
   addToastAtom,
 } from '../store';
 import { planService } from '../services/plan';
-import { MealPlan, CreateMealPlanRequest } from '../types/plan';
+import { Plan, CreatePlanRequest } from '../types/plan';
 
 export const usePlans = () => {
-  const [mealPlans, setMealPlans] = useAtom(mealPlansAtom);
-  const [selectedPlan, setSelectedPlan] = useAtom(selectedMealPlanAtom);
+  const [plans, setPlans] = useAtom(plansAtom);
+  const [selectedPlan, setSelectedPlan] = useAtom(selectedPlanAtom);
   const [currentWeekPlan, setCurrentWeekPlan] = useAtom(currentWeekPlanAtom);
   const [, addToast] = useAtom(addToastAtom);
 
@@ -22,7 +22,7 @@ export const usePlans = () => {
       try {
         setLoading(true);
         const response = await planService.getPlans(page, pageSize);
-        setMealPlans(response.data);
+        setPlans(response.data);
 
         // Set current week plan if available
         const currentPlan = response.data.find(plan => {
@@ -46,7 +46,7 @@ export const usePlans = () => {
         setLoading(false);
       }
     },
-    [setMealPlans, setCurrentWeekPlan, addToast],
+    [setPlans, setCurrentWeekPlan, addToast],
   );
 
   const fetchPlan = useCallback(
@@ -71,11 +71,11 @@ export const usePlans = () => {
   );
 
   const createPlan = useCallback(
-    async (data: CreateMealPlanRequest) => {
+    async (data: CreatePlanRequest) => {
       try {
         setLoading(true);
         const newPlan = await planService.createPlan(data);
-        setMealPlans([newPlan, ...mealPlans]);
+        setPlans([newPlan, ...plans]);
 
         addToast({
           message: 'Meal plan created successfully!',
@@ -96,18 +96,16 @@ export const usePlans = () => {
         setLoading(false);
       }
     },
-    [mealPlans, setMealPlans, addToast],
+    [plans, setPlans, addToast],
   );
 
   const updatePlan = useCallback(
-    async (id: string, data: Partial<MealPlan>) => {
+    async (id: string, data: Partial<Plan>) => {
       try {
         setLoading(true);
         const updatedPlan = await planService.updatePlan(id, data);
 
-        setMealPlans(
-          mealPlans.map(plan => (plan._id === id ? updatedPlan : plan)),
-        );
+        setPlans(plans.map(plan => (plan._id === id ? updatedPlan : plan)));
 
         if (selectedPlan?._id === id) {
           setSelectedPlan(updatedPlan);
@@ -137,10 +135,10 @@ export const usePlans = () => {
       }
     },
     [
-      mealPlans,
+      plans,
       selectedPlan,
       currentWeekPlan,
-      setMealPlans,
+      setPlans,
       setSelectedPlan,
       setCurrentWeekPlan,
       addToast,
@@ -153,7 +151,7 @@ export const usePlans = () => {
         setLoading(true);
         await planService.deletePlan(id);
 
-        setMealPlans(mealPlans.filter(plan => plan._id !== id));
+        setPlans(plans.filter(plan => plan._id !== id));
 
         if (selectedPlan?._id === id) {
           setSelectedPlan(null);
@@ -181,10 +179,10 @@ export const usePlans = () => {
       }
     },
     [
-      mealPlans,
+      plans,
       selectedPlan,
       currentWeekPlan,
-      setMealPlans,
+      setPlans,
       setSelectedPlan,
       setCurrentWeekPlan,
       addToast,
@@ -196,7 +194,7 @@ export const usePlans = () => {
       try {
         setLoading(true);
         const duplicatedPlan = await planService.duplicatePlan(id);
-        setMealPlans([duplicatedPlan, ...mealPlans]);
+        setPlans([duplicatedPlan, ...plans]);
 
         addToast({
           message: 'Meal plan duplicated successfully!',
@@ -217,11 +215,11 @@ export const usePlans = () => {
         setLoading(false);
       }
     },
-    [mealPlans, setMealPlans, addToast],
+    [plans, setPlans, addToast],
   );
 
   return {
-    mealPlans,
+    plans,
     selectedPlan,
     currentWeekPlan,
     loading,

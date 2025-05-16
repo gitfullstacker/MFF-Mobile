@@ -30,7 +30,7 @@ import {
 } from '../../theme';
 import { MealPlanStackParamList } from '../../navigation/types';
 import { Recipe } from '../../types/recipe';
-import { MealPlan, MealSchedule, ScheduledRecipe } from '../../types/plan';
+import { Plan, PlanSchedule, ScheduledRecipe } from '../../types/plan';
 
 type EditMealPlanNavigationProp = StackNavigationProp<
   MealPlanStackParamList,
@@ -58,7 +58,7 @@ const EditMealPlanScreen: React.FC = () => {
 
   const [planName, setPlanName] = useState('');
   const [selectedDay, setSelectedDay] = useState<string>('su');
-  const [schedule, setSchedule] = useState<MealSchedule>({
+  const [schedule, setSchedule] = useState<PlanSchedule>({
     su: [],
     mo: [],
     tu: [],
@@ -69,7 +69,7 @@ const EditMealPlanScreen: React.FC = () => {
   });
   const [showRecipePicker, setShowRecipePicker] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [mealPlan, setMealPlan] = useState<MealPlan | null>(plan || null);
+  const [mealPlan, setMealPlan] = useState<Plan | null>(plan || null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [recipeMap, setRecipeMap] = useState<Record<string, Recipe>>({});
   const [dayRecipes, setDayRecipes] = useState<Recipe[]>([]);
@@ -82,7 +82,7 @@ const EditMealPlanScreen: React.FC = () => {
 
       // We need to transform the schedule to match the expected structure
       // The backend populates recipe objects, but for updating we need just the IDs
-      const simplifiedSchedule: MealSchedule = {
+      const simplifiedSchedule: PlanSchedule = {
         su: [],
         mo: [],
         tu: [],
@@ -96,7 +96,7 @@ const EditMealPlanScreen: React.FC = () => {
       const recipes: Record<string, Recipe> = {};
 
       DAYS.forEach(day => {
-        const dayKey = day.key as keyof MealSchedule;
+        const dayKey = day.key as keyof PlanSchedule;
 
         if (plan.schedule[dayKey]) {
           plan.schedule[dayKey].forEach((item: ScheduledRecipe) => {
@@ -137,11 +137,11 @@ const EditMealPlanScreen: React.FC = () => {
 
   // Function to update day recipes
   const updateDayRecipes = (
-    currentSchedule: MealSchedule,
+    currentSchedule: PlanSchedule,
     day: string,
     recipes: Record<string, Recipe>,
   ) => {
-    const daySchedule = currentSchedule[day as keyof MealSchedule];
+    const daySchedule = currentSchedule[day as keyof PlanSchedule];
 
     if (!Array.isArray(daySchedule)) {
       setDayRecipes([]);
@@ -174,7 +174,7 @@ const EditMealPlanScreen: React.FC = () => {
         setPlanName(loadedPlan.name);
 
         // Process schedule as above
-        const simplifiedSchedule: MealSchedule = {
+        const simplifiedSchedule: PlanSchedule = {
           su: [],
           mo: [],
           tu: [],
@@ -187,7 +187,7 @@ const EditMealPlanScreen: React.FC = () => {
         const recipes: Record<string, Recipe> = {};
 
         DAYS.forEach(day => {
-          const dayKey = day.key as keyof MealSchedule;
+          const dayKey = day.key as keyof PlanSchedule;
 
           if (loadedPlan.schedule[dayKey]) {
             loadedPlan.schedule[dayKey].forEach((item: ScheduledRecipe) => {
@@ -240,7 +240,7 @@ const EditMealPlanScreen: React.FC = () => {
 
     // Update the schedule
     const updatedSchedule = { ...schedule };
-    const daySchedule = [...updatedSchedule[selectedDay as keyof MealSchedule]];
+    const daySchedule = [...updatedSchedule[selectedDay as keyof PlanSchedule]];
 
     // Check if we already have this recipe in this slot
     const existingIndex = daySchedule.findIndex(
@@ -255,7 +255,7 @@ const EditMealPlanScreen: React.FC = () => {
       daySchedule.push(newScheduledRecipe);
     }
 
-    updatedSchedule[selectedDay as keyof MealSchedule] = daySchedule;
+    updatedSchedule[selectedDay as keyof PlanSchedule] = daySchedule;
     setSchedule(updatedSchedule);
 
     // Update day recipes
@@ -268,7 +268,7 @@ const EditMealPlanScreen: React.FC = () => {
   // Function to remove a recipe from the schedule
   const handleRemoveRecipe = (recipeId: string) => {
     const updatedSchedule = { ...schedule };
-    const daySchedule = [...updatedSchedule[selectedDay as keyof MealSchedule]];
+    const daySchedule = [...updatedSchedule[selectedDay as keyof PlanSchedule]];
 
     const newDaySchedule = daySchedule.filter(item =>
       typeof item.recipe === 'string'
@@ -276,7 +276,7 @@ const EditMealPlanScreen: React.FC = () => {
         : (item.recipe as any)._id !== recipeId,
     );
 
-    updatedSchedule[selectedDay as keyof MealSchedule] = newDaySchedule;
+    updatedSchedule[selectedDay as keyof PlanSchedule] = newDaySchedule;
     setSchedule(updatedSchedule);
 
     // Update day recipes
@@ -307,7 +307,7 @@ const EditMealPlanScreen: React.FC = () => {
     try {
       setLoading(true);
 
-      const updatedPlan: Partial<MealPlan> = {
+      const updatedPlan: Partial<Plan> = {
         name: planName,
         schedule,
       };
@@ -326,7 +326,7 @@ const EditMealPlanScreen: React.FC = () => {
 
   // Get recipe counts by day
   const getRecipeCountByDay = (dayKey: string) => {
-    return schedule[dayKey as keyof MealSchedule].length;
+    return schedule[dayKey as keyof PlanSchedule].length;
   };
 
   if (initialLoad) {

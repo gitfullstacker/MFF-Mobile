@@ -57,7 +57,6 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
   const [favorite, setFavorite] = useState(is_favorite);
   const [isSaving, setIsSaving] = useState(false);
   const { allowedCategoryIds } = useSubscription();
-  const [dialogOpen, setDialogOpen] = useState(false); // For future modal implementation
 
   // Check if recipe is accessible based on subscription
   const isRecipeAccessible = useCallback(() => {
@@ -83,19 +82,6 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
     if (mins === 0) return `${hours} hr`;
     return `${hours} hr ${mins} min`;
   };
-
-  // Handle recipe card click
-  const handleRecipeClick = useCallback(() => {
-    if (isValidRecipe) {
-      if (openInModal) {
-        // Future: Open modal dialog instead of navigation
-        setDialogOpen(true);
-      } else {
-        // Navigate to recipe detail
-        onPress();
-      }
-    }
-  }, [isValidRecipe, onPress, openInModal]);
 
   // Handle favorite toggle
   const handleFavoriteClick = async (e: any) => {
@@ -146,7 +132,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
         <View style={styles.titleSection}>
           {/* Recipe Title */}
           <TouchableOpacity
-            onPress={handleRecipeClick}
+            onPress={onPress}
             activeOpacity={0.7}
             disabled={!isValidRecipe}>
             <Text style={styles.title} numberOfLines={2}>
@@ -193,7 +179,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
         {isValidRecipe ? (
           <TouchableOpacity
             style={styles.imageContainer}
-            onPress={handleRecipeClick}
+            onPress={onPress}
             activeOpacity={0.9}>
             {/* Selection Icon (if enabled) */}
             {showSelectionIcon && (

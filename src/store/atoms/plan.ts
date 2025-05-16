@@ -1,6 +1,6 @@
 import { atom } from 'jotai';
-import { MealPlan } from '../../types/plan';
+import { Plan } from '../../types/plan';
 
-export const mealPlansAtom = atom<MealPlan[]>([]);
-export const selectedMealPlanAtom = atom<MealPlan | null>(null);
-export const currentWeekPlanAtom = atom<MealPlan | null>(null);
+export const plansAtom = atom<Plan[]>([]);
+export const selectedPlanAtom = atom<Plan | null>(null);
+export const currentWeekPlanAtom = atom<Plan | null>(null);

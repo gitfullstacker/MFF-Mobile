@@ -31,9 +31,9 @@ import {
 import { MealPlanStackParamList } from '../../navigation/types';
 import { Recipe } from '../../types/recipe';
 import {
-  MealSchedule,
+  PlanSchedule,
   ScheduledRecipe,
-  CreateMealPlanRequest,
+  CreatePlanRequest,
 } from '../../types/plan';
 import { RecipeCard } from '@/components/recipe/RecipeCard';
 
@@ -66,7 +66,7 @@ const CreateMealPlanScreen: React.FC = () => {
 
   const [planName, setPlanName] = useState('');
   const [selectedDay, setSelectedDay] = useState<string>('su');
-  const [schedule, setSchedule] = useState<MealSchedule>({
+  const [schedule, setSchedule] = useState<PlanSchedule>({
     su: [],
     mo: [],
     tu: [],
@@ -104,7 +104,7 @@ const CreateMealPlanScreen: React.FC = () => {
 
     // Update the schedule
     const updatedSchedule = { ...schedule };
-    const daySchedule = [...updatedSchedule[selectedDay as keyof MealSchedule]];
+    const daySchedule = [...updatedSchedule[selectedDay as keyof PlanSchedule]];
 
     // Check if we already have this recipe in this slot
     const existingIndex = daySchedule.findIndex(
@@ -119,7 +119,7 @@ const CreateMealPlanScreen: React.FC = () => {
       daySchedule.push(newScheduledRecipe);
     }
 
-    updatedSchedule[selectedDay as keyof MealSchedule] = daySchedule;
+    updatedSchedule[selectedDay as keyof PlanSchedule] = daySchedule;
     setSchedule(updatedSchedule);
 
     // Close the picker
@@ -129,11 +129,11 @@ const CreateMealPlanScreen: React.FC = () => {
   // Function to remove a recipe from the schedule
   const handleRemoveRecipe = (dayKey: string, recipeId: string) => {
     const updatedSchedule = { ...schedule };
-    const daySchedule = [...updatedSchedule[dayKey as keyof MealSchedule]];
+    const daySchedule = [...updatedSchedule[dayKey as keyof PlanSchedule]];
 
     const newDaySchedule = daySchedule.filter(item => item.recipe !== recipeId);
 
-    updatedSchedule[dayKey as keyof MealSchedule] = newDaySchedule;
+    updatedSchedule[dayKey as keyof PlanSchedule] = newDaySchedule;
     setSchedule(updatedSchedule);
   };
 
@@ -161,7 +161,7 @@ const CreateMealPlanScreen: React.FC = () => {
     try {
       setLoading(true);
 
-      const planData: CreateMealPlanRequest = {
+      const planData: CreatePlanRequest = {
         name: planName,
         schedule,
         removed_ingredient_ids: [],
@@ -181,12 +181,12 @@ const CreateMealPlanScreen: React.FC = () => {
 
   // Get recipe counts by day
   const getRecipeCountByDay = (dayKey: string) => {
-    return schedule[dayKey as keyof MealSchedule].length;
+    return schedule[dayKey as keyof PlanSchedule].length;
   };
 
   // Render scheduled recipes for the selected day
   const renderScheduledRecipes = () => {
-    const dayRecipes = schedule[selectedDay as keyof MealSchedule];
+    const dayRecipes = schedule[selectedDay as keyof PlanSchedule];
 
     if (dayRecipes.length === 0) {
       return (
@@ -290,7 +290,7 @@ const CreateMealPlanScreen: React.FC = () => {
         visible={showRecipePicker}
         onClose={() => setShowRecipePicker(false)}
         onSelect={handleRecipeSelect}
-        selectedRecipes={schedule[selectedDay as keyof MealSchedule]
+        selectedRecipes={schedule[selectedDay as keyof PlanSchedule]
           .map(item => recipes[item.recipe])
           .filter(Boolean)}
       />

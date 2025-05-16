@@ -98,7 +98,6 @@ const styles = StyleSheet.create({
     paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 50, // More padding for iOS
     paddingHorizontal: spacing.md,
     height: Platform.OS === 'ios' ? 100 : 56 + (StatusBar.currentHeight || 0),
-    ...shadows.sm,
   },
   transparent: {
     backgroundColor: 'transparent',

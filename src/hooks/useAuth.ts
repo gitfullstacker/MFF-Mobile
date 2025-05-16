@@ -10,6 +10,7 @@ import {
 import { authService } from '../services/auth';
 import { LoginRequest } from '../types/auth';
 import { isTokenExpired } from '../utils/tokenUtils';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const useAuth = () => {
   const [authToken, setAuthToken] = useAtom(authTokenAtom);
@@ -67,8 +68,9 @@ export const useAuth = () => {
 
   const logout = useCallback(async () => {
     try {
-      setAuthToken(null);
-      setUser(null);
+      await AsyncStorage.removeItem('authToken');
+      await AsyncStorage.removeItem('user');
+
       setIsAuthenticated(false);
 
       // Don't clear savedCredentials on logout if rememberMe was true
