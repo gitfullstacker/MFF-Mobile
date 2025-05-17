@@ -31,7 +31,7 @@ import {
 } from '../../theme';
 import { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { Recipe } from '../../types/recipe';
-import { MealSchedule } from '../../types/plan';
+import { PlanSchedule } from '../../types/plan';
 
 type DashboardNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Dashboard'>,
@@ -77,7 +77,7 @@ const DashboardScreen: React.FC = () => {
   const calculateTodaysMeals = () => {
     if (!currentWeekPlan) return;
 
-    const daysMap: { [key: string]: keyof MealSchedule } = {
+    const daysMap: { [key: string]: keyof PlanSchedule } = {
       su: 'su',
       mo: 'mo',
       tu: 'tu',
@@ -91,8 +91,6 @@ const DashboardScreen: React.FC = () => {
     const dayKey = daysMap[today];
 
     if (!dayKey) return;
-
-    const todayPlan = currentWeekPlan.schedule[dayKey] || [];
 
     // This would need to be populated with actual recipe data
     // For now, just showing the structure
@@ -122,7 +120,7 @@ const DashboardScreen: React.FC = () => {
           params: { recipeId: item.slug },
         } as any)
       }>
-      <RecipeCard recipe={item} onPress={() => {}} variant="compact" />
+      <RecipeCard recipe={item} onPress={() => {}} />
     </TouchableOpacity>
   );
 
@@ -136,8 +134,7 @@ const DashboardScreen: React.FC = () => {
             params: { recipeId: item.slug },
           } as any)
         }
-        onFavorite={() => toggleFavorite(item._id)}
-        variant="compact"
+        onFavoriteToggle={() => toggleFavorite(item._id)}
       />
     </View>
   );
