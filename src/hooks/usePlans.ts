@@ -1,18 +1,12 @@
 import { useCallback, useState } from 'react';
 import { useAtom } from 'jotai';
-import {
-  plansAtom,
-  selectedPlanAtom,
-  currentWeekPlanAtom,
-  addToastAtom,
-} from '../store';
+import { plansAtom, selectedPlanAtom, addToastAtom } from '../store';
 import { planService } from '../services/plan';
 import { Plan, CreatePlanRequest } from '../types/plan';
 
 export const usePlans = () => {
   const [plans, setPlans] = useAtom(plansAtom);
   const [selectedPlan, setSelectedPlan] = useAtom(selectedPlanAtom);
-  const [currentWeekPlan, setCurrentWeekPlan] = useAtom(currentWeekPlanAtom);
   const [, addToast] = useAtom(addToastAtom);
 
   const [loading, setLoading] = useState(false);
@@ -23,15 +17,6 @@ export const usePlans = () => {
         setLoading(true);
         const response = await planService.getPlans(page, pageSize);
         setPlans(response.data);
-
-        // Set current week plan if available
-        const currentPlan = response.data.find(plan => {
-          // Logic to determine if plan is for current week
-          return true; // Placeholder
-        });
-        if (currentPlan) {
-          setCurrentWeekPlan(currentPlan);
-        }
 
         return response;
       } catch (error: any) {
@@ -46,7 +31,7 @@ export const usePlans = () => {
         setLoading(false);
       }
     },
-    [setPlans, setCurrentWeekPlan, addToast],
+    [setPlans, addToast],
   );
 
   const fetchPlan = useCallback(
@@ -111,10 +96,6 @@ export const usePlans = () => {
           setSelectedPlan(updatedPlan);
         }
 
-        if (currentWeekPlan?._id === id) {
-          setCurrentWeekPlan(updatedPlan);
-        }
-
         addToast({
           message: 'Meal plan updated successfully!',
           type: 'success',
@@ -134,15 +115,7 @@ export const usePlans = () => {
         setLoading(false);
       }
     },
-    [
-      plans,
-      selectedPlan,
-      currentWeekPlan,
-      setPlans,
-      setSelectedPlan,
-      setCurrentWeekPlan,
-      addToast,
-    ],
+    [plans, selectedPlan, setPlans, setSelectedPlan, addToast],
   );
 
   const deletePlan = useCallback(
@@ -155,10 +128,6 @@ export const usePlans = () => {
 
         if (selectedPlan?._id === id) {
           setSelectedPlan(null);
-        }
-
-        if (currentWeekPlan?._id === id) {
-          setCurrentWeekPlan(null);
         }
 
         addToast({
@@ -178,15 +147,7 @@ export const usePlans = () => {
         setLoading(false);
       }
     },
-    [
-      plans,
-      selectedPlan,
-      currentWeekPlan,
-      setPlans,
-      setSelectedPlan,
-      setCurrentWeekPlan,
-      addToast,
-    ],
+    [plans, selectedPlan, setPlans, setSelectedPlan, addToast],
   );
 
   const duplicatePlan = useCallback(
@@ -221,7 +182,6 @@ export const usePlans = () => {
   return {
     plans,
     selectedPlan,
-    currentWeekPlan,
     loading,
     fetchPlans,
     fetchPlan,

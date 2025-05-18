@@ -3,4 +3,3 @@ import { Plan } from '../../types/plan';
 
 export const plansAtom = atom<Plan[]>([]);
 export const selectedPlanAtom = atom<Plan | null>(null);
-export const currentWeekPlanAtom = atom<Plan | null>(null);

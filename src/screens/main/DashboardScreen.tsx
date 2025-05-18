@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
@@ -28,10 +29,12 @@ import {
   spacing,
   borderRadius,
   fontWeights,
+  shadows,
 } from '../../theme';
 import { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { Recipe } from '../../types/recipe';
-import { PlanSchedule } from '../../types/plan';
+import { Plan, PlanSchedule } from '../../types/plan';
+import { RECIPE_CATEGORIES } from '@/constants';
 
 type DashboardNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Dashboard'>,
@@ -47,8 +50,9 @@ const DashboardScreen: React.FC = () => {
     fetchRecipes,
     toggleFavorite,
   } = useRecipes();
-  const { currentWeekPlan, loading: plansLoading, fetchPlans } = usePlans();
+  const { plans, loading: plansLoading, fetchPlans } = usePlans();
 
+  const [activePlans, setActivePlans] = useState<Plan[]>([]);
   const [todaysMeals, setTodaysMeals] = useState<Recipe[]>([]);
   const [dailyMacros, setDailyMacros] = useState({
     protein: 0,
@@ -62,10 +66,9 @@ const DashboardScreen: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (currentWeekPlan) {
-      calculateTodaysMeals();
-    }
-  }, [currentWeekPlan]);
+    setActivePlans(plans);
+    calculateTodaysMeals();
+  }, [plans]);
 
   const loadDashboardData = async () => {
     await Promise.all([
@@ -75,7 +78,7 @@ const DashboardScreen: React.FC = () => {
   };
 
   const calculateTodaysMeals = () => {
-    if (!currentWeekPlan) return;
+    if (!plans) return;
 
     const daysMap: { [key: string]: keyof PlanSchedule } = {
       su: 'su',
@@ -139,6 +142,29 @@ const DashboardScreen: React.FC = () => {
     </View>
   );
 
+  const renderRecipeCategory = ({
+    item,
+  }: {
+    item: {
+      id: number;
+      name: string;
+      slug: string;
+      icon: string;
+    };
+  }) => (
+    <View style={styles.recentRecipeCard}>
+      <TouchableOpacity
+        key={item.id}
+        style={styles.categoryButton}
+        onPress={() => navigateToCategory(item.name)}>
+        <View style={styles.categoryIcon}>
+          <Icon name={item.icon} size={18} color={colors.primary} />
+        </View>
+        <Text style={styles.categoryName}>{item.name}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   const navigateToMealPlans = () => {
     navigation.navigate('Meal Plans');
   };
@@ -153,35 +179,91 @@ const DashboardScreen: React.FC = () => {
     } as any);
   };
 
+  const navigateToPlanDetail = (plan: Plan) => {
+    navigation.navigate('MealPlanStack', {
+      screen: 'MealPlanDetail',
+      params: { planId: plan._id, plan },
+    } as any);
+  };
+
+  const navigateToCategory = (category: string) => {
+    // Navigation code to category
+    console.log('Navigate to category', category);
+  };
+
   return (
     <PageContainer>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>
-              Hello, {user?.first_name || 'there'}! 👋
-            </Text>
-            <Text style={styles.date}>
-              {format(new Date(), 'EEEE, MMMM d')}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={() => navigation.navigate('Account')}>
-            <View style={styles.avatarContainer}>
-              <Icon name="user" size={24} color={colors.primary} />
+          <Image
+            source={require('../../../assets/images/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Welcome Section */}
+        <View style={styles.welcomeSection}>
+          <Text style={styles.welcomeText}>
+            Welcome back, {user?.first_name || 'there'}!
+          </Text>
+          <Text style={styles.welcomeSubtext}>What are you cooking today?</Text>
+        </View>
+
+        {/* Active Meal Plan Card */}
+        <View style={styles.planCardContainer}>
+          {activePlans[0] ? (
+            <TouchableOpacity
+              style={styles.planCard}
+              onPress={() => navigateToPlanDetail(activePlans[0])}
+              activeOpacity={0.9}>
+              <Image
+                source={require('../../../assets/images/plan-placeholder.jpg')}
+                style={styles.planImage}
+                resizeMode="cover"
+              />
+              <View style={styles.planOverlay} />
+              <View style={styles.planContent}>
+                <View>
+                  <Text style={styles.planTitle}>Active Meal Plan</Text>
+                  <Text style={styles.planName}>{activePlans[0].name}</Text>
+                  <View style={styles.planDetails}>
+                    <Icon name="book-open" size={14} color={colors.white} />
+                    <Text style={styles.planDetailText}>
+                      {Object.values(activePlans[0].schedule).flat().length}{' '}
+                      recipes
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.viewButton}>
+                  <Text style={styles.viewButtonText}>View Plan</Text>
+                  <Icon name="chevron-right" size={16} color={colors.primary} />
+                </View>
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.planCardEmpty}>
+              <Icon name="calendar" size={32} color={colors.gray[400]} />
+              <Text style={styles.emptyPlanText}>No active meal plan</Text>
+              <TouchableOpacity
+                style={styles.createPlanButton}
+                onPress={navigateToCreatePlan}>
+                <Text style={styles.createPlanButtonText}>Create Plan</Text>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          )}
         </View>
 
         {/* Today's Plan */}
         <Section
           title="Today's Plan"
           action={
-            currentWeekPlan
+            todaysMeals
               ? { label: 'View All', onPress: navigateToMealPlans }
               : undefined
           }>
-          {currentWeekPlan ? (
+          {todaysMeals ? (
             <>
               {todaysMeals.length > 0 ? (
                 <FlatList
@@ -278,22 +360,16 @@ const DashboardScreen: React.FC = () => {
           )}
         </Section>
 
-        {/* Weekly Progress */}
-        <Section title="Weekly Progress">
-          <View style={styles.progressCard}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressTitle}>Macro Adherence</Text>
-              <Text style={styles.progressPercentage}>85%</Text>
-            </View>
-
-            <View style={styles.progressBarContainer}>
-              <View style={[styles.progressBar, { width: '85%' }]} />
-            </View>
-
-            <Text style={styles.progressText}>
-              Great job! You're on track with your nutrition goals.
-            </Text>
-          </View>
+        {/* Recipe Categories */}
+        <Section title="Recipe Categories">
+          <FlatList
+            data={RECIPE_CATEGORIES}
+            renderItem={renderRecipeCategory}
+            keyExtractor={item => item.slug}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.recipesContainer}
+          />
         </Section>
       </ScrollView>
 
@@ -308,32 +384,126 @@ const DashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: spacing.sm,
   },
+
+  // Header
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  greeting: {
+  logo: {
+    height: 43,
+    width: 144,
+    tintColor: colors.primary,
+  },
+
+  // Welcome Section
+  welcomeSection: {
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+  },
+  welcomeText: {
     ...typography.h4,
+    fontWeight: typography.fontWeights.bold,
     color: colors.text.primary,
-    fontWeight: fontWeights.bold,
   },
-  date: {
+  welcomeSubtext: {
     ...typography.bodyRegular,
     color: colors.text.secondary,
     marginTop: spacing.xs,
   },
-  avatarContainer: {
-    width: 48,
-    height: 48,
+
+  // Active Meal Plan Card
+  planCardContainer: {
+    marginBottom: spacing.md,
+  },
+  planCard: {
+    height: 160,
+    borderRadius: borderRadius.xl,
+    overflow: 'hidden',
+    ...shadows.md,
+  },
+  planImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+  },
+  planOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  planContent: {
+    flex: 1,
+    padding: spacing.md,
+    justifyContent: 'space-between',
+  },
+  planTitle: {
+    ...typography.bodySmall,
+    color: colors.white,
+    opacity: 0.9,
+    marginBottom: spacing.xs,
+  },
+  planName: {
+    ...typography.h5,
+    fontWeight: typography.fontWeights.bold,
+    color: colors.white,
+    marginBottom: spacing.xs,
+  },
+  planDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  planDetailText: {
+    ...typography.bodySmall,
+    color: colors.white,
+    marginLeft: spacing.xs,
+  },
+  viewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: colors.white,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
     borderRadius: borderRadius.full,
-    backgroundColor: colors.primary + '20',
+  },
+  viewButtonText: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontWeight: typography.fontWeights.medium,
+    marginRight: spacing.xs,
+  },
+  planCardEmpty: {
+    height: 160,
+    borderRadius: borderRadius.xl,
+    backgroundColor: colors.gray[50],
     alignItems: 'center',
     justifyContent: 'center',
+    padding: spacing.md,
+    ...shadows.sm,
   },
+  emptyPlanText: {
+    ...typography.bodyRegular,
+    color: colors.text.secondary,
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  createPlanButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+  },
+  createPlanButtonText: {
+    ...typography.bodySmall,
+    color: colors.white,
+    fontWeight: typography.fontWeights.medium,
+  },
+
+  // Today's Plan
   mealsContainer: {
     paddingRight: spacing.md,
   },
@@ -383,41 +553,26 @@ const styles = StyleSheet.create({
   recentRecipeCard: {
     marginRight: spacing.md,
   },
-  progressCard: {
-    backgroundColor: colors.gray[50],
-    padding: spacing.lg,
-    borderRadius: borderRadius.lg,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+
+  // Categories
+  categoryButton: {
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginRight: spacing.md,
+    width: 60,
   },
-  progressTitle: {
-    ...typography.bodyLarge,
+  categoryIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  categoryName: {
+    ...typography.bodySmall,
     color: colors.text.primary,
-    fontWeight: fontWeights.medium,
-  },
-  progressPercentage: {
-    ...typography.h5,
-    color: colors.primary,
-    fontWeight: fontWeights.bold,
-  },
-  progressBarContainer: {
-    height: 8,
-    backgroundColor: colors.gray[200],
-    borderRadius: borderRadius.full,
-    overflow: 'hidden',
-    marginBottom: spacing.md,
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: colors.primary,
-  },
-  progressText: {
-    ...typography.bodyRegular,
-    color: colors.text.secondary,
+    textAlign: 'center',
   },
 });
 
