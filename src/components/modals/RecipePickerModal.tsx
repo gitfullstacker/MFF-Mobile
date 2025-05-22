@@ -41,16 +41,15 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
     return selectedRecipes.some(r => r._id === recipe._id);
   };
 
-  const renderRecipe = ({ item, index }: { item: Recipe; index: number }) => {
-    const isLeft = index % 2 === 0;
+  const renderRecipe = ({ item }: { item: Recipe; index: number }) => {
     return (
-      <View style={[styles.recipeCardContainer, isLeft && styles.leftCard]}>
+      <View style={styles.recipeCardContainer}>
         <RecipeCard
-          recipe={{
-            ...item,
-            is_favorite: isSelected(item),
-          }}
-          onPress={() => onSelect(item)}
+          recipe={item}
+          showSelectionIcon
+          isAdded={isSelected(item)}
+          onAddClick={onSelect}
+          onPress={() => {}}
         />
       </View>
     );
@@ -77,10 +76,9 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
         data={recipes}
         renderItem={renderRecipe}
         keyExtractor={item => item._id}
-        numColumns={2}
-        columnWrapperStyle={styles.columnWrapper}
-        contentContainerStyle={styles.listContainer}
+        horizontal={false}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContainer}
       />
     </BottomSheet>
   );
@@ -105,14 +103,7 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingBottom: spacing.lg,
   },
-  columnWrapper: {
-    justifyContent: 'space-between',
-  },
   recipeCardContainer: {
-    width: '48%',
     marginBottom: spacing.md,
-  },
-  leftCard: {
-    marginRight: spacing.sm,
   },
 });
