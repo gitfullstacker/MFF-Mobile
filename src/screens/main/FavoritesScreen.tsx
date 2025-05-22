@@ -194,7 +194,7 @@ const FavoritesScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   searchContainer: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
   },
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listContent: {
-    padding: spacing.md,
+    padding: spacing.sm,
     paddingTop: spacing.sm,
     flexGrow: 1,
   },

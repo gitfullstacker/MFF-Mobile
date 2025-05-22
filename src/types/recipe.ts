@@ -92,6 +92,7 @@ export interface RecipeFilters {
   month?: number;
   search?: string;
   ingredients?: string;
+  favorites?: boolean;
   sort?: 'newest' | 'oldest' | 'timeAsc' | 'timeDesc';
   page?: number;
   pageSize?: number;

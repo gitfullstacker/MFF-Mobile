@@ -8,6 +8,7 @@ import {
   PanResponder,
   StyleSheet,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { colors, spacing, borderRadius } from '../../theme';
 
@@ -30,11 +31,13 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 }) => {
   const translateY = useRef(new Animated.Value(screenHeight)).current;
   const sheetHeight = height === 'auto' ? screenHeight * 0.5 : height;
+  const scrollViewRef = useRef<ScrollView>(null);
+  const isScrolling = useRef(false);
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => !isScrolling.current,
+      onMoveShouldSetPanResponder: () => !isScrolling.current,
       onPanResponderMove: (_, gestureState) => {
         if (gestureState.dy > 0) {
           translateY.setValue(gestureState.dy);
@@ -89,10 +92,26 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             height: sheetHeight,
             transform: [{ translateY }],
           },
-        ]}
-        {...panResponder.panHandlers}>
-        <View style={styles.handle} />
-        <View style={styles.content}>{children}</View>
+        ]}>
+        <View style={styles.handle} {...panResponder.panHandlers} />
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.content}
+          scrollEventThrottle={16}
+          onScrollBeginDrag={() => {
+            isScrolling.current = true;
+          }}
+          onScrollEndDrag={() => {
+            isScrolling.current = false;
+          }}
+          onMomentumScrollBegin={() => {
+            isScrolling.current = true;
+          }}
+          onMomentumScrollEnd={() => {
+            isScrolling.current = false;
+          }}>
+          {children}
+        </ScrollView>
       </Animated.View>
     </Modal>
   );

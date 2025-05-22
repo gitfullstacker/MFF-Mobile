@@ -243,7 +243,7 @@ const RecipesScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   searchContainer: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
   },
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.medium,
   },
   listContent: {
-    padding: spacing.md,
+    padding: spacing.sm,
     paddingTop: spacing.sm,
   },
   recipeCardContainer: {

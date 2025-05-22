@@ -260,15 +260,6 @@ const MealPlansScreen: React.FC = () => {
         }}
       />
 
-      <View style={styles.headerContainer}>
-        <View>
-          <Text style={styles.pageTitle}>My Meal Plans</Text>
-          <Text style={styles.pageSubtitle}>
-            View and manage your weekly meal plans
-          </Text>
-        </View>
-      </View>
-
       <View style={styles.searchContainer}>
         <Input
           placeholder="Search meal plans..."
@@ -328,28 +319,16 @@ const MealPlansScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-  },
-  pageTitle: {
-    ...typography.h4,
-    color: colors.text.primary,
-    fontWeight: fontWeights.bold,
-  },
-  pageSubtitle: {
-    ...typography.bodyRegular,
-    color: colors.text.secondary,
-  },
   searchContainer: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.md,
     paddingBottom: spacing.sm,
   },
   searchInput: {
     marginBottom: 0,
   },
   listContent: {
-    padding: spacing.md,
+    padding: spacing.sm,
     paddingTop: spacing.sm,
     flexGrow: 1,
   },
