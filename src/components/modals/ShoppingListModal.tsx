@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -35,8 +35,10 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
   onClose,
   recipes,
 }) => {
-  // Group all ingredients by recipe
-  const [ingredients, setIngredients] = useState<IngredientItem[]>(() => {
+  const [ingredients, setIngredients] = useState<IngredientItem[]>([]);
+  const [groupByRecipe, setGroupByRecipe] = useState(true);
+
+  useEffect(() => {
     const items: IngredientItem[] = [];
 
     recipes.forEach(recipe => {
@@ -55,10 +57,8 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
       });
     });
 
-    return items;
-  });
-
-  const [groupByRecipe, setGroupByRecipe] = useState(true);
+    setIngredients(items);
+  }, [recipes]);
 
   const toggleIngredient = (index: number) => {
     const updatedIngredients = [...ingredients];
@@ -254,14 +254,22 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
               ));
             })()
           : // Alphabetical list
-            sortedIngredients().map((item, index) => (
+            sortedIngredients().map(item => (
               <TouchableOpacity
-                key={index}
+                key={`${item.recipeId}-${item.name}-${item.amount}`}
                 style={[
                   styles.ingredientItem,
                   item.checked && styles.ingredientItemChecked,
                 ]}
-                onPress={() => toggleIngredient(index)}>
+                onPress={() => {
+                  const originalIndex = ingredients.findIndex(
+                    i =>
+                      i.recipeId === item.recipeId &&
+                      i.name === item.name &&
+                      i.amount === item.amount,
+                  );
+                  if (originalIndex !== -1) toggleIngredient(originalIndex);
+                }}>
                 <View
                   style={[
                     styles.checkbox,

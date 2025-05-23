@@ -88,7 +88,7 @@ const MealPlanDetailScreen: React.FC = () => {
       calculateMacros();
       extractRecipes();
     }
-  }, []);
+  }, [mealPlan]);
 
   // Recalculate macros and extract recipes when selected day changes
   useEffect(() => {
@@ -174,8 +174,6 @@ const MealPlanDetailScreen: React.FC = () => {
     try {
       const loadedPlan = await fetchPlan(planId);
       setMealPlan(loadedPlan);
-      calculateMacros();
-      extractRecipes();
     } catch (error) {
       console.error('Error loading plan data:', error);
       Alert.alert(
@@ -366,7 +364,13 @@ const MealPlanDetailScreen: React.FC = () => {
       });
 
       // Add weekly totals
-      planSummary += `Weekly Totals: ${weeklyMacros.calories} calories, ${weeklyMacros.protein}g protein, ${weeklyMacros.carbs}g carbs, ${weeklyMacros.fat}g fat\n\n`;
+      planSummary += `Weekly Totals: ${weeklyMacros.calories.toFixed(
+        2,
+      )} calories, ${weeklyMacros.protein.toFixed(
+        2,
+      )}g protein, ${weeklyMacros.carbs.toFixed(
+        2,
+      )}g carbs, ${weeklyMacros.fat.toFixed(2)}g fat\n\n`;
       planSummary += 'Created with Macro Friendly Food App';
 
       await Share.share({
@@ -496,7 +500,13 @@ const MealPlanDetailScreen: React.FC = () => {
             onPress: () => {
               Alert.alert(
                 'Daily Macros',
-                `Protein: ${dailyMacros.protein}g\nCarbs: ${dailyMacros.carbs}g\nFat: ${dailyMacros.fat}g\nCalories: ${dailyMacros.calories}`,
+                `Protein: ${dailyMacros.protein.toFixed(
+                  2,
+                )}g\nCarbs: ${dailyMacros.carbs.toFixed(
+                  2,
+                )}g\nFat: ${dailyMacros.fat.toFixed(2)}g\nCalories: ${
+                  dailyMacros.calories
+                }`,
               );
             },
           }}>
