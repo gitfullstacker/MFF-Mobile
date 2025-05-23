@@ -27,10 +27,11 @@ type FavoritesNavigationProp = CompositeNavigationProp<
 
 const FavoritesScreen: React.FC = () => {
   const navigation = useNavigation<FavoritesNavigationProp>();
-  const { recipes, loading, hasMore, toggleFavorite } = useRecipes();
+  const { toggleFavorite } = useRecipes();
   const [favoriteRecipes, setFavoriteRecipes] = useState<Recipe[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [filteredFavorites, setFilteredFavorites] = useState<Recipe[]>([]);
 
   // Use the favoriteService directly
@@ -39,10 +40,13 @@ const FavoritesScreen: React.FC = () => {
   // Fetch favorite recipes
   const fetchFavorites = useCallback(async (page = 0) => {
     try {
+      setLoading(true);
       const response = await favoriteService.getFavorites(page);
+      setLoading(false);
       return response;
     } catch (error) {
       console.error('Error fetching favorites:', error);
+      setLoading(false);
       return { data: [], total: 0, hasMore: false };
     }
   }, []);
@@ -85,29 +89,33 @@ const FavoritesScreen: React.FC = () => {
     [navigation],
   );
 
-  const handleToggleFavorite = useCallback(
-    async (recipeId: string) => {
+  const handleFavoriteToggle = useCallback(
+    async (recipeId: string, isFavorite: boolean) => {
+      // If toggled to unfavorite, remove from the list
+      if (!isFavorite) {
+        setFavoriteRecipes(prev =>
+          prev.filter(recipe => recipe._id !== recipeId),
+        );
+        setFilteredFavorites(prev =>
+          prev.filter(recipe => recipe._id !== recipeId),
+        );
+      }
+
+      // Call the API
       await toggleFavorite(recipeId);
-      // Remove from the list immediately for better UX
-      setFavoriteRecipes(prev =>
-        prev.filter(recipe => recipe._id !== recipeId),
-      );
-      setFilteredFavorites(prev =>
-        prev.filter(recipe => recipe._id !== recipeId),
-      );
     },
     [toggleFavorite],
   );
 
-  const renderRecipe = ({ item, index }: { item: Recipe; index: number }) => {
-    const isLeft = index % 2 === 0;
+  const renderRecipe = ({ item }: { item: Recipe }) => {
     return (
-      <View style={[styles.recipeCardContainer, isLeft && styles.leftCard]}>
+      <View style={styles.recipeCardContainer}>
         <RecipeCard
           recipe={item}
-          onPress={() => handleRecipePress(item._id)}
-          onFavorite={() => handleToggleFavorite(item._id)}
-          variant="compact"
+          onPress={() => handleRecipePress(item.slug)}
+          onFavoriteToggle={(recipeId, isFavorite) =>
+            handleFavoriteToggle(recipeId, isFavorite)
+          }
         />
       </View>
     );
@@ -166,8 +174,7 @@ const FavoritesScreen: React.FC = () => {
           data={filteredFavorites}
           renderItem={renderRecipe}
           keyExtractor={item => item._id}
-          numColumns={2}
-          columnWrapperStyle={styles.columnWrapper}
+          numColumns={1} // Changed from 2 to 1 for horizontal cards
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -187,7 +194,7 @@ const FavoritesScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   searchContainer: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
   },
@@ -200,19 +207,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listContent: {
-    padding: spacing.md,
+    padding: spacing.sm,
     paddingTop: spacing.sm,
     flexGrow: 1,
   },
-  columnWrapper: {
-    justifyContent: 'space-between',
-  },
   recipeCardContainer: {
-    flex: 0.48,
     marginBottom: spacing.md,
-  },
-  leftCard: {
-    marginRight: spacing.sm,
   },
 });
 

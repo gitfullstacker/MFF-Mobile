@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   Share,
+  FlatList,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -24,12 +25,13 @@ import {
   typography,
   spacing,
   borderRadius,
-  shadows,
   fontWeights,
 } from '../../theme';
 import { MealPlanStackParamList } from '../../navigation/types';
-import { MealPlan, MealSchedule, ScheduledRecipe } from '../../types/plan';
+import { Plan, PlanSchedule, ScheduledRecipe } from '../../types/plan';
 import { Recipe } from '@/types/recipe';
+import { RecipeCard } from '@/components/recipe/RecipeCard';
+import { ShoppingListModal } from '@/components/modals/ShoppingListModal';
 
 type MealPlanDetailNavigationProp = StackNavigationProp<
   MealPlanStackParamList,
@@ -55,12 +57,12 @@ const DAYS = [
 const MealPlanDetailScreen: React.FC = () => {
   const navigation = useNavigation<MealPlanDetailNavigationProp>();
   const route = useRoute<MealPlanDetailRouteProp>();
-  const { planId, plan } = route.params;
+  const { planId } = route.params;
   const { deletePlan, duplicatePlan, fetchPlan } = usePlans();
 
   const [selectedDay, setSelectedDay] = useState<string>('su');
   const [loading, setLoading] = useState(false);
-  const [mealPlan, setMealPlan] = useState<MealPlan | null>(plan || null);
+  const [mealPlan, setMealPlan] = useState<Plan | null>(null);
   const [dailyMacros, setDailyMacros] = useState({
     protein: 0,
     carbs: 0,
@@ -73,6 +75,9 @@ const MealPlanDetailScreen: React.FC = () => {
     fat: 0,
     calories: 0,
   });
+  const [showShoppingList, setShowShoppingList] = useState(false);
+  const [dayRecipes, setDayRecipes] = useState<Recipe[]>([]);
+  const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
 
   // Load the plan data on mount if needed
   useEffect(() => {
@@ -81,15 +86,87 @@ const MealPlanDetailScreen: React.FC = () => {
     } else {
       // Calculate macros on initial load
       calculateMacros();
+      extractRecipes();
     }
-  }, []);
+  }, [mealPlan]);
 
-  // Recalculate macros when selected day changes
+  // Recalculate macros and extract recipes when selected day changes
   useEffect(() => {
     if (mealPlan) {
       calculateDailyMacros();
+      extractDayRecipes();
     }
   }, [selectedDay, mealPlan]);
+
+  // Helper function to extract recipe ID from a scheduled recipe item
+  const getRecipeId = (item: ScheduledRecipe): string => {
+    if (typeof item.recipe === 'string') {
+      return item.recipe;
+    } else if (item.recipe && typeof item.recipe === 'object') {
+      return (item.recipe as Recipe)._id;
+    }
+    // Fallback
+    return '';
+  };
+
+  // Helper function to extract recipe object from a scheduled recipe item
+  const getRecipeObject = (item: ScheduledRecipe): Recipe | null => {
+    if (typeof item.recipe === 'string') {
+      return null;
+    } else if (item.recipe && typeof item.recipe === 'object') {
+      return item.recipe as Recipe;
+    }
+    return null;
+  };
+
+  // Extract all recipes from the meal plan
+  const extractRecipes = () => {
+    if (!mealPlan) return;
+
+    const allExtractedRecipes: Recipe[] = [];
+    const validDayKeys = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
+
+    validDayKeys.forEach(dayKey => {
+      const daySchedule = mealPlan.schedule[dayKey as keyof PlanSchedule];
+
+      if (!Array.isArray(daySchedule)) return;
+
+      daySchedule.forEach(item => {
+        const recipe = getRecipeObject(item);
+        if (recipe) {
+          // Check if recipe is already in the array to avoid duplicates
+          if (!allExtractedRecipes.some(r => r._id === recipe._id)) {
+            allExtractedRecipes.push(recipe);
+          }
+        }
+      });
+    });
+
+    setAllRecipes(allExtractedRecipes);
+    extractDayRecipes();
+  };
+
+  // Extract recipes for the currently selected day
+  const extractDayRecipes = () => {
+    if (!mealPlan) return;
+
+    const recipes: Recipe[] = [];
+    const daySchedule = mealPlan.schedule[selectedDay as keyof PlanSchedule];
+
+    if (!Array.isArray(daySchedule)) {
+      setDayRecipes([]);
+      return;
+    }
+
+    daySchedule.forEach(item => {
+      const recipe = getRecipeObject(item);
+      if (recipe) {
+        recipes.push(recipe);
+      }
+    });
+
+    setDayRecipes(recipes);
+  };
 
   // Function to load plan data from API
   const loadPlanData = async () => {
@@ -97,7 +174,6 @@ const MealPlanDetailScreen: React.FC = () => {
     try {
       const loadedPlan = await fetchPlan(planId);
       setMealPlan(loadedPlan);
-      calculateMacros();
     } catch (error) {
       console.error('Error loading plan data:', error);
       Alert.alert(
@@ -121,16 +197,27 @@ const MealPlanDetailScreen: React.FC = () => {
   const calculateDailyMacros = () => {
     if (!mealPlan) return;
 
-    const dayRecipes = mealPlan.schedule[selectedDay as keyof MealSchedule];
+    const daySchedule = mealPlan.schedule[selectedDay as keyof PlanSchedule];
+
+    // Check if it's actually an array
+    if (!Array.isArray(daySchedule)) {
+      setDailyMacros({
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        calories: 0,
+      });
+      return;
+    }
+
     let proteinTotal = 0;
     let carbsTotal = 0;
     let fatTotal = 0;
     let caloriesTotal = 0;
 
-    dayRecipes.forEach((item: ScheduledRecipe) => {
-      // Check if recipe is populated with data
-      if (item.recipe && typeof item.recipe !== 'string') {
-        const recipe = item.recipe as Recipe;
+    daySchedule.forEach((item: ScheduledRecipe) => {
+      const recipe = getRecipeObject(item);
+      if (recipe && recipe.nutrition) {
         proteinTotal += recipe.nutrition.protein;
         carbsTotal += recipe.nutrition.carbohydrates;
         fatTotal += recipe.nutrition.fat;
@@ -155,11 +242,18 @@ const MealPlanDetailScreen: React.FC = () => {
     let weeklyFat = 0;
     let weeklyCalories = 0;
 
-    Object.values(mealPlan.schedule).forEach(daySchedule => {
+    // Filter valid day keys to avoid non-array values like _id
+    const validDayKeys = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
+
+    validDayKeys.forEach(dayKey => {
+      const daySchedule = mealPlan.schedule[dayKey as keyof PlanSchedule];
+
+      // Skip if not an array or undefined
+      if (!Array.isArray(daySchedule)) return;
+
       daySchedule.forEach((item: ScheduledRecipe) => {
-        // Check if recipe is populated with data
-        if (item.recipe && typeof item.recipe !== 'string') {
-          const recipe = item.recipe as Recipe;
+        const recipe = getRecipeObject(item);
+        if (recipe && recipe.nutrition) {
           weeklyProtein += recipe.nutrition.protein;
           weeklyCarbs += recipe.nutrition.carbohydrates;
           weeklyFat += recipe.nutrition.fat;
@@ -179,16 +273,16 @@ const MealPlanDetailScreen: React.FC = () => {
   // Get recipe counts by day
   const getRecipeCountByDay = (dayKey: string) => {
     if (!mealPlan) return 0;
-    return mealPlan.schedule[dayKey as keyof MealSchedule].length;
+
+    const daySchedule = mealPlan.schedule[dayKey as keyof PlanSchedule];
+    // Check if it's actually an array
+    return Array.isArray(daySchedule) ? daySchedule.length : 0;
   };
 
   // Handle edit plan
   const handleEditPlan = () => {
     if (mealPlan) {
-      navigation.navigate('EditMealPlan', {
-        planId,
-        plan: mealPlan,
-      });
+      navigation.navigate('EditMealPlan', { planId });
     }
   };
 
@@ -246,24 +340,37 @@ const MealPlanDetailScreen: React.FC = () => {
       // Generate a text summary of the plan
       let planSummary = `${mealPlan.name}\n\n`;
 
+      // Only process valid day keys
+      const validDayKeys = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
+
       DAYS.forEach(day => {
-        const dayRecipes = mealPlan.schedule[day.key as keyof MealSchedule];
-        if (dayRecipes.length > 0) {
-          planSummary += `${day.label}:\n`;
+        if (!validDayKeys.includes(day.key)) return;
 
-          dayRecipes.forEach((item: ScheduledRecipe) => {
-            // Check if recipe is populated with data
-            if (item.recipe && typeof item.recipe !== 'string') {
-              planSummary += `- ${(item.recipe as Recipe).name}\n`;
-            }
-          });
+        const daySchedule = mealPlan.schedule[day.key as keyof PlanSchedule];
 
-          planSummary += '\n';
-        }
+        // Skip if not an array or empty
+        if (!Array.isArray(daySchedule) || daySchedule.length === 0) return;
+
+        planSummary += `${day.label}:\n`;
+
+        daySchedule.forEach((item: ScheduledRecipe) => {
+          const recipe = getRecipeObject(item);
+          if (recipe) {
+            planSummary += `- ${recipe.name}\n`;
+          }
+        });
+
+        planSummary += '\n';
       });
 
       // Add weekly totals
-      planSummary += `Weekly Totals: ${weeklyMacros.calories} calories, ${weeklyMacros.protein}g protein, ${weeklyMacros.carbs}g carbs, ${weeklyMacros.fat}g fat\n\n`;
+      planSummary += `Weekly Totals: ${weeklyMacros.calories.toFixed(
+        2,
+      )} calories, ${weeklyMacros.protein.toFixed(
+        2,
+      )}g protein, ${weeklyMacros.carbs.toFixed(
+        2,
+      )}g carbs, ${weeklyMacros.fat.toFixed(2)}g fat\n\n`;
       planSummary += 'Created with Macro Friendly Food App';
 
       await Share.share({
@@ -278,11 +385,12 @@ const MealPlanDetailScreen: React.FC = () => {
 
   // Generate shopping list
   const handleGenerateShoppingList = () => {
-    // This would be implemented to generate a shopping list based on the recipes
-    Alert.alert(
-      'Coming Soon',
-      'Shopping list generation will be available in a future update.',
-    );
+    if (allRecipes.length === 0) {
+      Alert.alert('No Recipes', 'There are no recipes in this meal plan.');
+      return;
+    }
+
+    setShowShoppingList(true);
   };
 
   // View recipe details
@@ -294,54 +402,6 @@ const MealPlanDetailScreen: React.FC = () => {
         params: { recipeId },
       } as any,
     );
-  };
-
-  // Render scheduled recipes for the selected day
-  const renderScheduledRecipes = () => {
-    if (!mealPlan) return null;
-
-    const dayRecipes = mealPlan.schedule[selectedDay as keyof MealSchedule];
-
-    if (dayRecipes.length === 0) {
-      return (
-        <View style={styles.emptyDayContainer}>
-          <Text style={styles.emptyDayText}>
-            No recipes scheduled for{' '}
-            {DAYS.find(day => day.key === selectedDay)?.label}.
-          </Text>
-        </View>
-      );
-    }
-
-    return dayRecipes.map((item: ScheduledRecipe) => {
-      // Make sure recipe is populated
-      if (!item.recipe || typeof item.recipe === 'string') {
-        return (
-          <View
-            key={typeof item.recipe === 'string' ? item.recipe : 'loading'}
-            style={styles.recipeItem}>
-            <Text style={styles.recipeName}>Loading recipe...</Text>
-          </View>
-        );
-      }
-
-      const recipe = item.recipe as Recipe;
-
-      return (
-        <TouchableOpacity
-          key={recipe._id}
-          style={styles.recipeItem}
-          onPress={() => handleViewRecipe(recipe._id)}>
-          <View style={styles.recipeInfo}>
-            <Text style={styles.recipeName}>{recipe.name}</Text>
-            <Text style={styles.recipeDetails}>
-              {recipe.total_time} min • {recipe.nutrition.calories} cal
-            </Text>
-          </View>
-          <Icon name="chevron-right" size={20} color={colors.gray[400]} />
-        </TouchableOpacity>
-      );
-    });
   };
 
   if (!mealPlan) {
@@ -440,11 +500,38 @@ const MealPlanDetailScreen: React.FC = () => {
             onPress: () => {
               Alert.alert(
                 'Daily Macros',
-                `Protein: ${dailyMacros.protein}g\nCarbs: ${dailyMacros.carbs}g\nFat: ${dailyMacros.fat}g\nCalories: ${dailyMacros.calories}`,
+                `Protein: ${dailyMacros.protein.toFixed(
+                  2,
+                )}g\nCarbs: ${dailyMacros.carbs.toFixed(
+                  2,
+                )}g\nFat: ${dailyMacros.fat.toFixed(2)}g\nCalories: ${
+                  dailyMacros.calories
+                }`,
               );
             },
           }}>
-          <View style={styles.mealsContainer}>{renderScheduledRecipes()}</View>
+          {dayRecipes.length === 0 ? (
+            <View style={styles.emptyDayContainer}>
+              <Text style={styles.emptyDayText}>
+                No recipes scheduled for{' '}
+                {DAYS.find(day => day.key === selectedDay)?.label}.
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={dayRecipes}
+              renderItem={({ item }) => (
+                <View style={styles.recipeCardContainer}>
+                  <RecipeCard
+                    recipe={item}
+                    onPress={() => handleViewRecipe(item.slug)}
+                  />
+                </View>
+              )}
+              keyExtractor={item => item._id}
+              scrollEnabled={false} // Since we're already in a ScrollView
+            />
+          )}
         </Section>
 
         <Section>
@@ -470,6 +557,12 @@ const MealPlanDetailScreen: React.FC = () => {
           </View>
         </Section>
       </ScrollView>
+
+      <ShoppingListModal
+        visible={showShoppingList}
+        onClose={() => setShowShoppingList(false)}
+        recipes={allRecipes}
+      />
 
       <LoadingOverlay visible={loading} message="Loading..." />
     </PageContainer>
@@ -511,7 +604,7 @@ const styles = StyleSheet.create({
   },
   daysScrollView: {
     flexDirection: 'row',
-    marginBottom: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   dayButton: {
     paddingVertical: spacing.sm,
@@ -550,9 +643,6 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: fontWeights.bold,
   },
-  mealsContainer: {
-    marginBottom: spacing.md,
-  },
   emptyDayContainer: {
     backgroundColor: colors.gray[50],
     padding: spacing.md,
@@ -564,27 +654,8 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
   },
-  recipeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    ...shadows.sm,
-  },
-  recipeInfo: {
-    flex: 1,
-  },
-  recipeName: {
-    ...typography.bodyLarge,
-    color: colors.text.primary,
-    fontWeight: fontWeights.medium,
-    marginBottom: spacing.xs,
-  },
-  recipeDetails: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
+  recipeCardContainer: {
+    marginBottom: spacing.md,
   },
   planManagementContainer: {
     flexDirection: 'row',

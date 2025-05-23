@@ -3,7 +3,7 @@ export interface ScheduledRecipe {
   only_recipe: boolean;
 }
 
-export interface MealSchedule {
+export interface PlanSchedule {
   su: ScheduledRecipe[];
   mo: ScheduledRecipe[];
   tu: ScheduledRecipe[];
@@ -15,22 +15,38 @@ export interface MealSchedule {
 
 export interface RemovedIngredient {
   recipe_id: string;
-  ingredient_id: string;
+  ingredient_uid: number;
 }
 
-export interface MealPlan {
+export interface Plan {
   _id: string;
   user_id: number;
   slug: string;
   name: string;
-  schedule: MealSchedule;
+  schedule: PlanSchedule;
   removed_ingredient_ids: RemovedIngredient[];
   created_at: string;
   updated_at: string;
 }
 
-export interface CreateMealPlanRequest {
+export type DayOfWeek = 'su' | 'mo' | 'tu' | 'we' | 'th' | 'fr' | 'sa';
+
+export const DAYS_OF_WEEK: {
+  value: DayOfWeek;
+  label: string;
+  fullName: string;
+}[] = [
+  { value: 'su', label: 'Sun', fullName: 'Sunday' },
+  { value: 'mo', label: 'Mon', fullName: 'Monday' },
+  { value: 'tu', label: 'Tue', fullName: 'Tuesday' },
+  { value: 'we', label: 'Wed', fullName: 'Wednesday' },
+  { value: 'th', label: 'Thu', fullName: 'Thursday' },
+  { value: 'fr', label: 'Fri', fullName: 'Friday' },
+  { value: 'sa', label: 'Sat', fullName: 'Saturday' },
+];
+
+export interface CreatePlanRequest {
   name: string;
-  schedule: MealSchedule;
+  schedule: PlanSchedule;
   removed_ingredient_ids: string[];
 }

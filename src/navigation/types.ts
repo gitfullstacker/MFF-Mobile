@@ -1,6 +1,5 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { Recipe } from '../types/recipe';
-import { MealPlan } from '../types/plan';
 import { Ticket } from '../types/ticket';
 
 export type AuthStackParamList = {
@@ -25,8 +24,8 @@ export type RecipeStackParamList = {
 export type MealPlanStackParamList = {
   MealPlanList: undefined;
   CreateMealPlan: undefined;
-  EditMealPlan: { planId: string; plan?: MealPlan };
-  MealPlanDetail: { planId: string; plan?: MealPlan };
+  EditMealPlan: { planId: string };
+  MealPlanDetail: { planId: string };
 };
 
 export type AccountStackParamList = {

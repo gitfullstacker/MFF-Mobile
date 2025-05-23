@@ -34,7 +34,7 @@ import {
   shadows,
 } from '../../theme';
 import { RecipeStackParamList } from '../../navigation/types';
-import { Ingredient } from '@/types/recipe';
+import { IngredientItem } from '@/types/recipe';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -127,7 +127,7 @@ const RecipeDetailScreen: React.FC = () => {
   };
 
   // Render ingredient with adjusted amounts
-  const renderIngredient = (item: Ingredient, index: number) => {
+  const renderIngredient = (item: IngredientItem, index: number) => {
     const factor = servingSize / (selectedRecipe?.servings || 1);
     let adjustedAmount = item.amount;
 

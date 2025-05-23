@@ -1,15 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { BottomSheet } from './BottomSheet';
 import { Input } from '../forms/Input';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { RecipeCard } from '../recipe/RecipeCard';
+import { colors, typography, spacing } from '../../theme';
 import { Recipe } from '../../types/recipe';
 import { useRecipes } from '../../hooks/useRecipes';
 
@@ -47,31 +41,10 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
     return selectedRecipes.some(r => r._id === recipe._id);
   };
 
-  const renderRecipe = ({ item }: { item: Recipe }) => (
-    <TouchableOpacity
-      style={[styles.recipeItem, isSelected(item) && styles.selectedRecipe]}
-      onPress={() => onSelect(item)}>
-      <View style={styles.recipeContent}>
-        <Text style={styles.recipeTitle} numberOfLines={2}>
-          {item.name}
-        </Text>
-        <Text style={styles.recipeInfo}>
-          {item.total_time} min • {item.nutrition.calories} cal
-        </Text>
-      </View>
-      {isSelected(item) && (
-        <Icon name="check-circle" size={24} color={colors.primary} />
-      )}
-    </TouchableOpacity>
-  );
-
   return (
-    <BottomSheet visible={visible} onClose={onClose} height="75%">
+    <BottomSheet visible={visible} onClose={onClose} height="80%">
       <View style={styles.header}>
         <Text style={styles.title}>Select Recipe</Text>
-        <TouchableOpacity onPress={onClose}>
-          <Icon name="x" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
@@ -81,16 +54,24 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
           onChangeText={setSearchQuery}
           leftIcon="search"
           onSubmitEditing={handleSearch}
+          returnKeyType="search"
         />
       </View>
 
-      <FlatList
-        data={recipes}
-        renderItem={renderRecipe}
-        keyExtractor={item => item._id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+      <ScrollView contentContainerStyle={styles.listContainer}>
+        {recipes.map(item => (
+          <View key={item._id} style={styles.recipeCardContainer}>
+            <RecipeCard
+              recipe={item}
+              showSelectionIcon
+              isAdded={isSelected(item)}
+              onAddClick={onSelect}
+              onRemoveClick={onSelect}
+              onPress={() => {}}
+            />
+          </View>
+        ))}
+      </ScrollView>
     </BottomSheet>
   );
 };
@@ -109,36 +90,12 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   searchContainer: {
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
   },
   listContainer: {
     paddingBottom: spacing.lg,
   },
-  recipeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.sm,
-    backgroundColor: colors.background.light,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-  },
-  selectedRecipe: {
-    backgroundColor: colors.primary + '10',
-    borderColor: colors.primary,
-  },
-  recipeContent: {
-    flex: 1,
-  },
-  recipeTitle: {
-    ...typography.bodyLarge,
-    color: colors.text.primary,
-    fontWeight: typography.fontWeights.medium,
-  },
-  recipeInfo: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    marginTop: spacing.xs,
+  recipeCardContainer: {
+    marginBottom: spacing.md,
   },
 });

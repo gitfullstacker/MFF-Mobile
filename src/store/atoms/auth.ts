@@ -8,6 +8,9 @@ const storage = createJSONStorage<any>(() => ({
   getItem: async (key: string) => {
     try {
       const item = await AsyncStorage.getItem(key);
+      if (item === null) {
+        return null;
+      }
       // For authToken, we store it as a plain string, not JSON
       if (key === 'authToken' && item) {
         return item;
@@ -45,5 +48,14 @@ export const authTokenAtom = atomWithStorage<string | null>(
   null,
   storage,
 );
+
 export const userAtom = atomWithStorage<User | null>('user', null, storage);
+
+// Save username/password for "Remember Me" functionality
+export const savedCredentialsAtom = atomWithStorage<{
+  username: string;
+  password: string;
+  rememberMe: boolean;
+} | null>('savedCredentials', null, storage);
+
 export const isAuthenticatedAtom = atom<boolean>(false);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
+import { Rating } from 'react-native-ratings';
 import {
   colors,
   typography,
@@ -15,184 +18,346 @@ import {
   borderRadius,
   shadows,
 } from '../../theme';
-import { MacroDisplay } from './MacroDisplay';
 import { Recipe } from '../../types/recipe';
+import { useSubscription } from '../../hooks/useSubscription';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 interface RecipeCardProps {
   recipe: Recipe;
   onPress: () => void;
-  onFavorite?: () => void;
-  variant?: 'compact' | 'full';
+  openInModal?: boolean;
+  isAdded?: boolean;
+  showSelectionIcon?: boolean;
+  onAddClick?: (recipe: Recipe) => void;
+  onRemoveClick?: (recipe: Recipe) => void;
+  onFavoriteToggle?: (recipeId: string, isFavorite: boolean) => void;
 }
 
 export const RecipeCard: React.FC<RecipeCardProps> = ({
   recipe,
   onPress,
-  onFavorite,
-  variant = 'compact',
+  openInModal = false,
+  isAdded = false,
+  showSelectionIcon = false,
+  onAddClick,
+  onRemoveClick,
+  onFavoriteToggle,
 }) => {
-  const { name, image_url, total_time, nutrition, is_favorite } = recipe;
+  const {
+    name,
+    image_url,
+    total_time,
+    nutrition,
+    is_favorite,
+    slug,
+    _id,
+    rating,
+  } = recipe;
+  const [favorite, setFavorite] = useState(is_favorite);
+  const [isSaving, setIsSaving] = useState(false);
+  const { allowedCategoryIds } = useSubscription();
 
-  // Function to determine difficulty based on total time
-  const getDifficulty = (): 'Easy' | 'Medium' | 'Hard' => {
-    if (total_time <= 30) return 'Easy';
-    if (total_time <= 60) return 'Medium';
-    return 'Hard';
+  // Check if recipe is accessible based on subscription
+  const isRecipeAccessible = useCallback(() => {
+    if (!recipe.tags?.course) return true;
+
+    const recipeCategoryIds = recipe.tags.course
+      .map(tag => tag.term_id)
+      .filter(id => id !== undefined) as number[];
+
+    return recipeCategoryIds.some(id => allowedCategoryIds.includes(id));
+  }, [recipe, allowedCategoryIds]);
+
+  const isValidRecipe = isRecipeAccessible();
+
+  // Format time in human-readable format
+  const formatTime = (minutes: number) => {
+    if (!minutes) return '0 min';
+    if (minutes < 60) return `${minutes} min`;
+
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+
+    if (mins === 0) return `${hours} hr`;
+    return `${hours} hr ${mins} min`;
   };
 
-  const difficulty = getDifficulty();
+  // Handle favorite toggle
+  const handleFavoriteClick = async (e: any) => {
+    e.stopPropagation();
+    e.preventDefault();
 
-  const getDifficultyColor = () => {
-    switch (difficulty) {
-      case 'Easy':
-        return colors.semantic.success;
-      case 'Medium':
-        return colors.semantic.warning;
-      case 'Hard':
-        return colors.semantic.error;
-      default:
-        return colors.text.secondary;
+    if (isSaving) return; // Prevent double taps
+
+    setIsSaving(true);
+    const newFavoriteStatus = !favorite;
+
+    try {
+      // Update UI optimistically
+      setFavorite(newFavoriteStatus);
+
+      // Notify parent component if needed
+      if (onFavoriteToggle) {
+        onFavoriteToggle(_id, newFavoriteStatus);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      setFavorite(favorite); // Revert on error
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle selection actions
+  const handleSelectionAction = (e: any) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (isAdded) {
+      if (onRemoveClick) {
+        onRemoveClick(recipe);
+      }
+    } else {
+      if (onAddClick) {
+        onAddClick(recipe);
+      }
     }
   };
 
   return (
-    <TouchableOpacity
-      style={[styles.container, styles[variant]]}
-      onPress={onPress}
-      activeOpacity={0.9}>
-      <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: image_url }}
-          style={[styles.image, styles[`${variant}Image`]]}
-          resizeMode="cover"
-        />
-
-        {onFavorite && (
+    <View style={styles.container}>
+      {/* Left Side - Recipe Details */}
+      <View style={styles.detailsSection}>
+        <View style={styles.titleSection}>
+          {/* Recipe Title */}
           <TouchableOpacity
-            style={styles.favoriteButton}
-            onPress={onFavorite}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Icon
-              name="heart"
-              size={20}
-              color={is_favorite ? colors.primary : colors.white}
-              style={
-                is_favorite ? styles.favoriteIconFilled : styles.favoriteIcon
-              }
-            />
+            onPress={onPress}
+            activeOpacity={0.7}
+            disabled={!isValidRecipe}>
+            <Text style={styles.title} numberOfLines={2}>
+              {name}
+            </Text>
           </TouchableOpacity>
-        )}
-      </View>
 
-      <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={2}>
-          {name}
-        </Text>
-
-        <View style={styles.info}>
-          <View style={styles.infoItem}>
-            <Icon name="clock" size={14} color={colors.text.secondary} />
-            <Text style={styles.infoText}>{total_time} min</Text>
-          </View>
-
-          <View style={styles.infoItem}>
-            <View
-              style={[
-                styles.difficultyDot,
-                { backgroundColor: getDifficultyColor() },
-              ]}
+          {/* Recipe Rating */}
+          <View style={styles.ratingContainer}>
+            <Rating
+              type="star"
+              readonly
+              ratingColor="#F8B84E"
+              ratingBackgroundColor={colors.gray[200]}
+              ratingCount={5}
+              imageSize={18}
+              startingValue={rating?.average || 0}
             />
-            <Text style={styles.infoText}>{difficulty}</Text>
           </View>
         </View>
 
-        <MacroDisplay
-          protein={nutrition.protein}
-          carbs={nutrition.carbohydrates}
-          fat={nutrition.fat}
-          calories={nutrition.calories}
-          variant="text"
-          size="small"
-        />
+        {/* Nutrition Information */}
+        <View style={styles.nutritionContainer}>
+          <Text style={styles.nutritionItem}>
+            Calories: {nutrition?.calories || 0}kcal
+          </Text>
+          <Text style={styles.nutritionItem}>
+            Carbohydrates: {nutrition?.carbohydrates?.toFixed(0) || 0}g
+          </Text>
+          <Text style={styles.nutritionItem}>
+            Protein: {nutrition?.protein?.toFixed(0) || 0}g
+          </Text>
+          <Text style={styles.nutritionItem}>
+            Fat: {nutrition?.fat?.toFixed(0) || 0}g
+          </Text>
+          <Text style={styles.nutritionItem}>
+            {formatTime(total_time || 0)}
+          </Text>
+        </View>
       </View>
-    </TouchableOpacity>
+
+      {/* Right Side - Recipe Image */}
+      <View style={styles.imageSection}>
+        {isValidRecipe ? (
+          <TouchableOpacity
+            style={styles.imageContainer}
+            onPress={onPress}
+            activeOpacity={0.9}>
+            {/* Selection Icon (if enabled) */}
+            {showSelectionIcon && (
+              <TouchableOpacity
+                style={styles.selectionButton}
+                onPress={handleSelectionAction}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                {isAdded ? (
+                  <MaterialIcon
+                    name="remove-circle"
+                    size={30}
+                    color={colors.primary}
+                  />
+                ) : (
+                  <Icon name="plus" size={20} color={colors.primary} />
+                )}
+              </TouchableOpacity>
+            )}
+
+            {/* Favorite Button */}
+            <TouchableOpacity
+              style={styles.favoriteButton}
+              onPress={handleFavoriteClick}
+              disabled={isSaving}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              {isSaving ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : favorite ? (
+                <MaterialIcon
+                  name="favorite"
+                  size={18}
+                  color={colors.primary}
+                />
+              ) : (
+                <MaterialIcon
+                  name="favorite-border"
+                  size={18}
+                  color={colors.primary}
+                />
+              )}
+            </TouchableOpacity>
+
+            {/* Recipe Image */}
+            <Image
+              source={{ uri: image_url || undefined }}
+              defaultSource={require('../../../assets/images/recipe-placeholder.jpg')}
+              style={styles.recipeImage}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+        ) : (
+          // Locked Recipe Overlay
+          <View style={styles.lockedOverlay}>
+            <MaterialIcon name="lock-outline" size={24} color={colors.white} />
+            <Text style={styles.lockedText}>
+              <Text style={styles.lockedTextBold}>Upgrade</Text> to access
+            </Text>
+            <TouchableOpacity style={styles.upgradeButton}>
+              <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flexDirection: 'row',
     backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: '#dedede',
+    height: 200,
+    maxHeight: 200,
     overflow: 'hidden',
-    ...shadows.md,
-    marginBottom: spacing.md,
+    ...shadows.sm,
   },
-  compact: {
-    width: (screenWidth - spacing.lg * 3) / 2,
+  detailsSection: {
+    flex: 1,
+    borderRightWidth: 1,
+    borderRightColor: '#f0f0f0',
+    padding: spacing.md,
+    paddingVertical: spacing.sm,
+    justifyContent: 'space-between',
+    maxWidth: screenWidth - spacing.md * 2 - 130,
   },
-  full: {
-    width: '100%',
+  titleSection: {
+    gap: spacing.xs,
   },
-  imageContainer: {
+  title: {
+    ...typography.bodyRegular,
+    color: '#333',
+    fontWeight: '600',
+    lineHeight: 18,
+    height: 36,
+    marginBottom: 4,
+  },
+  ratingContainer: {
+    alignItems: 'flex-start',
+    marginBottom: spacing.xs,
+  },
+  nutritionContainer: {
+    marginTop: spacing.xs,
+  },
+  nutritionItem: {
+    ...typography.bodySmall,
+    color: '#666',
+    lineHeight: 20,
+  },
+  imageSection: {
+    width: 130,
     position: 'relative',
   },
-  image: {
+  imageContainer: {
     width: '100%',
+    height: '100%',
   },
-  compactImage: {
-    height: 120,
-  },
-  fullImage: {
-    height: 200,
+  recipeImage: {
+    width: '100%',
+    height: '100%',
+    borderTopRightRadius: borderRadius.md,
+    borderBottomRightRadius: borderRadius.md,
   },
   favoriteButton: {
     position: 'absolute',
     top: spacing.sm,
     right: spacing.sm,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderRadius: borderRadius.full,
-    padding: spacing.xs,
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
   },
-  favoriteIcon: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
+  selectionButton: {
+    position: 'absolute',
+    top: spacing.sm,
+    left: spacing.sm,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: borderRadius.full,
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
   },
-  favoriteIconFilled: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-  },
-  content: {
+  // Locked recipe styles
+  lockedOverlay: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#4caf50',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: spacing.sm,
   },
-  title: {
-    ...typography.h6,
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
-  },
-  info: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
-    gap: spacing.md,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  infoText: {
+  lockedText: {
     ...typography.bodySmall,
-    color: colors.text.secondary,
+    color: colors.white,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
-  difficultyDot: {
-    width: 8,
-    height: 8,
-    borderRadius: borderRadius.full,
+  lockedTextBold: {
+    fontWeight: 'bold',
+  },
+  upgradeButton: {
+    backgroundColor: colors.white,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.sm,
+    marginTop: spacing.xs,
+  },
+  upgradeButtonText: {
+    ...typography.bodySmall,
+    color: '#4caf50',
+    fontWeight: 'bold',
   },
 });

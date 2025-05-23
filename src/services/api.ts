@@ -4,7 +4,7 @@ import { API_BASE_URL } from '@env';
 import { isTokenExpired } from '../utils/tokenUtils';
 import { eventBus } from '@/utils/eventBus';
 
-const BASE_URL = API_BASE_URL || 'http://localhost:5000';
+const BASE_URL = API_BASE_URL || 'http://localhost:5000/v1';
 
 class ApiClient {
   private instance: AxiosInstance;

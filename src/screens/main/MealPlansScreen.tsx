@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -12,13 +13,12 @@ import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Feather';
-import { format, parseISO, isAfter, isBefore } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Header } from '../../components/navigation/Header';
 import { Input } from '../../components/forms/Input';
 import { Button } from '../../components/forms/Button';
 import { EmptyState } from '../../components/feedback/EmptyState';
-import { Section } from '../../components/layout/Section';
 import { usePlans } from '../../hooks/usePlans';
 import {
   colors,
@@ -29,7 +29,9 @@ import {
   fontWeights,
 } from '../../theme';
 import { MainTabParamList, RootStackParamList } from '../../navigation/types';
-import { MealPlan } from '../../types/plan';
+import { Plan } from '../../types/plan';
+import { PlanWeekdayIndicator } from '@/components/meal-plan/PlanWeekdayIndicator';
+import { ConfirmModal } from '@/components/modals/ConfirmModal';
 
 type MealPlansNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Meal Plans'>,
@@ -38,77 +40,63 @@ type MealPlansNavigationProp = CompositeNavigationProp<
 
 const MealPlansScreen: React.FC = () => {
   const navigation = useNavigation<MealPlansNavigationProp>();
-  const { mealPlans, loading, fetchPlans, deletePlan, duplicatePlan } =
-    usePlans();
+  const { plans, loading, fetchPlans, deletePlan, duplicatePlan } = usePlans();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [filteredPlans, setFilteredPlans] = useState<MealPlan[]>([]);
-  const [activePlans, setActivePlans] = useState<MealPlan[]>([]);
-  const [pastPlans, setPastPlans] = useState<MealPlan[]>([]);
+  const [filteredPlans, setFilteredPlans] = useState<Plan[]>([]);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPlans, setTotalPlans] = useState(0);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [planToDuplicate, setPlanToDuplicate] = useState<Plan | null>(null);
 
   useEffect(() => {
     loadPlans();
   }, []);
 
   useEffect(() => {
-    if (mealPlans.length > 0) {
-      filterAndSortPlans();
+    if (plans.length > 0) {
+      filterPlans();
     }
-  }, [mealPlans, searchQuery]);
+  }, [plans, searchQuery]);
 
   const loadPlans = async () => {
-    await fetchPlans();
+    setRefreshing(true);
+    try {
+      const response = await fetchPlans(page, pageSize);
+      setTotalPlans(response?.total || 0);
+    } catch (error) {
+      console.error('Error loading plans:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const filterPlans = () => {
+    if (!searchQuery.trim()) {
+      setFilteredPlans(plans);
+      return;
+    }
+
+    const filtered = plans.filter(plan =>
+      plan.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+    setFilteredPlans(filtered);
   };
 
   const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchPlans();
-    setRefreshing(false);
-  }, [fetchPlans]);
+    setPage(0);
+    loadPlans();
+  }, []);
 
-  const filterAndSortPlans = () => {
-    const now = new Date();
-
-    // Filter by search query if needed
-    let filtered = mealPlans;
-    if (searchQuery.trim()) {
-      filtered = mealPlans.filter(plan =>
-        plan.name.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
+  const handleLoadMore = () => {
+    if (!loading && plans.length < totalPlans) {
+      setPage(prevPage => prevPage + 1);
+      loadPlans();
     }
-
-    setFilteredPlans(filtered);
-
-    // Sort active and past plans
-    // In a real app, you would use plan date ranges
-    // For this example, we'll consider plans created in the last week as active
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
-    const active = [];
-    const past = [];
-
-    for (const plan of filtered) {
-      const createdDate = parseISO(plan.created_at);
-      if (isAfter(createdDate, oneWeekAgo)) {
-        active.push(plan);
-      } else {
-        past.push(plan);
-      }
-    }
-
-    // Sort by date (newest first)
-    active.sort((a, b) =>
-      isBefore(parseISO(a.created_at), parseISO(b.created_at)) ? 1 : -1,
-    );
-
-    past.sort((a, b) =>
-      isBefore(parseISO(a.created_at), parseISO(b.created_at)) ? 1 : -1,
-    );
-
-    setActivePlans(active);
-    setPastPlans(past);
   };
 
   const handleCreatePlan = () => {
@@ -117,66 +105,120 @@ const MealPlansScreen: React.FC = () => {
     } as any);
   };
 
-  const handleEditPlan = (plan: MealPlan) => {
+  const handleEditPlan = (plan: Plan) => {
     navigation.navigate('MealPlanStack', {
       screen: 'EditMealPlan',
       params: { planId: plan._id, plan },
     } as any);
   };
 
-  const handleViewPlan = (plan: MealPlan) => {
+  const handleViewPlan = (plan: Plan) => {
     navigation.navigate('MealPlanStack', {
       screen: 'MealPlanDetail',
-      params: { planId: plan._id, plan },
+      params: { planId: plan._id },
     } as any);
   };
 
-  const handleDeletePlan = async (planId: string) => {
-    await deletePlan(planId);
+  const confirmDeletePlan = (plan: Plan) => {
+    setPlanToDelete(plan);
+    setShowDeleteDialog(true);
   };
 
-  const handleDuplicatePlan = async (planId: string) => {
-    await duplicatePlan(planId);
+  const handleDeletePlan = async () => {
+    if (!planToDelete) return;
+
+    setShowDeleteDialog(false);
+    try {
+      await deletePlan(planToDelete._id);
+      // Plan will be removed from state in the hook
+      Alert.alert('Success', 'Meal plan deleted successfully');
+    } catch (error) {
+      console.error('Error deleting plan:', error);
+      Alert.alert('Error', 'Failed to delete meal plan');
+    } finally {
+      setPlanToDelete(null);
+    }
   };
 
-  const renderPlanCard = ({ item }: { item: MealPlan }) => {
-    // Count total recipes in the plan
-    let recipeCount = 0;
-    Object.values(item.schedule).forEach(day => {
-      recipeCount += day.length;
+  const confirmDuplicatePlan = (plan: Plan) => {
+    setPlanToDuplicate(plan);
+    setShowDuplicateDialog(true);
+  };
+
+  const handleDuplicatePlan = async () => {
+    if (!planToDuplicate) return;
+
+    setShowDuplicateDialog(false);
+    try {
+      await duplicatePlan(planToDuplicate._id);
+      Alert.alert('Success', 'Meal plan duplicated successfully');
+      loadPlans(); // Refresh to show the new plan
+    } catch (error) {
+      console.error('Error duplicating plan:', error);
+      Alert.alert('Error', 'Failed to duplicate meal plan');
+    } finally {
+      setPlanToDuplicate(null);
+    }
+  };
+
+  // Count total recipes in plan
+  const getTotalRecipeCount = (plan: Plan): number => {
+    let total = 0;
+    Object.values(plan.schedule).forEach(day => {
+      if (Array.isArray(day)) {
+        total += day.length;
+      }
     });
+    return total;
+  };
 
+  const renderPlanCard = ({ item }: { item: Plan }) => {
     return (
       <TouchableOpacity
         style={styles.planCard}
         onPress={() => handleViewPlan(item)}
         activeOpacity={0.7}>
-        <View style={styles.planContent}>
-          <Text style={styles.planName}>{item.name}</Text>
-          <Text style={styles.planDate}>
-            Created {format(parseISO(item.created_at), 'MMM d, yyyy')}
-          </Text>
-          <Text style={styles.planRecipes}>{recipeCount} recipes</Text>
-        </View>
+        <View style={styles.planCardContent}>
+          <View style={styles.planCardHeader}>
+            <View style={styles.planTitleSection}>
+              <Text style={styles.planName}>{item.name}</Text>
+              <Text style={styles.planDate}>
+                Created {format(parseISO(item.created_at), 'MMM d, yyyy')}
+              </Text>
+            </View>
+            <View style={styles.planActionButtons}>
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={() => handleEditPlan(item)}>
+                <Icon name="edit-2" size={20} color={colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={() => confirmDuplicatePlan(item)}>
+                <Icon name="copy" size={20} color={colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={() => confirmDeletePlan(item)}>
+                <Icon name="trash-2" size={20} color={colors.semantic.error} />
+              </TouchableOpacity>
+            </View>
+          </View>
 
-        <View style={styles.planActions}>
-          <TouchableOpacity
-            style={styles.planActionButton}
-            onPress={() => handleEditPlan(item)}>
-            <Icon name="edit-2" size={20} color={colors.primary} />
-          </TouchableOpacity>
+          {/* Recipe count chip */}
+          <View style={styles.chipContainer}>
+            <View style={styles.chip}>
+              <Text style={styles.chipText}>
+                {getTotalRecipeCount(item)} Recipes
+              </Text>
+            </View>
+          </View>
 
-          <TouchableOpacity
-            style={styles.planActionButton}
-            onPress={() => handleDuplicatePlan(item._id)}>
-            <Icon name="copy" size={20} color={colors.primary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.planActionButton}
-            onPress={() => handleDeletePlan(item._id)}>
-            <Icon name="trash-2" size={20} color={colors.semantic.error} />
-          </TouchableOpacity>
+          {/* Weekday indicators */}
+          <View style={styles.weekdayIndicatorContainer}>
+            <Text style={styles.sectionTitle}>Scheduled Days</Text>
+            <PlanWeekdayIndicator plan={item} />
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -197,9 +239,26 @@ const MealPlansScreen: React.FC = () => {
     );
   };
 
+  const renderFooter = () => {
+    if (!loading || refreshing) return null;
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator color={colors.primary} />
+        <Text style={styles.loadingText}>Loading plans...</Text>
+      </View>
+    );
+  };
+
   return (
     <PageContainer safeArea={false}>
-      <Header title="Meal Plans" showBack={false} />
+      <Header
+        title="My Meal Plans"
+        showBack={false}
+        rightAction={{
+          icon: 'plus',
+          onPress: handleCreatePlan,
+        }}
+      />
 
       <View style={styles.searchContainer}>
         <Input
@@ -213,116 +272,188 @@ const MealPlansScreen: React.FC = () => {
         />
       </View>
 
-      <View style={styles.createButtonContainer}>
-        <Button
-          title="Create Meal Plan"
-          onPress={handleCreatePlan}
-          icon={<Icon name="plus" size={20} color={colors.white} />}
-          fullWidth
-        />
-      </View>
+      <FlatList
+        data={filteredPlans}
+        renderItem={renderPlanCard}
+        keyExtractor={item => item._id}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListEmptyComponent={renderEmptyState}
+        ListFooterComponent={renderFooter}
+      />
 
-      {loading && !refreshing ? (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      ) : filteredPlans.length === 0 ? (
-        renderEmptyState()
-      ) : (
-        <FlatList
-          data={[]} // Header only
-          renderItem={() => null}
-          ListHeaderComponent={() => (
-            <>
-              {activePlans.length > 0 && (
-                <Section title="Active Plans">
-                  {activePlans.map(plan => (
-                    <View key={plan._id} style={styles.planCardWrapper}>
-                      {renderPlanCard({ item: plan })}
-                    </View>
-                  ))}
-                </Section>
-              )}
+      {/* Delete Confirmation Dialog */}
+      <ConfirmModal
+        visible={showDeleteDialog}
+        title="Delete Meal Plan"
+        message={
+          planToDelete
+            ? `Are you sure you want to delete "${planToDelete.name}"? This action cannot be undone.`
+            : 'Are you sure you want to delete this meal plan?'
+        }
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleDeletePlan}
+        confirmText="Delete"
+        destructive={true}
+      />
 
-              {pastPlans.length > 0 && (
-                <Section title="Past Plans">
-                  {pastPlans.map(plan => (
-                    <View key={plan._id} style={styles.planCardWrapper}>
-                      {renderPlanCard({ item: plan })}
-                    </View>
-                  ))}
-                </Section>
-              )}
-            </>
-          )}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          onRefresh={handleRefresh}
-          refreshing={refreshing}
-        />
-      )}
+      {/* Duplicate Confirmation Dialog */}
+      <ConfirmModal
+        visible={showDuplicateDialog}
+        title="Duplicate Meal Plan"
+        message={
+          planToDuplicate
+            ? `Are you sure you want to duplicate "${planToDuplicate.name}"? A new copy will be created with all the same recipes and settings.`
+            : 'Are you sure you want to duplicate this meal plan?'
+        }
+        onClose={() => setShowDuplicateDialog(false)}
+        onConfirm={handleDuplicatePlan}
+        confirmText="Duplicate"
+      />
     </PageContainer>
   );
 };
 
 const styles = StyleSheet.create({
   searchContainer: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
   },
   searchInput: {
     marginBottom: 0,
   },
-  createButtonContainer: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
   listContent: {
-    padding: spacing.md,
-    paddingTop: 0,
+    padding: spacing.sm,
+    paddingTop: spacing.sm,
     flexGrow: 1,
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  planCardWrapper: {
-    marginBottom: spacing.md,
   },
   planCard: {
     backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    marginBottom: spacing.md,
+    ...shadows.sm,
+  },
+  planCardContent: {
     padding: spacing.md,
+  },
+  planCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    ...shadows.md,
+    alignItems: 'flex-start',
+    marginBottom: spacing.sm,
   },
-  planContent: {
+  planTitleSection: {
     flex: 1,
   },
   planName: {
     ...typography.h6,
     color: colors.text.primary,
-    marginBottom: spacing.xs,
-    fontWeight: fontWeights.semibold,
+    fontWeight: fontWeights.bold,
+    marginBottom: 2,
   },
   planDate: {
     ...typography.bodySmall,
     color: colors.text.secondary,
-    marginBottom: spacing.xs,
   },
-  planRecipes: {
-    ...typography.bodySmall,
-    color: colors.primary,
-  },
-  planActions: {
+  planActionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.xs,
   },
-  planActionButton: {
-    padding: spacing.sm,
-    marginLeft: spacing.xs,
+  iconButton: {
+    padding: spacing.xs,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.gray[50],
+  },
+  chipContainer: {
+    marginVertical: spacing.xs,
+  },
+  chip: {
+    backgroundColor: colors.gray[100],
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    alignSelf: 'flex-start',
+  },
+  chipText: {
+    ...typography.bodySmall,
+    color: colors.text.primary,
+  },
+  weekdayIndicatorContainer: {
+    marginTop: spacing.sm,
+  },
+  sectionTitle: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    marginBottom: spacing.xs,
+  },
+  footerLoader: {
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+  },
+  loadingText: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.md,
+  },
+  modalContainer: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    width: '90%',
+    maxWidth: 400,
+    ...shadows.md,
+  },
+  modalTitle: {
+    ...typography.h5,
+    color: colors.text.primary,
+    fontWeight: fontWeights.bold,
+    marginBottom: spacing.sm,
+  },
+  modalMessage: {
+    ...typography.bodyRegular,
+    color: colors.text.secondary,
+    marginBottom: spacing.lg,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.md,
+  },
+  modalButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.sm,
+  },
+  modalButtonDestructive: {
+    backgroundColor: colors.semantic.error + '10',
+  },
+  modalButtonText: {
+    ...typography.bodyRegular,
+    color: colors.primary,
+    fontWeight: fontWeights.medium,
+  },
+  modalButtonTextDestructive: {
+    color: colors.semantic.error,
   },
 });
 
