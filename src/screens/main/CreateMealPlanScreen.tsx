@@ -121,20 +121,6 @@ const CreateMealPlanScreen: React.FC = () => {
 
     updatedSchedule[selectedDay as keyof PlanSchedule] = daySchedule;
     setSchedule(updatedSchedule);
-
-    // Close the picker
-    setShowRecipePicker(false);
-  };
-
-  // Function to remove a recipe from the schedule
-  const handleRemoveRecipe = (dayKey: string, recipeId: string) => {
-    const updatedSchedule = { ...schedule };
-    const daySchedule = [...updatedSchedule[dayKey as keyof PlanSchedule]];
-
-    const newDaySchedule = daySchedule.filter(item => item.recipe !== recipeId);
-
-    updatedSchedule[dayKey as keyof PlanSchedule] = newDaySchedule;
-    setSchedule(updatedSchedule);
   };
 
   // Function to save the meal plan
@@ -201,16 +187,22 @@ const CreateMealPlanScreen: React.FC = () => {
     }
 
     return (
-      <FlatList
-        data={dayRecipes.map(item => recipes[item.recipe]).filter(Boolean)}
-        renderItem={({ item, index }) => (
-          <View style={styles.recipeCardContainer}>
-            <RecipeCard recipe={item} onPress={() => {}} />
-          </View>
-        )}
-        keyExtractor={item => item._id}
-        showsVerticalScrollIndicator={false}
-      />
+      <ScrollView contentContainerStyle={styles.listContainer}>
+        {dayRecipes
+          .map(item => recipes[item.recipe])
+          .filter(Boolean)
+          .map(item => (
+            <View key={item._id} style={styles.recipeCardContainer}>
+              <RecipeCard
+                recipe={item}
+                showSelectionIcon
+                isAdded
+                onRemoveClick={handleRecipeSelect}
+                onPress={() => {}}
+              />
+            </View>
+          ))}
+      </ScrollView>
     );
   };
 
@@ -280,10 +272,6 @@ const CreateMealPlanScreen: React.FC = () => {
             style={styles.addRecipeButton}
           />
         </Section>
-
-        <View style={styles.saveButtonContainer}>
-          <Button title="Save Meal Plan" onPress={handleSavePlan} fullWidth />
-        </View>
       </ScrollView>
 
       <RecipePickerModal
@@ -306,7 +294,7 @@ const styles = StyleSheet.create({
   },
   daysScrollView: {
     flexDirection: 'row',
-    marginBottom: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   dayButton: {
     paddingVertical: spacing.sm,
@@ -359,15 +347,14 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
   },
+  listContainer: {
+    paddingBottom: spacing.lg,
+  },
   recipeCardContainer: {
     marginBottom: spacing.md,
   },
   addRecipeButton: {
     marginBottom: spacing.md,
-  },
-  saveButtonContainer: {
-    padding: spacing.md,
-    marginBottom: spacing.xl,
   },
 });
 

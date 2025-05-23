@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { BottomSheet } from './BottomSheet';
 import { Input } from '../forms/Input';
 import { RecipeCard } from '../recipe/RecipeCard';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing } from '../../theme';
 import { Recipe } from '../../types/recipe';
 import { useRecipes } from '../../hooks/useRecipes';
 
@@ -41,20 +41,6 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
     return selectedRecipes.some(r => r._id === recipe._id);
   };
 
-  const renderRecipe = ({ item }: { item: Recipe; index: number }) => {
-    return (
-      <View style={styles.recipeCardContainer}>
-        <RecipeCard
-          recipe={item}
-          showSelectionIcon
-          isAdded={isSelected(item)}
-          onAddClick={onSelect}
-          onPress={() => {}}
-        />
-      </View>
-    );
-  };
-
   return (
     <BottomSheet visible={visible} onClose={onClose} height="80%">
       <View style={styles.header}>
@@ -72,14 +58,20 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
         />
       </View>
 
-      <FlatList
-        data={recipes}
-        renderItem={renderRecipe}
-        keyExtractor={item => item._id}
-        horizontal={false}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContainer}
-      />
+      <ScrollView contentContainerStyle={styles.listContainer}>
+        {recipes.map(item => (
+          <View key={item._id} style={styles.recipeCardContainer}>
+            <RecipeCard
+              recipe={item}
+              showSelectionIcon
+              isAdded={isSelected(item)}
+              onAddClick={onSelect}
+              onRemoveClick={onSelect}
+              onPress={() => {}}
+            />
+          </View>
+        ))}
+      </ScrollView>
     </BottomSheet>
   );
 };
@@ -98,7 +90,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   searchContainer: {
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
   },
   listContainer: {
     paddingBottom: spacing.lg,

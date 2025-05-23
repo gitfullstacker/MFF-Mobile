@@ -57,12 +57,12 @@ const DAYS = [
 const MealPlanDetailScreen: React.FC = () => {
   const navigation = useNavigation<MealPlanDetailNavigationProp>();
   const route = useRoute<MealPlanDetailRouteProp>();
-  const { planId, plan } = route.params;
+  const { planId } = route.params;
   const { deletePlan, duplicatePlan, fetchPlan } = usePlans();
 
   const [selectedDay, setSelectedDay] = useState<string>('su');
   const [loading, setLoading] = useState(false);
-  const [mealPlan, setMealPlan] = useState<Plan | null>(plan || null);
+  const [mealPlan, setMealPlan] = useState<Plan | null>(null);
   const [dailyMacros, setDailyMacros] = useState({
     protein: 0,
     carbs: 0,
@@ -284,10 +284,7 @@ const MealPlanDetailScreen: React.FC = () => {
   // Handle edit plan
   const handleEditPlan = () => {
     if (mealPlan) {
-      navigation.navigate('EditMealPlan', {
-        planId,
-        plan: mealPlan,
-      });
+      navigation.navigate('EditMealPlan', { planId });
     }
   };
 
@@ -597,7 +594,7 @@ const styles = StyleSheet.create({
   },
   daysScrollView: {
     flexDirection: 'row',
-    marginBottom: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   dayButton: {
     paddingVertical: spacing.sm,

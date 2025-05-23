@@ -115,7 +115,7 @@ const MealPlansScreen: React.FC = () => {
   const handleViewPlan = (plan: Plan) => {
     navigation.navigate('MealPlanStack', {
       screen: 'MealPlanDetail',
-      params: { planId: plan._id, plan },
+      params: { planId: plan._id },
     } as any);
   };
 

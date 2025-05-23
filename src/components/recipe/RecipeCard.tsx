@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingVertical: spacing.sm,
     justifyContent: 'space-between',
-    maxWidth: screenWidth - spacing.lg * 2 - 130,
+    maxWidth: screenWidth - spacing.md * 2 - 130,
   },
   titleSection: {
     gap: spacing.xs,

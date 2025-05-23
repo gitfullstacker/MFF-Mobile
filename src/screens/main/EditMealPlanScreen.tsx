@@ -25,7 +25,6 @@ import {
   typography,
   spacing,
   borderRadius,
-  shadows,
   fontWeights,
 } from '../../theme';
 import { MealPlanStackParamList } from '../../navigation/types';
@@ -53,7 +52,7 @@ const DAYS = [
 const EditMealPlanScreen: React.FC = () => {
   const navigation = useNavigation<EditMealPlanNavigationProp>();
   const route = useRoute<EditMealPlanRouteProp>();
-  const { planId, plan } = route.params;
+  const { planId } = route.params;
   const { updatePlan, fetchPlan } = usePlans();
 
   const [planName, setPlanName] = useState('');
@@ -69,16 +68,16 @@ const EditMealPlanScreen: React.FC = () => {
   });
   const [showRecipePicker, setShowRecipePicker] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [mealPlan, setMealPlan] = useState<Plan | null>(plan || null);
+  const [mealPlan, setMealPlan] = useState<Plan | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [recipeMap, setRecipeMap] = useState<Record<string, Recipe>>({});
   const [dayRecipes, setDayRecipes] = useState<Recipe[]>([]);
 
   // Load the plan data on mount
   useEffect(() => {
-    if (plan) {
+    if (mealPlan) {
       // Set initial state from plan
-      setPlanName(plan.name);
+      setPlanName(mealPlan.name);
 
       // We need to transform the schedule to match the expected structure
       // The backend populates recipe objects, but for updating we need just the IDs
@@ -98,8 +97,8 @@ const EditMealPlanScreen: React.FC = () => {
       DAYS.forEach(day => {
         const dayKey = day.key as keyof PlanSchedule;
 
-        if (plan.schedule[dayKey]) {
-          plan.schedule[dayKey].forEach((item: ScheduledRecipe) => {
+        if (mealPlan.schedule[dayKey]) {
+          mealPlan.schedule[dayKey].forEach((item: ScheduledRecipe) => {
             if (item.recipe && typeof item.recipe !== 'string') {
               const recipeItem = item.recipe as Recipe;
               // Store the recipe object for display purposes
@@ -126,7 +125,7 @@ const EditMealPlanScreen: React.FC = () => {
       // If no plan was passed but we have an ID, fetch it
       loadPlanData();
     }
-  }, [plan, planId]);
+  }, [mealPlan, planId]);
 
   // Update day recipes when selected day changes
   useEffect(() => {
@@ -260,27 +259,6 @@ const EditMealPlanScreen: React.FC = () => {
 
     // Update day recipes
     updateDayRecipes(updatedSchedule, selectedDay, updatedRecipeMap);
-
-    // Close the picker
-    setShowRecipePicker(false);
-  };
-
-  // Function to remove a recipe from the schedule
-  const handleRemoveRecipe = (recipeId: string) => {
-    const updatedSchedule = { ...schedule };
-    const daySchedule = [...updatedSchedule[selectedDay as keyof PlanSchedule]];
-
-    const newDaySchedule = daySchedule.filter(item =>
-      typeof item.recipe === 'string'
-        ? item.recipe !== recipeId
-        : (item.recipe as any)._id !== recipeId,
-    );
-
-    updatedSchedule[selectedDay as keyof PlanSchedule] = newDaySchedule;
-    setSchedule(updatedSchedule);
-
-    // Update day recipes
-    updateDayRecipes(updatedSchedule, selectedDay, recipeMap);
   };
 
   // Function to save the updated meal plan
@@ -401,11 +379,20 @@ const EditMealPlanScreen: React.FC = () => {
               data={dayRecipes}
               renderItem={({ item }) => (
                 <View style={styles.recipeCardContainer}>
-                  <RecipeCard recipe={item} onPress={() => {}} />
+                  <RecipeCard
+                    recipe={item}
+                    showSelectionIcon
+                    isAdded
+                    onRemoveClick={handleRecipeSelect}
+                    onPress={() => {}}
+                  />
                 </View>
               )}
               keyExtractor={item => item._id}
-              scrollEnabled={false} // Since we're already in a ScrollView
+              scrollEnabled={false}
+              showsVerticalScrollIndicator={false}
+              showsHorizontalScrollIndicator={false}
+              nestedScrollEnabled={true}
             />
           )}
 
@@ -418,10 +405,6 @@ const EditMealPlanScreen: React.FC = () => {
             style={styles.addRecipeButton}
           />
         </Section>
-
-        <View style={styles.saveButtonContainer}>
-          <Button title="Save Changes" onPress={handleSavePlan} fullWidth />
-        </View>
       </ScrollView>
 
       <RecipePickerModal
@@ -442,7 +425,7 @@ const styles = StyleSheet.create({
   },
   daysScrollView: {
     flexDirection: 'row',
-    marginBottom: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   dayButton: {
     paddingVertical: spacing.sm,
@@ -492,15 +475,14 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
   },
+  listContainer: {
+    paddingBottom: spacing.lg,
+  },
   recipeCardContainer: {
     marginBottom: spacing.md,
   },
   addRecipeButton: {
     marginBottom: spacing.md,
-  },
-  saveButtonContainer: {
-    padding: spacing.md,
-    marginBottom: spacing.xl,
   },
 });
 
