@@ -56,10 +56,12 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
   } = recipe;
   const [favorite, setFavorite] = useState(is_favorite);
   const [isSaving, setIsSaving] = useState(false);
-  const { allowedCategoryIds } = useSubscription();
+  const { allowedCategoryIds, loading: subscriptionLoading } =
+    useSubscription();
 
   // Check if recipe is accessible based on subscription
   const isRecipeAccessible = useCallback(() => {
+    if (subscriptionLoading) return true;
     if (!recipe.tags?.course) return true;
 
     const recipeCategoryIds = recipe.tags.course
@@ -67,7 +69,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
       .filter(id => id !== undefined) as number[];
 
     return recipeCategoryIds.some(id => allowedCategoryIds.includes(id));
-  }, [recipe, allowedCategoryIds]);
+  }, [recipe, allowedCategoryIds, subscriptionLoading]);
 
   const isValidRecipe = isRecipeAccessible();
 
