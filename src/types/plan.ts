@@ -1,5 +1,7 @@
+import { Recipe } from './recipe';
+
 export interface ScheduledRecipe {
-  recipe: string;
+  recipe: string | Recipe;
   only_recipe: boolean;
 }
 

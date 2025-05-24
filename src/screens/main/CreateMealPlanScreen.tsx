@@ -34,6 +34,7 @@ import {
   PlanSchedule,
   ScheduledRecipe,
   CreatePlanRequest,
+  DAYS_OF_WEEK,
 } from '../../types/plan';
 import { RecipeCard } from '@/components/recipe/RecipeCard';
 
@@ -147,9 +148,34 @@ const CreateMealPlanScreen: React.FC = () => {
     try {
       setLoading(true);
 
+      // Restructure schedule to clean format (remove any _id fields)
+      const cleanSchedule: PlanSchedule = {
+        su: [],
+        mo: [],
+        tu: [],
+        we: [],
+        th: [],
+        fr: [],
+        sa: [],
+      };
+
+      // Copy schedule data in clean format
+      DAYS_OF_WEEK.forEach(dayInfo => {
+        const daySchedule = schedule[dayInfo.value];
+        if (Array.isArray(daySchedule)) {
+          cleanSchedule[dayInfo.value] = daySchedule.map(item => ({
+            recipe:
+              typeof item.recipe === 'object'
+                ? (item.recipe as Recipe)._id
+                : item.recipe,
+            only_recipe: item.only_recipe,
+          }));
+        }
+      });
+
       const planData: CreatePlanRequest = {
         name: planName,
-        schedule,
+        schedule: cleanSchedule,
         removed_ingredient_ids: [],
       };
 
@@ -189,7 +215,7 @@ const CreateMealPlanScreen: React.FC = () => {
     return (
       <ScrollView contentContainerStyle={styles.listContainer}>
         {dayRecipes
-          .map(item => recipes[item.recipe])
+          .map(item => recipes[item.recipe as string])
           .filter(Boolean)
           .map(item => (
             <View key={item._id} style={styles.recipeCardContainer}>
@@ -279,7 +305,7 @@ const CreateMealPlanScreen: React.FC = () => {
         onClose={() => setShowRecipePicker(false)}
         onSelect={handleRecipeSelect}
         selectedRecipes={schedule[selectedDay as keyof PlanSchedule]
-          .map(item => recipes[item.recipe])
+          .map(item => recipes[item.recipe as string])
           .filter(Boolean)}
       />
 

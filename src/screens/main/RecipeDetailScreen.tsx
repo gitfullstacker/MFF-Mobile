@@ -25,7 +25,7 @@ import { Section } from '../../components/layout/Section';
 import { MacroDisplay } from '../../components/recipe/MacroDisplay';
 import { Button } from '../../components/forms/Button';
 import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
-import { RecipePickerModal } from '../../components/modals/RecipePickerModal';
+import { MealPlanPickerModal } from '../../components/modals/MealPlanPickerModal';
 import {
   colors,
   typography,
@@ -101,6 +101,11 @@ const RecipeDetailScreen: React.FC = () => {
 
   const handleAddToMealPlan = () => {
     setShowMealPlanModal(true);
+  };
+
+  const handleMealPlanSuccess = () => {
+    // Optional: You can add any additional logic here after successful addition
+    console.log('Recipe successfully added to meal plan');
   };
 
   const handleIncrementServings = () => {
@@ -505,17 +510,16 @@ const RecipeDetailScreen: React.FC = () => {
           title="Add to Meal Plan"
           onPress={handleAddToMealPlan}
           fullWidth
+          icon={<Icon name="calendar" size={18} color={colors.white} />}
         />
       </View>
 
       {/* Meal Plan Picker Modal */}
-      <RecipePickerModal
+      <MealPlanPickerModal
         visible={showMealPlanModal}
         onClose={() => setShowMealPlanModal(false)}
-        onSelect={() => {
-          // Here you would add the recipe to the meal plan
-          setShowMealPlanModal(false);
-        }}
+        recipe={selectedRecipe}
+        onSuccess={handleMealPlanSuccess}
       />
     </PageContainer>
   );

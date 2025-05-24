@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
-import { Rating } from 'react-native-ratings';
 import {
   colors,
   typography,
@@ -20,6 +19,7 @@ import {
 } from '../../theme';
 import { Recipe } from '../../types/recipe';
 import { useSubscription } from '../../hooks/useSubscription';
+import { RatingImage, StarRating } from 'react-native-product-ratings';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -142,14 +142,13 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
           {/* Recipe Rating */}
           <View style={styles.ratingContainer}>
-            <Rating
-              type="star"
+            <StarRating
+              count={5}
+              defaultRating={rating?.average || 0}
+              size={20}
+              selectedColor="#F8B84E"
               readonly
-              ratingColor="#F8B84E"
-              ratingBackgroundColor={colors.gray[200]}
-              ratingCount={5}
-              imageSize={18}
-              startingValue={rating?.average || 0}
+              RatingImage={props => <RatingImage {...props} type="airbnb" />}
             />
           </View>
         </View>
