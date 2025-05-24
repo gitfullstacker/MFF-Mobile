@@ -80,10 +80,10 @@ const FavoritesScreen: React.FC = () => {
   }, [loadFavorites]);
 
   const handleRecipePress = useCallback(
-    (recipeId: string) => {
+    (recipe: Recipe) => {
       navigation.navigate('RecipeStack', {
         screen: 'RecipeDetail',
-        params: { recipeId },
+        params: { recipeId: recipe.slug, recipe },
       } as any);
     },
     [navigation],
@@ -112,7 +112,7 @@ const FavoritesScreen: React.FC = () => {
       <View style={styles.recipeCardContainer}>
         <RecipeCard
           recipe={item}
-          onPress={() => handleRecipePress(item.slug)}
+          onPress={() => handleRecipePress(item)}
           onFavoriteToggle={(recipeId, isFavorite) =>
             handleFavoriteToggle(recipeId, isFavorite)
           }

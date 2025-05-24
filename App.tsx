@@ -63,7 +63,7 @@ const AppContent: React.FC = () => {
     };
 
     initialize();
-  }, [checkAuthStatus]);
+  }, []);
 
   if (loading) {
     return <LoadingOverlay visible={true} message="Loading..." />;

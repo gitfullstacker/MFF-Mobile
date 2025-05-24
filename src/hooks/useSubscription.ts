@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useAtom } from 'jotai';
 import { subscriptionStatsAtom, addToastAtom } from '../store';
 import { subscriptionService } from '../services/subscription';
@@ -27,6 +27,8 @@ export const useSubscription = () => {
   // Fetch subscription stats
   const fetchSubscriptionStats = useCallback(
     async (showToast = false) => {
+      if (loading) return;
+
       setLoading(true);
       setError(null);
 
@@ -229,13 +231,6 @@ export const useSubscription = () => {
       setLoading(false);
     }
   }, [addToast]);
-
-  // Initialize subscription stats on mount if not already loaded
-  useEffect(() => {
-    if (!subscriptionStats || !subscriptionStats.allowed_category_ids.length) {
-      fetchSubscriptionStats();
-    }
-  }, [fetchSubscriptionStats, subscriptionStats]);
 
   return {
     subscriptionStats: subscriptionStats || defaultStats,

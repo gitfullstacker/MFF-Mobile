@@ -28,7 +28,12 @@ import {
   fontWeights,
 } from '../../theme';
 import { MealPlanStackParamList } from '../../navigation/types';
-import { Plan, PlanSchedule, ScheduledRecipe } from '../../types/plan';
+import {
+  Plan,
+  PlanSchedule,
+  ScheduledRecipe,
+  DAYS_OF_WEEK,
+} from '../../types/plan';
 import { Recipe } from '@/types/recipe';
 import { RecipeCard } from '@/components/recipe/RecipeCard';
 import { ShoppingListModal } from '@/components/modals/ShoppingListModal';
@@ -57,8 +62,8 @@ const DAYS = [
 const MealPlanDetailScreen: React.FC = () => {
   const navigation = useNavigation<MealPlanDetailNavigationProp>();
   const route = useRoute<MealPlanDetailRouteProp>();
-  const { planId } = route.params;
-  const { deletePlan, duplicatePlan, fetchPlan } = usePlans();
+  const { planId, plan } = route.params;
+  const { deletePlan, duplicatePlan } = usePlans();
 
   const [selectedDay, setSelectedDay] = useState<string>('su');
   const [loading, setLoading] = useState(false);
@@ -79,18 +84,28 @@ const MealPlanDetailScreen: React.FC = () => {
   const [dayRecipes, setDayRecipes] = useState<Recipe[]>([]);
   const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
 
-  // Load the plan data on mount if needed
+  // Use plan from route params or fetch if not available
   useEffect(() => {
-    if (!mealPlan) {
-      loadPlanData();
+    if (plan) {
+      // Use plan from params (passed from EditMealPlan or other screens)
+      setMealPlan(plan);
     } else {
-      // Calculate macros on initial load
+      // Fallback: This shouldn't happen in normal flow, but just in case
+      console.warn(
+        'No plan provided in params. This should not happen in normal flow.',
+      );
+    }
+  }, [plan]);
+
+  // Calculate macros and extract recipes when meal plan changes
+  useEffect(() => {
+    if (mealPlan) {
       calculateMacros();
       extractRecipes();
     }
   }, [mealPlan]);
 
-  // Recalculate macros and extract recipes when selected day changes
+  // Recalculate daily macros and extract day recipes when selected day changes
   useEffect(() => {
     if (mealPlan) {
       calculateDailyMacros();
@@ -105,7 +120,6 @@ const MealPlanDetailScreen: React.FC = () => {
     } else if (item.recipe && typeof item.recipe === 'object') {
       return (item.recipe as Recipe)._id;
     }
-    // Fallback
     return '';
   };
 
@@ -143,7 +157,6 @@ const MealPlanDetailScreen: React.FC = () => {
     });
 
     setAllRecipes(allExtractedRecipes);
-    extractDayRecipes();
   };
 
   // Extract recipes for the currently selected day
@@ -168,28 +181,10 @@ const MealPlanDetailScreen: React.FC = () => {
     setDayRecipes(recipes);
   };
 
-  // Function to load plan data from API
-  const loadPlanData = async () => {
-    setLoading(true);
-    try {
-      const loadedPlan = await fetchPlan(planId);
-      setMealPlan(loadedPlan);
-    } catch (error) {
-      console.error('Error loading plan data:', error);
-      Alert.alert(
-        'Error',
-        'Failed to load meal plan details. Please try again.',
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Calculate macros for the selected day and the whole week
   const calculateMacros = () => {
     if (!mealPlan) return;
 
-    calculateDailyMacros();
     calculateWeeklyMacros();
   };
 
@@ -282,7 +277,7 @@ const MealPlanDetailScreen: React.FC = () => {
   // Handle edit plan
   const handleEditPlan = () => {
     if (mealPlan) {
-      navigation.navigate('EditMealPlan', { planId });
+      navigation.navigate('EditMealPlan', { planId, plan: mealPlan });
     }
   };
 
@@ -364,13 +359,7 @@ const MealPlanDetailScreen: React.FC = () => {
       });
 
       // Add weekly totals
-      planSummary += `Weekly Totals: ${weeklyMacros.calories.toFixed(
-        2,
-      )} calories, ${weeklyMacros.protein.toFixed(
-        2,
-      )}g protein, ${weeklyMacros.carbs.toFixed(
-        2,
-      )}g carbs, ${weeklyMacros.fat.toFixed(2)}g fat\n\n`;
+      planSummary += `Weekly Totals: ${weeklyMacros.calories} calories, ${weeklyMacros.protein}g protein, ${weeklyMacros.carbs}g carbs, ${weeklyMacros.fat}g fat\n\n`;
       planSummary += 'Created with Macro Friendly Food App';
 
       await Share.share({
@@ -394,16 +383,17 @@ const MealPlanDetailScreen: React.FC = () => {
   };
 
   // View recipe details
-  const handleViewRecipe = (recipeId: string) => {
+  const handleViewRecipe = (recipe: Recipe) => {
     navigation.navigate(
       'RecipeStack' as any,
       {
         screen: 'RecipeDetail',
-        params: { recipeId },
+        params: { recipeId: recipe.slug, recipe },
       } as any,
     );
   };
 
+  // Show loading if no meal plan is available
   if (!mealPlan) {
     return <LoadingOverlay visible={true} message="Loading meal plan..." />;
   }
@@ -500,13 +490,7 @@ const MealPlanDetailScreen: React.FC = () => {
             onPress: () => {
               Alert.alert(
                 'Daily Macros',
-                `Protein: ${dailyMacros.protein.toFixed(
-                  2,
-                )}g\nCarbs: ${dailyMacros.carbs.toFixed(
-                  2,
-                )}g\nFat: ${dailyMacros.fat.toFixed(2)}g\nCalories: ${
-                  dailyMacros.calories
-                }`,
+                `Protein: ${dailyMacros.protein}g\nCarbs: ${dailyMacros.carbs}g\nFat: ${dailyMacros.fat}g\nCalories: ${dailyMacros.calories}`,
               );
             },
           }}>
@@ -524,7 +508,7 @@ const MealPlanDetailScreen: React.FC = () => {
                 <View style={styles.recipeCardContainer}>
                   <RecipeCard
                     recipe={item}
-                    onPress={() => handleViewRecipe(item.slug)}
+                    onPress={() => handleViewRecipe(item)}
                   />
                 </View>
               )}

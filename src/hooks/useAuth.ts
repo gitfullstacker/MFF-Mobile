@@ -11,6 +11,7 @@ import { authService } from '../services/auth';
 import { LoginRequest } from '../types/auth';
 import { isTokenExpired } from '../utils/tokenUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSubscription } from './useSubscription';
 
 export const useAuth = () => {
   const [authToken, setAuthToken] = useAtom(authTokenAtom);
@@ -18,6 +19,7 @@ export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useAtom(isAuthenticatedAtom);
   const [, addToast] = useAtom(addToastAtom);
   const [savedCredentials, setSavedCredentials] = useAtom(savedCredentialsAtom);
+  const { fetchSubscriptionStats } = useSubscription();
 
   const login = useCallback(
     async (credentials: LoginRequest, rememberMe: boolean = false) => {
@@ -45,6 +47,9 @@ export const useAuth = () => {
           setSavedCredentials(null);
         }
 
+        // Fetch subscription stats after successful login
+        await fetchSubscriptionStats();
+
         addToast({
           message: 'Login successful!',
           type: 'success',
@@ -63,7 +68,14 @@ export const useAuth = () => {
         throw error;
       }
     },
-    [setAuthToken, setUser, setIsAuthenticated, setSavedCredentials, addToast],
+    [
+      setAuthToken,
+      setUser,
+      setIsAuthenticated,
+      setSavedCredentials,
+      addToast,
+      fetchSubscriptionStats,
+    ],
   );
 
   const logout = useCallback(async () => {
