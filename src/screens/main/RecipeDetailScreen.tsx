@@ -13,13 +13,19 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   Platform,
+  Alert,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
+import KeepAwake from 'react-native-keep-awake';
+import { RatingImage, StarRating } from 'react-native-product-ratings';
 import { useRecipes } from '../../hooks/useRecipes';
+import { useAuth } from '../../hooks/useAuth';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Section } from '../../components/layout/Section';
 import { MacroDisplay } from '../../components/recipe/MacroDisplay';
@@ -34,7 +40,8 @@ import {
   shadows,
 } from '../../theme';
 import { RecipeStackParamList } from '../../navigation/types';
-import { IngredientItem, Recipe } from '@/types/recipe';
+import { IngredientItem, Recipe, RecipeComment } from '@/types/recipe';
+import { recipeService } from '../../services/recipe';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -45,21 +52,43 @@ type RecipeDetailNavigationProps = StackNavigationProp<
   'RecipeDetail'
 >;
 
+interface ReviewSubmission {
+  rating: number;
+  content: string;
+}
+
 const RecipeDetailScreen: React.FC = () => {
   const navigation = useNavigation<RecipeDetailNavigationProps>();
   const route = useRoute<RecipeDetailRouteProps>();
   const { recipeId, recipe: routeRecipe } = route.params;
+  const { user } = useAuth();
 
   const { fetchRecipe, toggleFavorite, selectedRecipe, loading } = useRecipes();
   const [recipe, setRecipe] = useState<Recipe | null>(routeRecipe || null);
   const [activeTab, setActiveTab] = useState<
     'ingredients' | 'instructions' | 'reviews'
   >('ingredients');
-  const [servingSize, setServingSize] = useState(1);
   const [showMealPlanModal, setShowMealPlanModal] = useState(false);
   const [scrollY] = useState(new Animated.Value(0));
   const [isFavorite, setIsFavorite] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+
+  // Cook Mode State
+  const [cookModeActive, setCookModeActive] = useState(false);
+
+  // Reviews State
+  const [reviews, setReviews] = useState<RecipeComment[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsPage, setReviewsPage] = useState(0);
+  const [hasMoreReviews, setHasMoreReviews] = useState(true);
+
+  // Review Submission State
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewSubmission, setReviewSubmission] = useState<ReviewSubmission>({
+    rating: 0,
+    content: '',
+  });
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   // Set initial recipe and favorite state
   useEffect(() => {
@@ -80,6 +109,27 @@ const RecipeDetailScreen: React.FC = () => {
     }
   }, [selectedRecipe, routeRecipe]);
 
+  // Load reviews when recipe is loaded
+  useEffect(() => {
+    if (recipe && activeTab === 'reviews') {
+      loadReviews();
+    }
+  }, [recipe, activeTab]);
+
+  // Cook Mode Effect
+  useEffect(() => {
+    if (cookModeActive) {
+      KeepAwake.activate();
+    } else {
+      KeepAwake.deactivate();
+    }
+
+    // Cleanup when component unmounts
+    return () => {
+      KeepAwake.deactivate();
+    };
+  }, [cookModeActive]);
+
   // Handle scroll event manually
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -95,6 +145,62 @@ const RecipeDetailScreen: React.FC = () => {
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
+
+  const loadReviews = async (reset = false) => {
+    if (!recipe || reviewsLoading) return;
+
+    setReviewsLoading(true);
+    try {
+      const currentPage = reset ? 0 : reviewsPage;
+      const reviewsData = await recipeService.getRecipeComments(recipe._id);
+
+      if (reset) {
+        setReviews(reviewsData);
+      } else {
+        setReviews(prev => [...prev, ...reviewsData]);
+      }
+
+      setReviewsPage(currentPage + 1);
+      // For demo purposes, assume there are more reviews if we got some
+      setHasMoreReviews(reviewsData.length > 0);
+    } catch (error) {
+      console.error('Error loading reviews:', error);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!recipe || !user || reviewSubmission.rating === 0) {
+      Alert.alert(
+        'Review Required',
+        'Please provide a rating and review content.',
+      );
+      return;
+    }
+
+    setSubmittingReview(true);
+    try {
+      const newReview = await recipeService.addComment(recipe._id, {
+        content: reviewSubmission.content,
+        rating: reviewSubmission.rating,
+      });
+
+      // Add new review to the beginning of the list
+      setReviews(prev => [newReview, ...prev]);
+
+      // Reset form
+      setReviewSubmission({ rating: 0, content: '' });
+      setShowReviewForm(false);
+
+      Alert.alert('Success', 'Your review has been submitted!');
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      Alert.alert('Error', 'Failed to submit review. Please try again.');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   const handleFavoritePress = useCallback(async () => {
     if (!recipe || isTogglingFavorite) return;
@@ -146,21 +252,19 @@ const RecipeDetailScreen: React.FC = () => {
     console.log('Recipe successfully added to meal plan');
   };
 
-  const handleIncrementServings = () => {
-    setServingSize(prev => prev + 1);
+  const toggleCookMode = () => {
+    setCookModeActive(prev => !prev);
   };
 
-  const handleDecrementServings = () => {
-    if (servingSize > 1) {
-      setServingSize(prev => prev - 1);
-    }
+  const scrollToReviews = () => {
+    setActiveTab('reviews');
   };
 
   // Calculate scaled nutrition values based on serving size
   const getScaledNutrition = () => {
     if (!recipe) return { protein: 0, carbs: 0, fat: 0, calories: 0 };
 
-    const factor = servingSize / (recipe.servings || 1);
+    const factor = recipe.servings || 1;
     return {
       protein: Math.round(recipe.nutrition.protein * factor),
       carbs: Math.round(recipe.nutrition.carbohydrates * factor),
@@ -171,7 +275,7 @@ const RecipeDetailScreen: React.FC = () => {
 
   // Render ingredient with adjusted amounts
   const renderIngredient = (item: IngredientItem, index: number) => {
-    const factor = servingSize / (recipe?.servings || 1);
+    const factor = recipe?.servings || 1;
     let adjustedAmount = item.amount;
 
     // If amount is a number, scale it
@@ -195,6 +299,110 @@ const RecipeDetailScreen: React.FC = () => {
             <Text style={styles.ingredientNotes}> ({item.notes})</Text>
           )}
         </Text>
+      </View>
+    );
+  };
+
+  // Render category tags
+  const renderCategoryTags = () => {
+    if (!recipe?.tags) return null;
+
+    const allTags = [
+      ...(recipe.tags.course || []),
+      ...(recipe.tags.cuisine || []),
+      ...(recipe.tags.keyword || []),
+    ];
+
+    if (allTags.length === 0) return null;
+
+    return (
+      <View style={styles.tagsContainer}>
+        {allTags.slice(0, 6).map((tag, index) => (
+          <View key={`${tag.term_id}-${index}`} style={styles.tagChip}>
+            <Text style={styles.tagText}>{tag.name}</Text>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  // Render time information cards
+  const renderTimeInfo = () => {
+    if (!recipe) return null;
+
+    return (
+      <View style={styles.timeInfoContainer}>
+        <View style={styles.timeCard}>
+          <Icon name="clock" size={20} color={colors.primary} />
+          <Text style={styles.timeLabel}>Prep</Text>
+          <Text style={styles.timeValue}>{recipe.prep_time || 0}m</Text>
+        </View>
+        <View style={styles.timeCard}>
+          <Icon name="zap" size={20} color={colors.primary} />
+          <Text style={styles.timeLabel}>Cook</Text>
+          <Text style={styles.timeValue}>{recipe.cook_time || 0}m</Text>
+        </View>
+        <View style={styles.timeCard}>
+          <Icon name="target" size={20} color={colors.primary} />
+          <Text style={styles.timeLabel}>Total</Text>
+          <Text style={styles.timeValue}>{recipe.total_time || 0}m</Text>
+        </View>
+      </View>
+    );
+  };
+
+  // Render review form
+  const renderReviewForm = () => {
+    if (!showReviewForm || !user) return null;
+
+    return (
+      <View style={styles.reviewForm}>
+        <Text style={styles.reviewFormTitle}>Write a Review</Text>
+
+        <View style={styles.ratingSelector}>
+          <Text style={styles.ratingSelectorLabel}>Your Rating:</Text>
+          <StarRating
+            count={5}
+            defaultRating={reviewSubmission.rating}
+            size={30}
+            selectedColor={colors.semantic.warning}
+            onFinishRating={(rating: number) =>
+              setReviewSubmission(prev => ({ ...prev, rating }))
+            }
+            RatingImage={props => <RatingImage {...props} type="airbnb" />}
+          />
+        </View>
+
+        <TextInput
+          style={styles.reviewInput}
+          placeholder="Share your thoughts about this recipe..."
+          multiline
+          numberOfLines={4}
+          value={reviewSubmission.content}
+          onChangeText={content =>
+            setReviewSubmission(prev => ({ ...prev, content }))
+          }
+          textAlignVertical="top"
+        />
+
+        <View style={styles.reviewFormButtons}>
+          <Button
+            title="Cancel"
+            onPress={() => setShowReviewForm(false)}
+            variant="outline"
+            size="small"
+            style={styles.reviewFormButton}
+          />
+          <Button
+            title="Submit Review"
+            onPress={handleSubmitReview}
+            variant="primary"
+            size="small"
+            loading={submittingReview}
+            disabled={submittingReview || reviewSubmission.rating === 0}
+            style={styles.reviewFormButton}
+          />
+        </View>
       </View>
     );
   };
@@ -229,6 +437,27 @@ const RecipeDetailScreen: React.FC = () => {
         backgroundColor="transparent"
         barStyle="light-content"
       />
+
+      {/* Cook Mode Floating Button */}
+      <TouchableOpacity
+        style={[
+          styles.cookModeButton,
+          cookModeActive && styles.cookModeButtonActive,
+        ]}
+        onPress={toggleCookMode}>
+        <Icon
+          name={cookModeActive ? 'eye-off' : 'eye'}
+          size={24}
+          color={cookModeActive ? colors.white : colors.primary}
+        />
+        <Text
+          style={[
+            styles.cookModeText,
+            cookModeActive && styles.cookModeTextActive,
+          ]}>
+          {cookModeActive ? 'Exit Cook Mode' : 'Cook Mode'}
+        </Text>
+      </TouchableOpacity>
 
       {/* Animated Header */}
       <Animated.View
@@ -317,43 +546,38 @@ const RecipeDetailScreen: React.FC = () => {
         </View>
 
         <View style={styles.contentContainer}>
-          {/* Recipe Title & Info */}
-          <Text style={styles.recipeTitle}>{recipe.name}</Text>
+          {/* Category Tags */}
+          {renderCategoryTags()}
 
-          <View style={styles.recipeMetaContainer}>
-            <View style={styles.recipeMeta}>
-              <Icon name="clock" size={20} color={colors.primary} />
-              <Text style={styles.recipeMetaText}>{recipe.total_time} min</Text>
-            </View>
-            <View style={styles.recipeMeta}>
-              <Icon name="users" size={20} color={colors.primary} />
-              <View style={styles.servingAdjuster}>
-                <TouchableOpacity
-                  onPress={handleDecrementServings}
-                  disabled={servingSize <= 1}
-                  style={[
-                    styles.servingButton,
-                    servingSize <= 1 && styles.servingButtonDisabled,
-                  ]}>
-                  <Icon
-                    name="minus"
-                    size={16}
-                    color={
-                      servingSize <= 1 ? colors.gray[300] : colors.text.primary
-                    }
-                  />
-                </TouchableOpacity>
-                <Text style={styles.recipeMetaText}>
-                  {servingSize} {servingSize === 1 ? 'serving' : 'servings'}
+          {/* Recipe Title & SEO Structure */}
+          <View style={styles.titleSection}>
+            <Text style={styles.recipeTitle} accessibilityRole="header">
+              {recipe.name}
+            </Text>
+
+            {/* Rating Display */}
+            <View style={styles.ratingSection}>
+              <StarRating
+                count={5}
+                defaultRating={recipe.rating?.average || 0}
+                size={20}
+                selectedColor={colors.semantic.warning}
+                readonly
+                RatingImage={props => <RatingImage {...props} type="airbnb" />}
+              />
+              <Text style={styles.ratingText}>
+                {recipe.rating?.average?.toFixed(1) || '0.0'} (
+                {recipe.rating?.count || 0}{' '}
+                <Text style={styles.reviewsLink} onPress={scrollToReviews}>
+                  reviews
                 </Text>
-                <TouchableOpacity
-                  onPress={handleIncrementServings}
-                  style={styles.servingButton}>
-                  <Icon name="plus" size={16} color={colors.text.primary} />
-                </TouchableOpacity>
-              </View>
+                )
+              </Text>
             </View>
           </View>
+
+          {/* Time Information Cards */}
+          {renderTimeInfo()}
 
           {/* Description */}
           {recipe.description && (
@@ -412,7 +636,7 @@ const RecipeDetailScreen: React.FC = () => {
                   styles.tabText,
                   activeTab === 'reviews' && styles.activeTabText,
                 ]}>
-                Reviews
+                Reviews ({recipe.rating?.count || 0})
               </Text>
             </TouchableOpacity>
           </View>
@@ -468,91 +692,97 @@ const RecipeDetailScreen: React.FC = () => {
 
             {activeTab === 'reviews' && (
               <View style={styles.reviewsContainer}>
-                <View style={styles.ratingContainer}>
+                {/* Rating Summary */}
+                <View style={styles.ratingSummary}>
                   <Text style={styles.ratingValue}>
-                    {recipe.rating.average.toFixed(1)}
+                    {recipe.rating?.average?.toFixed(1) || '0.0'}
                   </Text>
                   <View style={styles.starsContainer}>
-                    {[1, 2, 3, 4, 5].map(star => (
-                      <Icon
-                        key={`star-${star}`}
-                        name="star"
-                        size={20}
-                        color={
-                          star <= Math.round(recipe.rating.average)
-                            ? colors.semantic.warning
-                            : colors.gray[300]
-                        }
-                      />
-                    ))}
+                    <StarRating
+                      count={5}
+                      defaultRating={recipe.rating?.average || 0}
+                      size={20}
+                      selectedColor={colors.semantic.warning}
+                      readonly
+                      RatingImage={props => (
+                        <RatingImage {...props} type="airbnb" />
+                      )}
+                    />
                     <Text style={styles.ratingCount}>
-                      ({recipe.rating.count} reviews)
+                      ({recipe.rating?.count || 0} reviews)
                     </Text>
                   </View>
                 </View>
 
-                {/* For demo purposes, showing mock reviews */}
-                <View style={styles.reviewCard}>
-                  <View style={styles.reviewHeader}>
-                    <View style={styles.reviewUser}>
-                      <View style={styles.reviewAvatar}>
-                        <Text style={styles.reviewAvatarText}>JD</Text>
-                      </View>
-                      <Text style={styles.reviewUserName}>John Doe</Text>
-                    </View>
-                    <View style={styles.reviewRating}>
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <Icon
-                          key={`review-star-${star}`}
-                          name="star"
-                          size={16}
-                          color={
-                            star <= 5
-                              ? colors.semantic.warning
-                              : colors.gray[300]
-                          }
-                        />
-                      ))}
-                    </View>
-                  </View>
-                  <Text style={styles.reviewText}>
-                    This recipe was amazing! The flavors were perfectly balanced
-                    and it was so easy to make. I'll definitely be adding this
-                    to my regular rotation.
-                  </Text>
-                  <Text style={styles.reviewDate}>January 15, 2025</Text>
-                </View>
+                {/* Review Submission Button */}
+                {user && !showReviewForm && (
+                  <Button
+                    title="Write a Review"
+                    onPress={() => setShowReviewForm(true)}
+                    variant="outline"
+                    icon={
+                      <Icon name="edit-3" size={18} color={colors.primary} />
+                    }
+                    style={styles.writeReviewButton}
+                  />
+                )}
 
-                <View style={styles.reviewCard}>
-                  <View style={styles.reviewHeader}>
-                    <View style={styles.reviewUser}>
-                      <View style={styles.reviewAvatar}>
-                        <Text style={styles.reviewAvatarText}>AS</Text>
+                {/* Review Form */}
+                {renderReviewForm()}
+
+                {/* Reviews List */}
+                {reviews.map((review, index) => (
+                  <View
+                    key={`review-${review.id}-${index}`}
+                    style={styles.reviewCard}>
+                    <View style={styles.reviewHeader}>
+                      <View style={styles.reviewUser}>
+                        <View style={styles.reviewAvatar}>
+                          <Text style={styles.reviewAvatarText}>
+                            {review.author.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                        <Text style={styles.reviewUserName}>
+                          {review.author}
+                        </Text>
                       </View>
-                      <Text style={styles.reviewUserName}>Alice Smith</Text>
+                      <View style={styles.reviewMeta}>
+                        {review.rating && (
+                          <StarRating
+                            count={5}
+                            defaultRating={review.rating}
+                            size={16}
+                            selectedColor={colors.semantic.warning}
+                            readonly
+                            RatingImage={props => (
+                              <RatingImage {...props} type="airbnb" />
+                            )}
+                          />
+                        )}
+                        <Text style={styles.reviewDate}>
+                          {new Date(review.created_at).toLocaleDateString()}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.reviewRating}>
-                      {[1, 2, 3, 4].map(star => (
-                        <Icon
-                          key={`review-star-${star}`}
-                          name="star"
-                          size={16}
-                          color={
-                            star <= 4
-                              ? colors.semantic.warning
-                              : colors.gray[300]
-                          }
-                        />
-                      ))}
-                    </View>
+                    <Text style={styles.reviewText}>{review.content}</Text>
                   </View>
-                  <Text style={styles.reviewText}>
-                    I made this for dinner last night and it was a hit with the
-                    whole family! I substituted spinach for kale and it worked
-                    perfectly.
-                  </Text>
-                  <Text style={styles.reviewDate}>February 3, 2025</Text>
-                </View>
+                ))}
+
+                {/* Load More Reviews */}
+                {hasMoreReviews && !reviewsLoading && (
+                  <Button
+                    title="Load More Reviews"
+                    onPress={() => loadReviews()}
+                    variant="outline"
+                    style={styles.loadMoreButton}
+                  />
+                )}
+
+                {reviewsLoading && (
+                  <View style={styles.reviewsLoader}>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -581,6 +811,34 @@ const RecipeDetailScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  // Cook Mode Button
+  cookModeButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 200 : 160,
+    right: spacing.md,
+    zIndex: 101,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    ...shadows.md,
+  },
+  cookModeButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  cookModeText: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    marginLeft: spacing.xs,
+    fontWeight: typography.fontWeights.medium,
+  },
+  cookModeTextActive: {
+    color: colors.white,
+  },
+
+  // Existing styles...
   animatedHeader: {
     position: 'absolute',
     top: 0,
@@ -596,7 +854,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 50, // More padding for iOS
+    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 50,
     paddingBottom: 10,
     paddingHorizontal: spacing.md,
     height: Platform.OS === 'ios' ? 100 : 56 + (StatusBar.currentHeight || 0),
@@ -668,46 +926,81 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     marginTop: -24,
   },
-  recipeTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
+
+  // Title and Rating Section
+  titleSection: {
     marginBottom: spacing.md,
   },
-  recipeMetaContainer: {
+  recipeTitle: {
+    ...typography.h2,
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
+    fontWeight: typography.fontWeights.bold,
+  },
+  ratingSection: {
     flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  ratingText: {
+    ...typography.bodyRegular,
+    color: colors.text.secondary,
+    marginLeft: spacing.sm,
+  },
+  reviewsLink: {
+    color: colors.primary,
+    textDecorationLine: 'underline',
+  },
+
+  // Category Tags
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  tagChip: {
+    backgroundColor: colors.primary + '15',
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginRight: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  tagText: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontWeight: typography.fontWeights.medium,
+  },
+
+  // Time Information Cards
+  timeInfoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: spacing.lg,
   },
-  recipeMeta: {
-    flexDirection: 'row',
+  timeCard: {
+    flex: 1,
+    backgroundColor: colors.gray[50],
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
     alignItems: 'center',
-    marginRight: spacing.lg,
-  },
-  recipeMetaText: {
-    ...typography.bodyRegular,
-    color: colors.text.primary,
-    marginLeft: spacing.xs,
-  },
-  servingAdjuster: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  servingButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginHorizontal: spacing.xs,
   },
-  servingButtonDisabled: {
-    borderColor: colors.border.light,
+  timeLabel: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+  },
+  timeValue: {
+    ...typography.bodyLarge,
+    color: colors.text.primary,
+    fontWeight: typography.fontWeights.semibold,
+    marginTop: spacing.xs,
   },
   description: {
     ...typography.bodyRegular,
     color: colors.text.secondary,
     marginBottom: spacing.lg,
+    lineHeight: 24,
   },
   macroSection: {
     alignItems: 'center',
@@ -805,17 +1098,23 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: spacing.xs,
   },
+
+  // Reviews Section
   reviewsContainer: {
     paddingBottom: spacing.lg,
   },
-  ratingContainer: {
+  ratingSummary: {
     alignItems: 'center',
     marginBottom: spacing.lg,
+    padding: spacing.md,
+    backgroundColor: colors.gray[50],
+    borderRadius: borderRadius.lg,
   },
   ratingValue: {
-    ...typography.h2,
+    ...typography.h1,
     color: colors.text.primary,
     fontWeight: typography.fontWeights.bold,
+    marginBottom: spacing.xs,
   },
   starsContainer: {
     flexDirection: 'row',
@@ -826,6 +1125,50 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginLeft: spacing.xs,
   },
+
+  // Review Form
+  writeReviewButton: {
+    marginBottom: spacing.lg,
+  },
+  reviewForm: {
+    backgroundColor: colors.gray[50],
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  reviewFormTitle: {
+    ...typography.h6,
+    color: colors.text.primary,
+    marginBottom: spacing.md,
+  },
+  ratingSelector: {
+    marginBottom: spacing.md,
+  },
+  ratingSelectorLabel: {
+    ...typography.bodyRegular,
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
+  },
+  reviewInput: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    padding: spacing.md,
+    ...typography.bodyRegular,
+    color: colors.text.primary,
+    minHeight: 100,
+    marginBottom: spacing.md,
+  },
+  reviewFormButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  reviewFormButton: {
+    marginLeft: spacing.sm,
+  },
+
+  // Review Cards
   reviewCard: {
     backgroundColor: colors.gray[50],
     borderRadius: borderRadius.lg,
@@ -835,12 +1178,13 @@ const styles = StyleSheet.create({
   reviewHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: spacing.sm,
   },
   reviewUser: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   reviewAvatar: {
     width: 36,
@@ -861,18 +1205,27 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontWeight: typography.fontWeights.medium,
   },
-  reviewRating: {
-    flexDirection: 'row',
-  },
-  reviewText: {
-    ...typography.bodyRegular,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
+  reviewMeta: {
+    alignItems: 'flex-end',
   },
   reviewDate: {
     ...typography.bodySmall,
     color: colors.text.secondary,
+    marginTop: spacing.xs,
   },
+  reviewText: {
+    ...typography.bodyRegular,
+    color: colors.text.primary,
+    lineHeight: 22,
+  },
+  loadMoreButton: {
+    marginTop: spacing.md,
+  },
+  reviewsLoader: {
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+  },
+
   bottomBar: {
     backgroundColor: colors.white,
     paddingHorizontal: spacing.md,
