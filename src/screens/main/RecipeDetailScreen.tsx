@@ -34,7 +34,7 @@ import {
   shadows,
 } from '../../theme';
 import { RecipeStackParamList } from '../../navigation/types';
-import { IngredientItem } from '@/types/recipe';
+import { IngredientItem, Recipe } from '@/types/recipe';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -48,20 +48,37 @@ type RecipeDetailNavigationProps = StackNavigationProp<
 const RecipeDetailScreen: React.FC = () => {
   const navigation = useNavigation<RecipeDetailNavigationProps>();
   const route = useRoute<RecipeDetailRouteProps>();
-  const { recipeId } = route.params;
+  const { recipeId, recipe: routeRecipe } = route.params;
 
   const { fetchRecipe, toggleFavorite, selectedRecipe, loading } = useRecipes();
+  const [recipe, setRecipe] = useState<Recipe | null>(routeRecipe || null);
   const [activeTab, setActiveTab] = useState<
     'ingredients' | 'instructions' | 'reviews'
   >('ingredients');
   const [servingSize, setServingSize] = useState(1);
   const [showMealPlanModal, setShowMealPlanModal] = useState(false);
   const [scrollY] = useState(new Animated.Value(0));
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
 
-  // Fetch recipe details
+  // Set initial recipe and favorite state
   useEffect(() => {
-    fetchRecipe(recipeId);
-  }, [recipeId, fetchRecipe]);
+    if (routeRecipe) {
+      setRecipe(routeRecipe);
+      setIsFavorite(routeRecipe.is_favorite);
+    } else if (recipeId) {
+      // Fallback: fetch recipe if not provided in params
+      fetchRecipe(recipeId);
+    }
+  }, [routeRecipe, recipeId, fetchRecipe]);
+
+  // Update recipe from global state if it was fetched
+  useEffect(() => {
+    if (selectedRecipe && !routeRecipe) {
+      setRecipe(selectedRecipe);
+      setIsFavorite(selectedRecipe.is_favorite);
+    }
+  }, [selectedRecipe, routeRecipe]);
 
   // Handle scroll event manually
   const handleScroll = useCallback(
@@ -79,25 +96,46 @@ const RecipeDetailScreen: React.FC = () => {
     extrapolate: 'clamp',
   });
 
-  const handleFavoritePress = useCallback(() => {
-    if (selectedRecipe) {
-      toggleFavorite(selectedRecipe._id);
+  const handleFavoritePress = useCallback(async () => {
+    if (!recipe || isTogglingFavorite) return;
+
+    setIsTogglingFavorite(true);
+    const newFavoriteStatus = !isFavorite;
+
+    try {
+      // Update UI optimistically
+      setIsFavorite(newFavoriteStatus);
+
+      // Update the recipe object
+      setRecipe(prev =>
+        prev ? { ...prev, is_favorite: newFavoriteStatus } : null,
+      );
+
+      // Call the API
+      await toggleFavorite(recipe._id);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      // Revert on error
+      setIsFavorite(isFavorite);
+      setRecipe(prev => (prev ? { ...prev, is_favorite: isFavorite } : null));
+    } finally {
+      setIsTogglingFavorite(false);
     }
-  }, [selectedRecipe, toggleFavorite]);
+  }, [recipe, isFavorite, isTogglingFavorite, toggleFavorite]);
 
   const handleSharePress = useCallback(async () => {
-    if (selectedRecipe) {
+    if (recipe) {
       try {
         await Share.share({
-          message: `Check out this delicious recipe: ${selectedRecipe.name}`,
+          message: `Check out this delicious recipe: ${recipe.name}`,
           // If you have a website, you could add a URL here
-          // url: `https://your-website.com/recipes/${selectedRecipe.slug}`,
+          // url: `https://your-website.com/recipes/${recipe.slug}`,
         });
       } catch (error) {
         console.error('Error sharing recipe:', error);
       }
     }
-  }, [selectedRecipe]);
+  }, [recipe]);
 
   const handleAddToMealPlan = () => {
     setShowMealPlanModal(true);
@@ -120,20 +158,20 @@ const RecipeDetailScreen: React.FC = () => {
 
   // Calculate scaled nutrition values based on serving size
   const getScaledNutrition = () => {
-    if (!selectedRecipe) return { protein: 0, carbs: 0, fat: 0, calories: 0 };
+    if (!recipe) return { protein: 0, carbs: 0, fat: 0, calories: 0 };
 
-    const factor = servingSize / (selectedRecipe.servings || 1);
+    const factor = servingSize / (recipe.servings || 1);
     return {
-      protein: Math.round(selectedRecipe.nutrition.protein * factor),
-      carbs: Math.round(selectedRecipe.nutrition.carbohydrates * factor),
-      fat: Math.round(selectedRecipe.nutrition.fat * factor),
-      calories: Math.round(selectedRecipe.nutrition.calories * factor),
+      protein: Math.round(recipe.nutrition.protein * factor),
+      carbs: Math.round(recipe.nutrition.carbohydrates * factor),
+      fat: Math.round(recipe.nutrition.fat * factor),
+      calories: Math.round(recipe.nutrition.calories * factor),
     };
   };
 
   // Render ingredient with adjusted amounts
   const renderIngredient = (item: IngredientItem, index: number) => {
-    const factor = servingSize / (selectedRecipe?.servings || 1);
+    const factor = servingSize / (recipe?.servings || 1);
     let adjustedAmount = item.amount;
 
     // If amount is a number, scale it
@@ -161,8 +199,25 @@ const RecipeDetailScreen: React.FC = () => {
     );
   };
 
-  if (!selectedRecipe) {
-    return <LoadingOverlay visible={loading} message="Loading recipe..." />;
+  // Show loading only if we don't have a recipe and are still loading
+  if (!recipe && loading) {
+    return <LoadingOverlay visible={true} message="Loading recipe..." />;
+  }
+
+  // Show error if no recipe is available
+  if (!recipe) {
+    return (
+      <PageContainer>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Recipe not found</Text>
+          <Button
+            title="Go Back"
+            onPress={() => navigation.goBack()}
+            variant="primary"
+          />
+        </View>
+      </PageContainer>
+    );
   }
 
   const nutrition = getScaledNutrition();
@@ -185,7 +240,7 @@ const RecipeDetailScreen: React.FC = () => {
             <Icon name="arrow-left" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle} numberOfLines={1}>
-            {selectedRecipe.name}
+            {recipe.name}
           </Text>
           <View style={styles.headerRight}>
             <TouchableOpacity
@@ -195,8 +250,9 @@ const RecipeDetailScreen: React.FC = () => {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleFavoritePress}
-              style={styles.headerButton}>
-              {selectedRecipe.is_favorite ? (
+              style={styles.headerButton}
+              disabled={isTogglingFavorite}>
+              {isFavorite ? (
                 <MaterialIcon
                   name="favorite"
                   size={24}
@@ -221,7 +277,7 @@ const RecipeDetailScreen: React.FC = () => {
         {/* Hero Image */}
         <View style={styles.heroImageContainer}>
           <Image
-            source={{ uri: selectedRecipe.image_url }}
+            source={{ uri: recipe.image_url }}
             style={styles.heroImage}
             resizeMode="cover"
           />
@@ -240,8 +296,9 @@ const RecipeDetailScreen: React.FC = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleFavoritePress}
-                style={styles.heroActionButton}>
-                {selectedRecipe.is_favorite ? (
+                style={styles.heroActionButton}
+                disabled={isTogglingFavorite}>
+                {isFavorite ? (
                   <MaterialIcon
                     name="favorite"
                     size={24}
@@ -261,14 +318,12 @@ const RecipeDetailScreen: React.FC = () => {
 
         <View style={styles.contentContainer}>
           {/* Recipe Title & Info */}
-          <Text style={styles.recipeTitle}>{selectedRecipe.name}</Text>
+          <Text style={styles.recipeTitle}>{recipe.name}</Text>
 
           <View style={styles.recipeMetaContainer}>
             <View style={styles.recipeMeta}>
               <Icon name="clock" size={20} color={colors.primary} />
-              <Text style={styles.recipeMetaText}>
-                {selectedRecipe.total_time} min
-              </Text>
+              <Text style={styles.recipeMetaText}>{recipe.total_time} min</Text>
             </View>
             <View style={styles.recipeMeta}>
               <Icon name="users" size={20} color={colors.primary} />
@@ -301,8 +356,8 @@ const RecipeDetailScreen: React.FC = () => {
           </View>
 
           {/* Description */}
-          {selectedRecipe.description && (
-            <Text style={styles.description}>{selectedRecipe.description}</Text>
+          {recipe.description && (
+            <Text style={styles.description}>{recipe.description}</Text>
           )}
 
           {/* Nutrition Info */}
@@ -366,7 +421,7 @@ const RecipeDetailScreen: React.FC = () => {
           <View style={styles.tabContent}>
             {activeTab === 'ingredients' && (
               <>
-                {selectedRecipe.ingredients.map((group, groupIndex) => (
+                {recipe.ingredients.map((group, groupIndex) => (
                   <View
                     key={`group-${groupIndex}`}
                     style={styles.ingredientGroup}>
@@ -385,7 +440,7 @@ const RecipeDetailScreen: React.FC = () => {
 
             {activeTab === 'instructions' && (
               <>
-                {selectedRecipe.instructions.map((group, groupIndex) => (
+                {recipe.instructions.map((group, groupIndex) => (
                   <View
                     key={`instructions-group-${groupIndex}`}
                     style={styles.instructionGroup}>
@@ -415,7 +470,7 @@ const RecipeDetailScreen: React.FC = () => {
               <View style={styles.reviewsContainer}>
                 <View style={styles.ratingContainer}>
                   <Text style={styles.ratingValue}>
-                    {selectedRecipe.rating.average.toFixed(1)}
+                    {recipe.rating.average.toFixed(1)}
                   </Text>
                   <View style={styles.starsContainer}>
                     {[1, 2, 3, 4, 5].map(star => (
@@ -424,14 +479,14 @@ const RecipeDetailScreen: React.FC = () => {
                         name="star"
                         size={20}
                         color={
-                          star <= Math.round(selectedRecipe.rating.average)
+                          star <= Math.round(recipe.rating.average)
                             ? colors.semantic.warning
                             : colors.gray[300]
                         }
                       />
                     ))}
                     <Text style={styles.ratingCount}>
-                      ({selectedRecipe.rating.count} reviews)
+                      ({recipe.rating.count} reviews)
                     </Text>
                   </View>
                 </View>
@@ -518,7 +573,7 @@ const RecipeDetailScreen: React.FC = () => {
       <MealPlanPickerModal
         visible={showMealPlanModal}
         onClose={() => setShowMealPlanModal(false)}
-        recipe={selectedRecipe}
+        recipe={recipe}
         onSuccess={handleMealPlanSuccess}
       />
     </PageContainer>
@@ -826,6 +881,18 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border.light,
     ...shadows.sm,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  errorText: {
+    ...typography.h5,
+    color: colors.text.primary,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
   },
 });
 

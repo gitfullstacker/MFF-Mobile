@@ -383,12 +383,12 @@ const MealPlanDetailScreen: React.FC = () => {
   };
 
   // View recipe details
-  const handleViewRecipe = (recipeId: string) => {
+  const handleViewRecipe = (recipe: Recipe) => {
     navigation.navigate(
       'RecipeStack' as any,
       {
         screen: 'RecipeDetail',
-        params: { recipeId },
+        params: { recipeId: recipe.slug, recipe },
       } as any,
     );
   };
@@ -508,7 +508,7 @@ const MealPlanDetailScreen: React.FC = () => {
                 <View style={styles.recipeCardContainer}>
                   <RecipeCard
                     recipe={item}
-                    onPress={() => handleViewRecipe(item.slug)}
+                    onPress={() => handleViewRecipe(item)}
                   />
                 </View>
               )}
