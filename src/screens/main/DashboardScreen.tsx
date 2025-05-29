@@ -22,7 +22,6 @@ import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { useAuth } from '../../hooks/useAuth';
 import { useRecipes } from '../../hooks/useRecipes';
-import { usePlans } from '../../hooks/usePlans';
 import {
   colors,
   typography,
@@ -35,6 +34,8 @@ import { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { Recipe } from '../../types/recipe';
 import { Plan, PlanSchedule } from '../../types/plan';
 import { RECIPE_CATEGORIES } from '@/constants';
+import { useActivePlan } from '../../hooks/useActivePlan';
+import { SetActivePlanModal } from '../../components/modals/SetActivePlanModal';
 
 type DashboardNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Dashboard'>,
@@ -50,9 +51,13 @@ const DashboardScreen: React.FC = () => {
     fetchRecipes,
     toggleFavorite,
   } = useRecipes();
-  const { plans, loading: plansLoading, fetchPlans } = usePlans();
+  const {
+    activePlan,
+    loading: activePlanLoading,
+    fetchActivePlan,
+  } = useActivePlan();
+  const [showSetActivePlanModal, setShowSetActivePlanModal] = useState(false);
 
-  const [activePlans, setActivePlans] = useState<Plan[]>([]);
   const [todaysMeals, setTodaysMeals] = useState<Recipe[]>([]);
   const [dailyMacros, setDailyMacros] = useState({
     protein: 0,
@@ -66,19 +71,25 @@ const DashboardScreen: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    setActivePlans(plans);
-    calculateTodaysMeals();
-  }, [plans]);
+    // Calculate today's meals when active plan changes
+    if (activePlan) {
+      calculateTodaysMeals();
+    }
+  }, [activePlan]);
 
   const loadDashboardData = async () => {
     await Promise.all([
       fetchRecipes({ sort: 'newest' }, true),
-      fetchPlans(0, 1),
+      fetchActivePlan(), // This will load the active plan
     ]);
   };
 
   const calculateTodaysMeals = () => {
-    if (!plans) return;
+    if (!activePlan) {
+      setTodaysMeals([]);
+      setDailyMacros({ protein: 0, carbs: 0, fat: 0, calories: 0 });
+      return;
+    }
 
     const daysMap: { [key: string]: keyof PlanSchedule } = {
       su: 'su',
@@ -93,19 +104,43 @@ const DashboardScreen: React.FC = () => {
     const today = format(new Date(), 'EEEE').toLowerCase().slice(0, 2);
     const dayKey = daysMap[today];
 
-    if (!dayKey) return;
+    if (!dayKey) {
+      setTodaysMeals([]);
+      return;
+    }
 
-    // This would need to be populated with actual recipe data
-    // For now, just showing the structure
-    setTodaysMeals([]);
+    const todaysSchedule = activePlan.schedule[dayKey];
+    if (!Array.isArray(todaysSchedule)) {
+      setTodaysMeals([]);
+      return;
+    }
 
-    // Calculate daily macros based on today's meals
+    // Extract recipes from today's schedule
+    const todaysRecipes: Recipe[] = [];
     let totalProtein = 0;
     let totalCarbs = 0;
     let totalFat = 0;
     let totalCalories = 0;
 
-    // This would calculate based on actual meal data
+    todaysSchedule.forEach(scheduledRecipe => {
+      if (
+        scheduledRecipe.recipe &&
+        typeof scheduledRecipe.recipe === 'object'
+      ) {
+        const recipe = scheduledRecipe.recipe as Recipe;
+        todaysRecipes.push(recipe);
+
+        // Calculate macros
+        if (recipe.nutrition) {
+          totalProtein += recipe.nutrition.protein;
+          totalCarbs += recipe.nutrition.carbohydrates;
+          totalFat += recipe.nutrition.fat;
+          totalCalories += recipe.nutrition.calories;
+        }
+      }
+    });
+
+    setTodaysMeals(todaysRecipes);
     setDailyMacros({
       protein: totalProtein,
       carbs: totalCarbs,
@@ -165,6 +200,14 @@ const DashboardScreen: React.FC = () => {
     </View>
   );
 
+  const handleActivePlanSuccess = (plan: Plan) => {
+    calculateTodaysMeals();
+  };
+
+  const handleSetActivePlan = () => {
+    setShowSetActivePlanModal(true);
+  };
+
   const navigateToMealPlans = () => {
     navigation.navigate('Meal Plans');
   };
@@ -213,10 +256,10 @@ const DashboardScreen: React.FC = () => {
 
         {/* Active Meal Plan Card */}
         <View style={styles.planCardContainer}>
-          {activePlans[0] ? (
+          {activePlan ? (
             <TouchableOpacity
               style={styles.planCard}
-              onPress={() => navigateToPlanDetail(activePlans[0])}
+              onPress={() => navigateToPlanDetail(activePlan)}
               activeOpacity={0.9}>
               <Image
                 source={require('../../../assets/images/plan-placeholder.jpg')}
@@ -227,12 +270,11 @@ const DashboardScreen: React.FC = () => {
               <View style={styles.planContent}>
                 <View>
                   <Text style={styles.planTitle}>Active Meal Plan</Text>
-                  <Text style={styles.planName}>{activePlans[0].name}</Text>
+                  <Text style={styles.planName}>{activePlan.name}</Text>
                   <View style={styles.planDetails}>
                     <Icon name="book-open" size={14} color={colors.white} />
                     <Text style={styles.planDetailText}>
-                      {Object.values(activePlans[0].schedule).flat().length}{' '}
-                      recipes
+                      {Object.values(activePlan.schedule).flat().length} recipes
                     </Text>
                   </View>
                 </View>
@@ -246,11 +288,18 @@ const DashboardScreen: React.FC = () => {
             <View style={styles.planCardEmpty}>
               <Icon name="calendar" size={32} color={colors.gray[400]} />
               <Text style={styles.emptyPlanText}>No active meal plan</Text>
-              <TouchableOpacity
-                style={styles.createPlanButton}
-                onPress={navigateToCreatePlan}>
-                <Text style={styles.createPlanButtonText}>Create Plan</Text>
-              </TouchableOpacity>
+              <View style={styles.emptyPlanActions}>
+                <TouchableOpacity
+                  style={styles.createPlanButton}
+                  onPress={navigateToCreatePlan}>
+                  <Text style={styles.createPlanButtonText}>Create Plan</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.setPlanButton}
+                  onPress={handleSetActivePlan}>
+                  <Text style={styles.setPlanButtonText}>Set Active Plan</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </View>
@@ -373,8 +422,14 @@ const DashboardScreen: React.FC = () => {
         </Section>
       </ScrollView>
 
+      <SetActivePlanModal
+        visible={showSetActivePlanModal}
+        onClose={() => setShowSetActivePlanModal(false)}
+        onSuccess={handleActivePlanSuccess}
+      />
+
       <LoadingOverlay
-        visible={recipesLoading || plansLoading}
+        visible={recipesLoading || activePlanLoading}
         message="Loading dashboard..."
       />
     </PageContainer>
@@ -490,6 +545,24 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginTop: spacing.sm,
     marginBottom: spacing.md,
+  },
+  emptyPlanActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  setPlanButton: {
+    backgroundColor: colors.white,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  setPlanButtonText: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontWeight: typography.fontWeights.medium,
   },
   createPlanButton: {
     backgroundColor: colors.primary,

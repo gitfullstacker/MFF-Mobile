@@ -12,6 +12,7 @@ import { LoginRequest } from '../types/auth';
 import { isTokenExpired } from '../utils/tokenUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSubscription } from './useSubscription';
+import { userService } from '@/services/user';
 
 export const useAuth = () => {
   const [authToken, setAuthToken] = useAtom(authTokenAtom);
@@ -97,7 +98,7 @@ export const useAuth = () => {
   const updateProfile = useCallback(
     async (data: any) => {
       try {
-        const updatedProfile = await authService.updateProfile(data);
+        const updatedProfile = await userService.updateProfile(data);
 
         if (user) {
           // Map UserProfile to User format
@@ -146,7 +147,7 @@ export const useAuth = () => {
 
         // Verify token is still valid by making a test request
         try {
-          await authService.getProfile();
+          await userService.getProfile();
         } catch (error) {
           console.log('❌ Token is invalid, logging out');
           await logout();

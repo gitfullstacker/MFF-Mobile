@@ -17,7 +17,6 @@ import { format, parseISO } from 'date-fns';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Header } from '../../components/navigation/Header';
 import { Input } from '../../components/forms/Input';
-import { Button } from '../../components/forms/Button';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { usePlans } from '../../hooks/usePlans';
 import {
@@ -32,6 +31,7 @@ import { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { Plan } from '../../types/plan';
 import { PlanWeekdayIndicator } from '@/components/meal-plan/PlanWeekdayIndicator';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
+import { useActivePlan } from '../../hooks/useActivePlan';
 
 type MealPlansNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Meal Plans'>,
@@ -41,6 +41,11 @@ type MealPlansNavigationProp = CompositeNavigationProp<
 const MealPlansScreen: React.FC = () => {
   const navigation = useNavigation<MealPlansNavigationProp>();
   const { plans, loading, fetchPlans, deletePlan, duplicatePlan } = usePlans();
+  const {
+    activePlan,
+    setActivePlanById,
+    loading: activePlanLoading,
+  } = useActivePlan();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -52,6 +57,8 @@ const MealPlansScreen: React.FC = () => {
   const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [planToDuplicate, setPlanToDuplicate] = useState<Plan | null>(null);
+  const [showSetActiveDialog, setShowSetActiveDialog] = useState(false);
+  const [planToSetActive, setPlanToSetActive] = useState<Plan | null>(null);
 
   useEffect(() => {
     loadPlans();
@@ -85,6 +92,28 @@ const MealPlansScreen: React.FC = () => {
       plan.name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
     setFilteredPlans(filtered);
+  };
+
+  const confirmSetActivePlan = (plan: Plan) => {
+    setPlanToSetActive(plan);
+    setShowSetActiveDialog(true);
+  };
+
+  const handleSetActivePlan = async () => {
+    if (!planToSetActive) return;
+
+    setShowSetActiveDialog(false);
+    try {
+      await setActivePlanById(planToSetActive._id);
+      Alert.alert(
+        'Success',
+        `"${planToSetActive.name}" is now your active meal plan!`,
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to set active plan');
+    } finally {
+      setPlanToSetActive(null);
+    }
   };
 
   const handleRefresh = useCallback(async () => {
@@ -173,20 +202,37 @@ const MealPlansScreen: React.FC = () => {
   };
 
   const renderPlanCard = ({ item }: { item: Plan }) => {
+    const isActivePlan = activePlan?._id === item._id;
+
     return (
       <TouchableOpacity
-        style={styles.planCard}
+        style={[styles.planCard, isActivePlan && styles.activePlanCard]}
         onPress={() => handleViewPlan(item)}
         activeOpacity={0.7}>
         <View style={styles.planCardContent}>
           <View style={styles.planCardHeader}>
             <View style={styles.planTitleSection}>
-              <Text style={styles.planName}>{item.name}</Text>
+              <View style={styles.planTitleRow}>
+                <Text style={styles.planName}>{item.name}</Text>
+                {isActivePlan && (
+                  <View style={styles.activeBadge}>
+                    <Icon name="check-circle" size={14} color={colors.white} />
+                    <Text style={styles.activeBadgeText}>Active</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.planDate}>
                 Created {format(parseISO(item.created_at), 'MMM d, yyyy')}
               </Text>
             </View>
             <View style={styles.planActionButtons}>
+              {!isActivePlan && (
+                <TouchableOpacity
+                  style={styles.setActiveButton}
+                  onPress={() => confirmSetActivePlan(item)}>
+                  <Icon name="star" size={18} color={colors.semantic.warning} />
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={styles.iconButton}
                 onPress={() => handleEditPlan(item)}>
@@ -286,6 +332,21 @@ const MealPlansScreen: React.FC = () => {
         ListFooterComponent={renderFooter}
       />
 
+      {/* Set Active Confirmation Dialog */}
+      <ConfirmModal
+        visible={showSetActiveDialog}
+        title="Set Active Plan"
+        message={
+          planToSetActive
+            ? `Do you want to set "${planToSetActive.name}" as your active meal plan? This will be used for today's meals and weekly planning.`
+            : 'Do you want to set this as your active meal plan?'
+        }
+        onClose={() => setShowSetActiveDialog(false)}
+        onConfirm={handleSetActivePlan}
+        confirmText="Set as Active"
+        confirmIcon="star"
+      />
+
       {/* Delete Confirmation Dialog */}
       <ConfirmModal
         visible={showDeleteDialog}
@@ -351,6 +412,40 @@ const styles = StyleSheet.create({
   },
   planTitleSection: {
     flex: 1,
+  },
+  activePlanCard: {
+    borderColor: colors.semantic.success,
+    backgroundColor: colors.semantic.success + '08',
+  },
+  planTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  activeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.semantic.success,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs / 2,
+    borderRadius: borderRadius.full,
+    marginLeft: spacing.sm,
+  },
+  activeBadgeText: {
+    ...typography.caption,
+    color: colors.white,
+    fontWeight: fontWeights.bold,
+    marginLeft: spacing.xs / 2,
+  },
+  setActiveButton: {
+    padding: spacing.xs,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.semantic.warning + '20',
+    marginRight: spacing.xs,
   },
   planName: {
     ...typography.h6,
