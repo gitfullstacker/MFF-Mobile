@@ -116,7 +116,7 @@ const MacroCircles: React.FC<MacroDisplayProps> = ({
             </Svg>
             <View style={styles.circleLabel}>
               <Text style={[styles.circleValue, styles[`${size}Value`]]}>
-                {macro.value.toFixed(2)}g
+                {macro.value.toFixed(0)}g
               </Text>
               <Text style={[styles.circleMacro, styles[`${size}Macro`]]}>
                 {macro.label}

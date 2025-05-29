@@ -106,14 +106,15 @@ const AccountScreen: React.FC = () => {
       icon: 'user',
       title: 'Profile',
       subtitle: 'Manage your personal information',
-      onPress: () => navigation.navigate('Profile' as any),
+      onPress: () => navigation.navigate('AccountStack', { screen: 'Profile' }),
       showArrow: true,
     },
     {
       icon: 'settings',
       title: 'Preferences',
       subtitle: 'Dietary restrictions & macro targets',
-      onPress: () => navigation.navigate('Preferences' as any),
+      onPress: () =>
+        navigation.navigate('AccountStack', { screen: 'Preferences' }),
       showArrow: true,
     },
   ];
@@ -123,14 +124,16 @@ const AccountScreen: React.FC = () => {
       icon: 'credit-card',
       title: 'Subscription',
       subtitle: 'Manage your subscription & billing',
-      onPress: () => navigation.navigate('Subscription' as any),
+      onPress: () =>
+        navigation.navigate('AccountStack', { screen: 'Subscription' }),
       showArrow: true,
     },
     {
       icon: 'download',
       title: 'Downloads',
       subtitle: 'Access your downloaded content',
-      onPress: () => navigation.navigate('Downloads' as any),
+      onPress: () =>
+        navigation.navigate('AccountStack', { screen: 'Downloads' }),
       showArrow: true,
     },
   ];
@@ -140,14 +143,14 @@ const AccountScreen: React.FC = () => {
       icon: 'help-circle',
       title: 'Help Center',
       subtitle: 'Get help and find answers',
-      onPress: () => navigation.navigate('Support' as any),
+      onPress: () => navigation.navigate('AccountStack', { screen: 'Support' }),
       showArrow: true,
     },
     {
       icon: 'message-square',
       title: 'Support Tickets',
       subtitle: 'View and manage your tickets',
-      onPress: () => navigation.navigate('Tickets' as any),
+      onPress: () => navigation.navigate('AccountStack', { screen: 'Tickets' }),
       showArrow: true,
     },
   ];
@@ -157,21 +160,21 @@ const AccountScreen: React.FC = () => {
       icon: 'info',
       title: 'About',
       subtitle: 'App version and information',
-      onPress: () => navigation.navigate('About' as any),
+      onPress: () => navigation.navigate('AccountStack', { screen: 'About' }),
       showArrow: true,
     },
     {
       icon: 'shield',
       title: 'Privacy Policy',
       subtitle: 'How we handle your data',
-      onPress: () => navigation.navigate('Privacy' as any),
+      onPress: () => navigation.navigate('AccountStack', { screen: 'Privacy' }),
       showArrow: true,
     },
     {
       icon: 'file-text',
       title: 'Terms of Service',
       subtitle: 'Terms and conditions',
-      onPress: () => navigation.navigate('Terms' as any),
+      onPress: () => navigation.navigate('AccountStack', { screen: 'Terms' }),
       showArrow: true,
     },
   ];

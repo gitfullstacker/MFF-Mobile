@@ -34,10 +34,14 @@ export type AccountStackParamList = {
   Profile: undefined;
   Preferences: undefined;
   Subscription: undefined;
+  Downloads: undefined;
   Support: undefined;
   Tickets: undefined;
   CreateTicket: undefined;
   TicketDetail: { ticketId: string; ticket?: Ticket };
+  About: undefined;
+  Privacy: undefined;
+  Terms: undefined;
 };
 
 export type RootStackParamList = {
