@@ -159,13 +159,13 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
             Calories: {nutrition?.calories || 0}kcal
           </Text>
           <Text style={styles.nutritionItem}>
-            Carbohydrates: {nutrition?.carbohydrates?.toFixed(0) || 0}g
+            Carbohydrates: {nutrition?.carbohydrates?.toFixed(2) || 0}g
           </Text>
           <Text style={styles.nutritionItem}>
-            Protein: {nutrition?.protein?.toFixed(0) || 0}g
+            Protein: {nutrition?.protein?.toFixed(2) || 0}g
           </Text>
           <Text style={styles.nutritionItem}>
-            Fat: {nutrition?.fat?.toFixed(0) || 0}g
+            Fat: {nutrition?.fat?.toFixed(2) || 0}g
           </Text>
           <Text style={styles.nutritionItem}>
             {formatTime(total_time || 0)}

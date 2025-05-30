@@ -373,6 +373,7 @@ const DashboardScreen: React.FC = () => {
                   calories={dailyMacros.calories}
                   variant="circle"
                   size="medium"
+                  precision={0}
                 />
               </View>
             </>

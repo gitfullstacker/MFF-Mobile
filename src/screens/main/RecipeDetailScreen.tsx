@@ -240,20 +240,6 @@ const RecipeDetailScreen: React.FC = () => {
     }
   }, [recipe, isFavorite, isTogglingFavorite, toggleFavorite]);
 
-  const handleSharePress = useCallback(async () => {
-    if (recipe) {
-      try {
-        await Share.share({
-          message: `Check out this delicious recipe: ${recipe.name}`,
-          // If you have a website, you could add a URL here
-          // url: `https://your-website.com/recipes/${recipe.slug}`,
-        });
-      } catch (error) {
-        console.error('Error sharing recipe:', error);
-      }
-    }
-  }, [recipe]);
-
   const handleAddToMealPlan = () => {
     setShowMealPlanModal(true);
   };
@@ -469,11 +455,6 @@ const RecipeDetailScreen: React.FC = () => {
           </Text>
           <View style={styles.headerRight}>
             <TouchableOpacity
-              onPress={handleSharePress}
-              style={styles.headerButton}>
-              <Icon name="share" size={24} color={colors.text.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity
               onPress={handleFavoritePress}
               style={styles.headerButton}
               disabled={isTogglingFavorite}>
@@ -514,11 +495,6 @@ const RecipeDetailScreen: React.FC = () => {
               <Icon name="arrow-left" size={24} color={colors.white} />
             </TouchableOpacity>
             <View style={styles.heroActions}>
-              <TouchableOpacity
-                onPress={handleSharePress}
-                style={styles.heroActionButton}>
-                <Icon name="share" size={24} color={colors.white} />
-              </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleFavoritePress}
                 style={styles.heroActionButton}

@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Share,
   FlatList,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -19,6 +18,8 @@ import { Section } from '../../components/layout/Section';
 import { Button } from '../../components/forms/Button';
 import { MacroDisplay } from '../../components/recipe/MacroDisplay';
 import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
+import { DaySelector } from '../../components/meal-plan/DaySelector';
+import { RecipeListDisplay } from '../../components/meal-plan/RecipeListDisplay';
 import { usePlans } from '../../hooks/usePlans';
 import {
   colors,
@@ -48,7 +49,7 @@ type MealPlanDetailRouteProp = RouteProp<
   'MealPlanDetail'
 >;
 
-// Days of the week
+// Days of the week for DaySelector
 const DAYS = [
   { key: 'su', label: 'Sunday' },
   { key: 'mo', label: 'Monday' },
@@ -327,51 +328,6 @@ const MealPlanDetailScreen: React.FC = () => {
     );
   };
 
-  // Handle share plan
-  const handleSharePlan = async () => {
-    if (!mealPlan) return;
-
-    try {
-      // Generate a text summary of the plan
-      let planSummary = `${mealPlan.name}\n\n`;
-
-      // Only process valid day keys
-      const validDayKeys = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
-
-      DAYS.forEach(day => {
-        if (!validDayKeys.includes(day.key)) return;
-
-        const daySchedule = mealPlan.schedule[day.key as keyof PlanSchedule];
-
-        // Skip if not an array or empty
-        if (!Array.isArray(daySchedule) || daySchedule.length === 0) return;
-
-        planSummary += `${day.label}:\n`;
-
-        daySchedule.forEach((item: ScheduledRecipe) => {
-          const recipe = getRecipeObject(item);
-          if (recipe) {
-            planSummary += `- ${recipe.name}\n`;
-          }
-        });
-
-        planSummary += '\n';
-      });
-
-      // Add weekly totals
-      planSummary += `Weekly Totals: ${weeklyMacros.calories} calories, ${weeklyMacros.protein}g protein, ${weeklyMacros.carbs}g carbs, ${weeklyMacros.fat}g fat\n\n`;
-      planSummary += 'Created with Macro Friendly Food App';
-
-      await Share.share({
-        message: planSummary,
-        title: mealPlan.name,
-      });
-    } catch (error) {
-      console.error('Error sharing plan:', error);
-      Alert.alert('Error', 'Failed to share meal plan. Please try again.');
-    }
-  };
-
   // Generate shopping list
   const handleGenerateShoppingList = () => {
     if (allRecipes.length === 0) {
@@ -393,6 +349,11 @@ const MealPlanDetailScreen: React.FC = () => {
     );
   };
 
+  // Get the selected day label
+  const getSelectedDayLabel = (): string => {
+    return DAYS.find(day => day.key === selectedDay)?.label || 'Selected Day';
+  };
+
   // Show loading if no meal plan is available
   if (!mealPlan) {
     return <LoadingOverlay visible={true} message="Loading meal plan..." />;
@@ -410,6 +371,7 @@ const MealPlanDetailScreen: React.FC = () => {
       />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Plan Header */}
         <View style={styles.planHeader}>
           <Text style={styles.planName}>{mealPlan.name}</Text>
           <Text style={styles.planDate}>
@@ -417,6 +379,31 @@ const MealPlanDetailScreen: React.FC = () => {
           </Text>
         </View>
 
+        {/* Plan Management Actions */}
+        <View style={styles.planManagementContainer}>
+          <Button
+            title="Duplicate"
+            onPress={handleDuplicatePlan}
+            variant="outline"
+            size="small"
+            icon={<Icon name="copy" size={18} color={colors.primary} />}
+            style={styles.managementButton}
+          />
+
+          <Button
+            title="Delete"
+            onPress={handleDeletePlan}
+            variant="outline"
+            size="small"
+            textStyle={{ color: colors.semantic.error }}
+            style={{ ...styles.managementButton, ...styles.deleteButton }}
+            icon={
+              <Icon name="trash-2" size={18} color={colors.semantic.error} />
+            }
+          />
+        </View>
+
+        {/* Weekly Summary */}
         <Section title="Weekly Summary">
           <View style={styles.macroSummary}>
             <MacroDisplay
@@ -426,6 +413,7 @@ const MealPlanDetailScreen: React.FC = () => {
               calories={weeklyMacros.calories}
               variant="circle"
               size="medium"
+              precision={0}
             />
           </View>
 
@@ -440,105 +428,43 @@ const MealPlanDetailScreen: React.FC = () => {
               }
               style={styles.actionButton}
             />
-            <Button
-              title="Share Plan"
-              onPress={handleSharePlan}
-              variant="outline"
-              size="small"
-              icon={<Icon name="share-2" size={18} color={colors.primary} />}
-              style={styles.actionButton}
-            />
           </View>
         </Section>
 
+        {/* Days */}
         <Section title="Days">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.daysScrollView}>
-            {DAYS.map(day => (
-              <TouchableOpacity
-                key={day.key}
-                style={[
-                  styles.dayButton,
-                  selectedDay === day.key && styles.selectedDayButton,
-                ]}
-                onPress={() => setSelectedDay(day.key)}>
-                <Text
-                  style={[
-                    styles.dayButtonText,
-                    selectedDay === day.key && styles.selectedDayButtonText,
-                  ]}>
-                  {day.label.substring(0, 3)}
-                </Text>
-                {getRecipeCountByDay(day.key) > 0 && (
-                  <View style={styles.recipeBadge}>
-                    <Text style={styles.recipeBadgeText}>
-                      {getRecipeCountByDay(day.key)}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <DaySelector
+            days={DAYS}
+            selectedDay={selectedDay}
+            onDaySelect={setSelectedDay}
+            getRecipeCountByDay={getRecipeCountByDay}
+          />
         </Section>
 
+        {/* Selected Day Meals */}
         <Section
-          title={`${DAYS.find(day => day.key === selectedDay)?.label} Meals`}
+          title={`${getSelectedDayLabel()} Meals`}
           action={{
             label: 'Macros',
             onPress: () => {
               Alert.alert(
                 'Daily Macros',
-                `Protein: ${dailyMacros.protein}g\nCarbs: ${dailyMacros.carbs}g\nFat: ${dailyMacros.fat}g\nCalories: ${dailyMacros.calories}`,
+                `Protein: ${dailyMacros.protein.toFixed(
+                  2,
+                )}g\nCarbs: ${dailyMacros.carbs.toFixed(
+                  2,
+                )}g\nFat: ${dailyMacros.fat.toFixed(2)}g\nCalories: ${
+                  dailyMacros.calories
+                }`,
               );
             },
           }}>
-          {dayRecipes.length === 0 ? (
-            <View style={styles.emptyDayContainer}>
-              <Text style={styles.emptyDayText}>
-                No recipes scheduled for{' '}
-                {DAYS.find(day => day.key === selectedDay)?.label}.
-              </Text>
-            </View>
-          ) : (
-            <FlatList
-              data={dayRecipes}
-              renderItem={({ item }) => (
-                <View style={styles.recipeCardContainer}>
-                  <RecipeCard
-                    recipe={item}
-                    onPress={() => handleViewRecipe(item)}
-                  />
-                </View>
-              )}
-              keyExtractor={item => item._id}
-              scrollEnabled={false} // Since we're already in a ScrollView
-            />
-          )}
-        </Section>
-
-        <Section>
-          <View style={styles.planManagementContainer}>
-            <Button
-              title="Duplicate Plan"
-              onPress={handleDuplicatePlan}
-              variant="outline"
-              icon={<Icon name="copy" size={18} color={colors.primary} />}
-              style={styles.managementButton}
-            />
-
-            <Button
-              title="Delete Plan"
-              onPress={handleDeletePlan}
-              variant="outline"
-              textStyle={{ color: colors.semantic.error }}
-              style={{ ...styles.managementButton, ...styles.deleteButton }}
-              icon={
-                <Icon name="trash-2" size={18} color={colors.semantic.error} />
-              }
-            />
-          </View>
+          <RecipeListDisplay
+            recipes={dayRecipes}
+            selectedDayLabel={getSelectedDayLabel()}
+            onRecipeSelect={() => {}} // Read-only view, no recipe selection
+            emptyStateText={`No recipes scheduled for ${getSelectedDayLabel()}.`}
+          />
         </Section>
       </ScrollView>
 
@@ -574,77 +500,11 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
   },
-  macroSummary: {
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  actionButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  actionButton: {
-    flex: 1,
-    marginHorizontal: spacing.xs,
-  },
-  daysScrollView: {
-    flexDirection: 'row',
-    paddingVertical: spacing.sm,
-  },
-  dayButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginRight: spacing.sm,
-    backgroundColor: colors.gray[100],
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 80,
-  },
-  selectedDayButton: {
-    backgroundColor: colors.primary,
-  },
-  dayButtonText: {
-    ...typography.bodyRegular,
-    color: colors.text.primary,
-    fontWeight: fontWeights.medium,
-  },
-  selectedDayButtonText: {
-    color: colors.white,
-  },
-  recipeBadge: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: colors.semantic.info,
-    borderRadius: borderRadius.full,
-    width: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  recipeBadgeText: {
-    ...typography.caption,
-    color: colors.white,
-    fontWeight: fontWeights.bold,
-  },
-  emptyDayContainer: {
-    backgroundColor: colors.gray[50],
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.md,
-  },
-  emptyDayText: {
-    ...typography.bodyRegular,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-  recipeCardContainer: {
-    marginBottom: spacing.md,
-  },
   planManagementContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: spacing.xl,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
   },
   managementButton: {
     flex: 1,
@@ -652,6 +512,18 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     borderColor: colors.semantic.error,
+  },
+  macroSummary: {
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  actionButton: {
+    flex: 1,
+    marginHorizontal: spacing.xs,
   },
 });
 
