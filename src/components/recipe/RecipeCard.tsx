@@ -26,7 +26,6 @@ const { width: screenWidth } = Dimensions.get('window');
 interface RecipeCardProps {
   recipe: Recipe;
   onPress: () => void;
-  openInModal?: boolean;
   isAdded?: boolean;
   showSelectionIcon?: boolean;
   onAddClick?: (recipe: Recipe) => void;
@@ -37,7 +36,6 @@ interface RecipeCardProps {
 export const RecipeCard: React.FC<RecipeCardProps> = ({
   recipe,
   onPress,
-  openInModal = false,
   isAdded = false,
   showSelectionIcon = false,
   onAddClick,
@@ -161,13 +159,13 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
             Calories: {nutrition?.calories || 0}kcal
           </Text>
           <Text style={styles.nutritionItem}>
-            Carbohydrates: {nutrition?.carbohydrates?.toFixed(0) || 0}g
+            Carbohydrates: {nutrition?.carbohydrates?.toFixed(2) || 0}g
           </Text>
           <Text style={styles.nutritionItem}>
-            Protein: {nutrition?.protein?.toFixed(0) || 0}g
+            Protein: {nutrition?.protein?.toFixed(2) || 0}g
           </Text>
           <Text style={styles.nutritionItem}>
-            Fat: {nutrition?.fat?.toFixed(0) || 0}g
+            Fat: {nutrition?.fat?.toFixed(2) || 0}g
           </Text>
           <Text style={styles.nutritionItem}>
             {formatTime(total_time || 0)}
@@ -267,7 +265,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingVertical: spacing.sm,
     justifyContent: 'space-between',
-    maxWidth: screenWidth - spacing.md * 2 - 130,
   },
   titleSection: {
     gap: spacing.xs,

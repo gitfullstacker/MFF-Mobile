@@ -23,8 +23,26 @@ export const recipeService = {
     return apiClient.get(`/recipes/${slug}`);
   },
 
-  async getRecipeComments(id: string): Promise<RecipeComment[]> {
-    return apiClient.get(`/recipes/${id}/comments`);
+  async getRecipeComments(
+    id: string,
+    page: number = 1,
+    pageSize: number = 10,
+  ): Promise<{
+    data: RecipeComment[];
+    pagination: {
+      page: number;
+      perPage: number;
+      total: number;
+      totalPages: number;
+      hasMore: boolean;
+    };
+  }> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+
+    return apiClient.get(`/recipes/${id}/comments?${params.toString()}`);
   },
 
   async addComment(

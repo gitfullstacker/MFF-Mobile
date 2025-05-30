@@ -127,7 +127,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
     return text;
   };
 
-  const handleShare = async () => {
+  const handlePrint = async () => {
     try {
       const text = generateShoppingListText();
       await Share.share({
@@ -137,12 +137,6 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
     } catch (error) {
       console.error('Error sharing shopping list:', error);
     }
-  };
-
-  const handlePrint = () => {
-    // In a real app, this would integrate with a printing library
-    // For now, we'll just share the text which can be printed from there
-    handleShare();
   };
 
   return (
@@ -169,14 +163,6 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
         </View>
 
         <View style={styles.actionButtons}>
-          <Button
-            title="Share"
-            onPress={handleShare}
-            variant="outline"
-            size="small"
-            icon={<Icon name="share-2" size={16} color={colors.primary} />}
-            style={styles.actionButton}
-          />
           <Button
             title="Print"
             onPress={handlePrint}

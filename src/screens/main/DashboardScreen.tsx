@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   FlatList,
   ScrollView,
   Image,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
@@ -22,7 +24,6 @@ import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { useAuth } from '../../hooks/useAuth';
 import { useRecipes } from '../../hooks/useRecipes';
-import { usePlans } from '../../hooks/usePlans';
 import {
   colors,
   typography,
@@ -35,11 +36,16 @@ import { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { Recipe } from '../../types/recipe';
 import { Plan, PlanSchedule } from '../../types/plan';
 import { RECIPE_CATEGORIES } from '@/constants';
+import { useActivePlan } from '../../hooks/useActivePlan';
+import { SetActivePlanModal } from '../../components/modals/SetActivePlanModal';
+import { SwipeIndicator } from '@/components/ui/SwipeIndicator';
 
 type DashboardNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Dashboard'>,
   StackNavigationProp<RootStackParamList>
 >;
+
+const { width: screenWidth } = Dimensions.get('window');
 
 const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<DashboardNavigationProp>();
@@ -50,9 +56,13 @@ const DashboardScreen: React.FC = () => {
     fetchRecipes,
     toggleFavorite,
   } = useRecipes();
-  const { plans, loading: plansLoading, fetchPlans } = usePlans();
+  const {
+    activePlan,
+    loading: activePlanLoading,
+    fetchActivePlan,
+  } = useActivePlan();
+  const [showSetActivePlanModal, setShowSetActivePlanModal] = useState(false);
 
-  const [activePlans, setActivePlans] = useState<Plan[]>([]);
   const [todaysMeals, setTodaysMeals] = useState<Recipe[]>([]);
   const [dailyMacros, setDailyMacros] = useState({
     protein: 0,
@@ -61,24 +71,40 @@ const DashboardScreen: React.FC = () => {
     calories: 0,
   });
 
+  // Refs for scroll indicators
+  const mealsScrollRef = useRef<FlatList>(null);
+  const recipesScrollRef = useRef<FlatList>(null);
+  const categoriesScrollRef = useRef<FlatList>(null);
+
+  // Animated values for scroll tracking
+  const mealsScrollX = useRef(new Animated.Value(0)).current;
+  const recipesScrollX = useRef(new Animated.Value(0)).current;
+  const categoriesScrollX = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     loadDashboardData();
   }, []);
 
   useEffect(() => {
-    setActivePlans(plans);
-    calculateTodaysMeals();
-  }, [plans]);
+    // Calculate today's meals when active plan changes
+    if (activePlan) {
+      calculateTodaysMeals();
+    }
+  }, [activePlan]);
 
   const loadDashboardData = async () => {
     await Promise.all([
       fetchRecipes({ sort: 'newest' }, true),
-      fetchPlans(0, 1),
+      fetchActivePlan(), // This will load the active plan
     ]);
   };
 
   const calculateTodaysMeals = () => {
-    if (!plans) return;
+    if (!activePlan) {
+      setTodaysMeals([]);
+      setDailyMacros({ protein: 0, carbs: 0, fat: 0, calories: 0 });
+      return;
+    }
 
     const daysMap: { [key: string]: keyof PlanSchedule } = {
       su: 'su',
@@ -93,19 +119,43 @@ const DashboardScreen: React.FC = () => {
     const today = format(new Date(), 'EEEE').toLowerCase().slice(0, 2);
     const dayKey = daysMap[today];
 
-    if (!dayKey) return;
+    if (!dayKey) {
+      setTodaysMeals([]);
+      return;
+    }
 
-    // This would need to be populated with actual recipe data
-    // For now, just showing the structure
-    setTodaysMeals([]);
+    const todaysSchedule = activePlan.schedule[dayKey];
+    if (!Array.isArray(todaysSchedule)) {
+      setTodaysMeals([]);
+      return;
+    }
 
-    // Calculate daily macros based on today's meals
+    // Extract recipes from today's schedule
+    const todaysRecipes: Recipe[] = [];
     let totalProtein = 0;
     let totalCarbs = 0;
     let totalFat = 0;
     let totalCalories = 0;
 
-    // This would calculate based on actual meal data
+    todaysSchedule.forEach(scheduledRecipe => {
+      if (
+        scheduledRecipe.recipe &&
+        typeof scheduledRecipe.recipe === 'object'
+      ) {
+        const recipe = scheduledRecipe.recipe as Recipe;
+        todaysRecipes.push(recipe);
+
+        // Calculate macros
+        if (recipe.nutrition) {
+          totalProtein += recipe.nutrition.protein;
+          totalCarbs += recipe.nutrition.carbohydrates;
+          totalFat += recipe.nutrition.fat;
+          totalCalories += recipe.nutrition.calories;
+        }
+      }
+    });
+
+    setTodaysMeals(todaysRecipes);
     setDailyMacros({
       protein: totalProtein,
       carbs: totalCarbs,
@@ -152,7 +202,7 @@ const DashboardScreen: React.FC = () => {
       icon: string;
     };
   }) => (
-    <View style={styles.recentRecipeCard}>
+    <View style={styles.categoryItemContainer}>
       <TouchableOpacity
         key={item.id}
         style={styles.categoryButton}
@@ -164,6 +214,14 @@ const DashboardScreen: React.FC = () => {
       </TouchableOpacity>
     </View>
   );
+
+  const handleActivePlanSuccess = (plan: Plan) => {
+    calculateTodaysMeals();
+  };
+
+  const handleSetActivePlan = () => {
+    setShowSetActivePlanModal(true);
+  };
 
   const navigateToMealPlans = () => {
     navigation.navigate('Meal Plans');
@@ -191,6 +249,11 @@ const DashboardScreen: React.FC = () => {
     console.log('Navigate to category', category);
   };
 
+  // Calculate item dimensions for indicators
+  const mealCardWidth = screenWidth - spacing.md * 2 - spacing.sm * 2; // Approximate width of meal card
+  const recipeCardWidth = screenWidth - spacing.md * 2 - spacing.sm * 2; // Approximate width of recipe card
+  const categoryItemWidth = 75; // Width of category item
+
   return (
     <PageContainer>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -213,10 +276,10 @@ const DashboardScreen: React.FC = () => {
 
         {/* Active Meal Plan Card */}
         <View style={styles.planCardContainer}>
-          {activePlans[0] ? (
+          {activePlan ? (
             <TouchableOpacity
               style={styles.planCard}
-              onPress={() => navigateToPlanDetail(activePlans[0])}
+              onPress={() => navigateToPlanDetail(activePlan)}
               activeOpacity={0.9}>
               <Image
                 source={require('../../../assets/images/plan-placeholder.jpg')}
@@ -227,12 +290,11 @@ const DashboardScreen: React.FC = () => {
               <View style={styles.planContent}>
                 <View>
                   <Text style={styles.planTitle}>Active Meal Plan</Text>
-                  <Text style={styles.planName}>{activePlans[0].name}</Text>
+                  <Text style={styles.planName}>{activePlan.name}</Text>
                   <View style={styles.planDetails}>
                     <Icon name="book-open" size={14} color={colors.white} />
                     <Text style={styles.planDetailText}>
-                      {Object.values(activePlans[0].schedule).flat().length}{' '}
-                      recipes
+                      {Object.values(activePlan.schedule).flat().length} recipes
                     </Text>
                   </View>
                 </View>
@@ -246,11 +308,18 @@ const DashboardScreen: React.FC = () => {
             <View style={styles.planCardEmpty}>
               <Icon name="calendar" size={32} color={colors.gray[400]} />
               <Text style={styles.emptyPlanText}>No active meal plan</Text>
-              <TouchableOpacity
-                style={styles.createPlanButton}
-                onPress={navigateToCreatePlan}>
-                <Text style={styles.createPlanButtonText}>Create Plan</Text>
-              </TouchableOpacity>
+              <View style={styles.emptyPlanActions}>
+                <TouchableOpacity
+                  style={styles.createPlanButton}
+                  onPress={navigateToCreatePlan}>
+                  <Text style={styles.createPlanButtonText}>Create Plan</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.setPlanButton}
+                  onPress={handleSetActivePlan}>
+                  <Text style={styles.setPlanButtonText}>Set Active Plan</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </View>
@@ -259,21 +328,37 @@ const DashboardScreen: React.FC = () => {
         <Section
           title="Today's Plan"
           action={
-            todaysMeals
+            todaysMeals.length > 0
               ? { label: 'View All', onPress: navigateToMealPlans }
               : undefined
           }>
           {todaysMeals ? (
             <>
               {todaysMeals.length > 0 ? (
-                <FlatList
-                  data={todaysMeals}
-                  renderItem={renderTodaysMeal}
-                  keyExtractor={item => item._id}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.mealsContainer}
-                />
+                <View style={styles.sectionWithIndicator}>
+                  <FlatList
+                    ref={mealsScrollRef}
+                    data={todaysMeals}
+                    renderItem={renderTodaysMeal}
+                    keyExtractor={item => item._id}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.mealsContainer}
+                    decelerationRate="fast"
+                    pagingEnabled={false}
+                    onScroll={Animated.event(
+                      [{ nativeEvent: { contentOffset: { x: mealsScrollX } } }],
+                      { useNativeDriver: false },
+                    )}
+                    scrollEventThrottle={16}
+                  />
+                  <SwipeIndicator
+                    itemCount={todaysMeals.length}
+                    itemWidth={mealCardWidth}
+                    scrollX={mealsScrollX}
+                    style={styles.mealsIndicator}
+                  />
+                </View>
               ) : (
                 <Text style={styles.noMealsText}>
                   No meals planned for today
@@ -288,6 +373,7 @@ const DashboardScreen: React.FC = () => {
                   calories={dailyMacros.calories}
                   variant="circle"
                   size="medium"
+                  precision={0}
                 />
               </View>
             </>
@@ -340,14 +426,30 @@ const DashboardScreen: React.FC = () => {
           title="Recent Recipes"
           action={{ label: 'View All', onPress: navigateToRecipes }}>
           {recipes.length > 0 ? (
-            <FlatList
-              data={recipes.slice(0, 6)}
-              renderItem={renderRecentRecipe}
-              keyExtractor={item => item._id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.recipesContainer}
-            />
+            <View style={styles.sectionWithIndicator}>
+              <FlatList
+                ref={recipesScrollRef}
+                data={recipes.slice(0, 6)}
+                renderItem={renderRecentRecipe}
+                keyExtractor={item => item._id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.recipesContainer}
+                decelerationRate="fast"
+                pagingEnabled={false}
+                onScroll={Animated.event(
+                  [{ nativeEvent: { contentOffset: { x: recipesScrollX } } }],
+                  { useNativeDriver: false },
+                )}
+                scrollEventThrottle={16}
+              />
+              <SwipeIndicator
+                itemCount={Math.min(6, recipes.length)}
+                itemWidth={recipeCardWidth}
+                scrollX={recipesScrollX}
+                style={styles.recipesIndicator}
+              />
+            </View>
           ) : (
             <EmptyState
               title="No recipes yet"
@@ -362,19 +464,41 @@ const DashboardScreen: React.FC = () => {
 
         {/* Recipe Categories */}
         <Section title="Recipe Categories">
-          <FlatList
-            data={RECIPE_CATEGORIES}
-            renderItem={renderRecipeCategory}
-            keyExtractor={item => item.slug}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.recipesContainer}
-          />
+          <View style={styles.sectionWithIndicator}>
+            <FlatList
+              ref={categoriesScrollRef}
+              data={RECIPE_CATEGORIES}
+              renderItem={renderRecipeCategory}
+              keyExtractor={item => item.slug}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoriesContainer}
+              decelerationRate="fast"
+              pagingEnabled={false}
+              onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { x: categoriesScrollX } } }],
+                { useNativeDriver: false },
+              )}
+              scrollEventThrottle={16}
+            />
+            <SwipeIndicator
+              itemCount={RECIPE_CATEGORIES.length}
+              itemWidth={categoryItemWidth}
+              scrollX={categoriesScrollX}
+              style={styles.categoriesIndicator}
+            />
+          </View>
         </Section>
       </ScrollView>
 
+      <SetActivePlanModal
+        visible={showSetActivePlanModal}
+        onClose={() => setShowSetActivePlanModal(false)}
+        onSuccess={handleActivePlanSuccess}
+      />
+
       <LoadingOverlay
-        visible={recipesLoading || plansLoading}
+        visible={recipesLoading || activePlanLoading}
         message="Loading dashboard..."
       />
     </PageContainer>
@@ -491,6 +615,24 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     marginBottom: spacing.md,
   },
+  emptyPlanActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  setPlanButton: {
+    backgroundColor: colors.white,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  setPlanButtonText: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontWeight: typography.fontWeights.medium,
+  },
   createPlanButton: {
     backgroundColor: colors.primary,
     paddingVertical: spacing.sm,
@@ -503,12 +645,18 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.medium,
   },
 
+  // Section with indicator wrapper
+  sectionWithIndicator: {
+    position: 'relative',
+  },
+
   // Today's Plan
   mealsContainer: {
     paddingRight: spacing.md,
   },
   mealCard: {
     marginRight: spacing.md,
+    width: screenWidth - spacing.md * 2 - spacing.sm * 2,
   },
   noMealsText: {
     ...typography.bodyRegular,
@@ -552,13 +700,19 @@ const styles = StyleSheet.create({
   },
   recentRecipeCard: {
     marginRight: spacing.md,
+    width: screenWidth - spacing.md * 2 - spacing.sm * 2,
   },
 
   // Categories
+  categoriesContainer: {
+    paddingRight: spacing.md,
+  },
+  categoryItemContainer: {
+    marginRight: spacing.md,
+  },
   categoryButton: {
     alignItems: 'center',
-    marginRight: spacing.md,
-    width: 60,
+    width: 75,
   },
   categoryIcon: {
     width: 60,
@@ -573,6 +727,17 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.text.primary,
     textAlign: 'center',
+  },
+
+  // Specific indicator positioning
+  mealsIndicator: {
+    marginTop: spacing.sm,
+  },
+  recipesIndicator: {
+    marginTop: spacing.sm,
+  },
+  categoriesIndicator: {
+    marginTop: spacing.sm,
   },
 });
 

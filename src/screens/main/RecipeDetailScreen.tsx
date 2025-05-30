@@ -79,8 +79,8 @@ const RecipeDetailScreen: React.FC = () => {
   // Reviews State
   const [reviews, setReviews] = useState<RecipeComment[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
-  const [reviewsPage, setReviewsPage] = useState(0);
-  const [hasMoreReviews, setHasMoreReviews] = useState(true);
+  const [reviewsPage, setReviewsPage] = useState(0); // Start at 0, will be set to 1 on first load
+  const [hasMoreReviews, setHasMoreReviews] = useState(false); // Start as false
 
   // Review Submission State
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -111,8 +111,8 @@ const RecipeDetailScreen: React.FC = () => {
 
   // Load reviews when recipe is loaded
   useEffect(() => {
-    if (recipe && activeTab === 'reviews') {
-      loadReviews();
+    if (recipe && activeTab === 'reviews' && reviews.length === 0) {
+      loadReviews(true);
     }
   }, [recipe, activeTab]);
 
@@ -151,20 +151,31 @@ const RecipeDetailScreen: React.FC = () => {
 
     setReviewsLoading(true);
     try {
-      const currentPage = reset ? 0 : reviewsPage;
-      const reviewsData = await recipeService.getRecipeComments(recipe._id);
+      const currentPage = reset ? 1 : reviewsPage + 1;
+
+      const response = await recipeService.getRecipeComments(
+        recipe._id,
+        currentPage,
+        10,
+      );
+      const { data: reviewsData, pagination } = response;
 
       if (reset) {
         setReviews(reviewsData);
       } else {
-        setReviews(prev => [...prev, ...reviewsData]);
+        // Prevent duplicates
+        const existingIds = new Set(reviews.map(r => r.id));
+        const newReviews = reviewsData.filter(
+          review => !existingIds.has(review.id),
+        );
+        setReviews(prev => [...prev, ...newReviews]);
       }
 
-      setReviewsPage(currentPage + 1);
-      // For demo purposes, assume there are more reviews if we got some
-      setHasMoreReviews(reviewsData.length > 0);
+      setReviewsPage(currentPage);
+      setHasMoreReviews(pagination.hasMore);
     } catch (error) {
       console.error('Error loading reviews:', error);
+      setHasMoreReviews(false);
     } finally {
       setReviewsLoading(false);
     }
@@ -229,20 +240,6 @@ const RecipeDetailScreen: React.FC = () => {
     }
   }, [recipe, isFavorite, isTogglingFavorite, toggleFavorite]);
 
-  const handleSharePress = useCallback(async () => {
-    if (recipe) {
-      try {
-        await Share.share({
-          message: `Check out this delicious recipe: ${recipe.name}`,
-          // If you have a website, you could add a URL here
-          // url: `https://your-website.com/recipes/${recipe.slug}`,
-        });
-      } catch (error) {
-        console.error('Error sharing recipe:', error);
-      }
-    }
-  }, [recipe]);
-
   const handleAddToMealPlan = () => {
     setShowMealPlanModal(true);
   };
@@ -258,19 +255,6 @@ const RecipeDetailScreen: React.FC = () => {
 
   const scrollToReviews = () => {
     setActiveTab('reviews');
-  };
-
-  // Calculate scaled nutrition values based on serving size
-  const getScaledNutrition = () => {
-    if (!recipe) return { protein: 0, carbs: 0, fat: 0, calories: 0 };
-
-    const factor = recipe.servings || 1;
-    return {
-      protein: Math.round(recipe.nutrition.protein * factor),
-      carbs: Math.round(recipe.nutrition.carbohydrates * factor),
-      fat: Math.round(recipe.nutrition.fat * factor),
-      calories: Math.round(recipe.nutrition.calories * factor),
-    };
   };
 
   // Render ingredient with adjusted amounts
@@ -428,8 +412,6 @@ const RecipeDetailScreen: React.FC = () => {
     );
   }
 
-  const nutrition = getScaledNutrition();
-
   return (
     <PageContainer safeArea={false} padding={false}>
       <StatusBar
@@ -473,11 +455,6 @@ const RecipeDetailScreen: React.FC = () => {
           </Text>
           <View style={styles.headerRight}>
             <TouchableOpacity
-              onPress={handleSharePress}
-              style={styles.headerButton}>
-              <Icon name="share" size={24} color={colors.text.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity
               onPress={handleFavoritePress}
               style={styles.headerButton}
               disabled={isTogglingFavorite}>
@@ -518,11 +495,6 @@ const RecipeDetailScreen: React.FC = () => {
               <Icon name="arrow-left" size={24} color={colors.white} />
             </TouchableOpacity>
             <View style={styles.heroActions}>
-              <TouchableOpacity
-                onPress={handleSharePress}
-                style={styles.heroActionButton}>
-                <Icon name="share" size={24} color={colors.white} />
-              </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleFavoritePress}
                 style={styles.heroActionButton}
@@ -588,10 +560,10 @@ const RecipeDetailScreen: React.FC = () => {
           <Section title="Nutrition Information">
             <View style={styles.macroSection}>
               <MacroDisplay
-                protein={nutrition.protein}
-                carbs={nutrition.carbs}
-                fat={nutrition.fat}
-                calories={nutrition.calories}
+                protein={recipe.nutrition.protein}
+                carbs={recipe.nutrition.carbohydrates}
+                fat={recipe.nutrition.fat}
+                calories={recipe.nutrition.calories}
                 variant="circle"
                 size="medium"
               />
@@ -731,48 +703,68 @@ const RecipeDetailScreen: React.FC = () => {
                 {renderReviewForm()}
 
                 {/* Reviews List */}
-                {reviews.map((review, index) => (
-                  <View
-                    key={`review-${review.id}-${index}`}
-                    style={styles.reviewCard}>
-                    <View style={styles.reviewHeader}>
-                      <View style={styles.reviewUser}>
-                        <View style={styles.reviewAvatar}>
-                          <Text style={styles.reviewAvatarText}>
-                            {review.author.charAt(0).toUpperCase()}
+                {reviews.map((review, index) => {
+                  // Handle different response structures
+                  const authorName =
+                    review.author_name ||
+                    (typeof review.author === 'string' ? review.author : '') ||
+                    'Anonymous User';
+
+                  const reviewContent =
+                    typeof review.content === 'string'
+                      ? review.content
+                      : review.content?.rendered?.replace(/<[^>]*>/g, '') || '';
+
+                  const reviewRating =
+                    review.meta?.wprm_comment_rating || review.rating || 0;
+
+                  const reviewDate = review.date || review.created_at || '';
+
+                  return (
+                    <View
+                      key={`review-${review.id}-${index}`}
+                      style={styles.reviewCard}>
+                      <View style={styles.reviewHeader}>
+                        <View style={styles.reviewUser}>
+                          <View style={styles.reviewAvatar}>
+                            <Text style={styles.reviewAvatarText}>
+                              {authorName.charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                          <Text style={styles.reviewUserName}>
+                            {authorName}
                           </Text>
                         </View>
-                        <Text style={styles.reviewUserName}>
-                          {review.author}
-                        </Text>
+                        <View style={styles.reviewMeta}>
+                          {reviewRating > 0 && (
+                            <StarRating
+                              count={5}
+                              defaultRating={reviewRating}
+                              size={16}
+                              selectedColor={colors.semantic.warning}
+                              readonly
+                              RatingImage={props => (
+                                <RatingImage {...props} type="airbnb" />
+                              )}
+                            />
+                          )}
+                          <Text style={styles.reviewDate}>
+                            {reviewDate
+                              ? new Date(reviewDate).toLocaleDateString()
+                              : ''}
+                          </Text>
+                        </View>
                       </View>
-                      <View style={styles.reviewMeta}>
-                        {review.rating && (
-                          <StarRating
-                            count={5}
-                            defaultRating={review.rating}
-                            size={16}
-                            selectedColor={colors.semantic.warning}
-                            readonly
-                            RatingImage={props => (
-                              <RatingImage {...props} type="airbnb" />
-                            )}
-                          />
-                        )}
-                        <Text style={styles.reviewDate}>
-                          {new Date(review.created_at).toLocaleDateString()}
-                        </Text>
-                      </View>
+                      <Text style={styles.reviewText}>{reviewContent}</Text>
                     </View>
-                    <Text style={styles.reviewText}>{review.content}</Text>
-                  </View>
-                ))}
+                  );
+                })}
 
                 {/* Load More Reviews */}
-                {hasMoreReviews && !reviewsLoading && (
+                {hasMoreReviews && !reviewsLoading && reviews.length > 0 && (
                   <Button
                     title="Load More Reviews"
-                    onPress={() => loadReviews()}
+                    onPress={() => loadReviews(false)} // Explicitly pass false for pagination
                     variant="outline"
                     style={styles.loadMoreButton}
                   />
@@ -781,6 +773,15 @@ const RecipeDetailScreen: React.FC = () => {
                 {reviewsLoading && (
                   <View style={styles.reviewsLoader}>
                     <ActivityIndicator size="small" color={colors.primary} />
+                  </View>
+                )}
+
+                {/* Show message if no reviews */}
+                {reviews.length === 0 && !reviewsLoading && (
+                  <View style={styles.noReviewsContainer}>
+                    <Text style={styles.noReviewsText}>
+                      No reviews yet. Be the first to review this recipe!
+                    </Text>
                   </View>
                 )}
               </View>
@@ -1225,7 +1226,18 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     alignItems: 'center',
   },
-
+  noReviewsContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+    backgroundColor: colors.gray[50],
+    borderRadius: borderRadius.lg,
+    marginTop: spacing.md,
+  },
+  noReviewsText: {
+    ...typography.bodyRegular,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
   bottomBar: {
     backgroundColor: colors.white,
     paddingHorizontal: spacing.md,

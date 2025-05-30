@@ -10,6 +10,7 @@ interface MacroDisplayProps {
   calories: number;
   variant?: 'circle' | 'bar' | 'text';
   size?: 'small' | 'medium' | 'large';
+  precision?: number;
 }
 
 export const MacroDisplay: React.FC<MacroDisplayProps> = ({
@@ -19,6 +20,7 @@ export const MacroDisplay: React.FC<MacroDisplayProps> = ({
   calories,
   variant = 'text',
   size = 'medium',
+  precision = 2,
 }) => {
   switch (variant) {
     case 'circle':
@@ -29,6 +31,7 @@ export const MacroDisplay: React.FC<MacroDisplayProps> = ({
           fat={fat}
           calories={calories}
           size={size}
+          precision={precision}
         />
       );
     case 'bar':
@@ -39,6 +42,7 @@ export const MacroDisplay: React.FC<MacroDisplayProps> = ({
           fat={fat}
           calories={calories}
           size={size}
+          precision={precision}
         />
       );
     default:
@@ -49,6 +53,7 @@ export const MacroDisplay: React.FC<MacroDisplayProps> = ({
           fat={fat}
           calories={calories}
           size={size}
+          precision={precision}
         />
       );
   }
@@ -60,6 +65,7 @@ const MacroCircles: React.FC<MacroDisplayProps> = ({
   fat,
   calories,
   size = 'medium',
+  precision = 2,
 }) => {
   const sizes = {
     small: { radius: 20, strokeWidth: 3 },
@@ -116,7 +122,7 @@ const MacroCircles: React.FC<MacroDisplayProps> = ({
             </Svg>
             <View style={styles.circleLabel}>
               <Text style={[styles.circleValue, styles[`${size}Value`]]}>
-                {macro.value.toFixed(2)}g
+                {macro.value.toFixed(precision)}g
               </Text>
               <Text style={[styles.circleMacro, styles[`${size}Macro`]]}>
                 {macro.label}

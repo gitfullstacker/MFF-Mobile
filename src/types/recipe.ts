@@ -99,9 +99,19 @@ export interface RecipeFilters {
 }
 
 export interface RecipeComment {
-  id: string;
-  content: string;
+  id: string | number;
+  content:
+    | {
+        rendered: string;
+      }
+    | string;
   rating?: number;
-  author: string;
-  created_at: string;
+  author?: string | number;
+  author_name?: string;
+  created_at?: string;
+  date?: string;
+  date_gmt?: string;
+  meta?: {
+    wprm_comment_rating?: number;
+  };
 }
