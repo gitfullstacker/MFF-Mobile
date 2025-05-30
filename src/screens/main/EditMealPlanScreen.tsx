@@ -1,32 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  FlatList,
-} from 'react-native';
+import { StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import Icon from 'react-native-vector-icons/Feather';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Header } from '../../components/navigation/Header';
 import { Section } from '../../components/layout/Section';
 import { Input } from '../../components/forms/Input';
-import { Button } from '../../components/forms/Button';
 import { RecipePickerModal } from '../../components/modals/RecipePickerModal';
-import { RecipeCard } from '../../components/recipe/RecipeCard';
 import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
+import { DaySelector, DayOption } from '../../components/meal-plan/DaySelector';
+import { RecipeListDisplay } from '../../components/meal-plan/RecipeListDisplay';
+import { MealPlanFormHeader } from '../../components/meal-plan/MealPlanFormHeader';
 import { usePlans } from '../../hooks/usePlans';
-import {
-  colors,
-  typography,
-  spacing,
-  borderRadius,
-  fontWeights,
-} from '../../theme';
 import { MealPlanStackParamList } from '../../navigation/types';
 import { Recipe } from '../../types/recipe';
 import {
@@ -44,7 +29,7 @@ type EditMealPlanNavigationProp = StackNavigationProp<
 type EditMealPlanRouteProp = RouteProp<MealPlanStackParamList, 'EditMealPlan'>;
 
 // Days of the week
-const DAYS = [
+const DAYS: DayOption[] = [
   { key: 'su', label: 'Sunday' },
   { key: 'mo', label: 'Monday' },
   { key: 'tu', label: 'Tuesday' },
@@ -74,7 +59,6 @@ const EditMealPlanScreen: React.FC = () => {
   const [showRecipePicker, setShowRecipePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [recipeMap, setRecipeMap] = useState<Record<string, Recipe>>({});
-  const [dayRecipes, setDayRecipes] = useState<Recipe[]>([]);
 
   // Use plan from route params
   useEffect(() => {
@@ -125,7 +109,6 @@ const EditMealPlanScreen: React.FC = () => {
 
       setSchedule(cleanSchedule);
       setRecipeMap(recipes);
-      updateDayRecipes(cleanSchedule, selectedDay, recipes);
     } else {
       // Fallback: This shouldn't happen in normal flow
       console.warn(
@@ -133,37 +116,6 @@ const EditMealPlanScreen: React.FC = () => {
       );
     }
   }, [plan]);
-
-  // Update day recipes when selected day changes
-  useEffect(() => {
-    updateDayRecipes(schedule, selectedDay, recipeMap);
-  }, [selectedDay, schedule, recipeMap]);
-
-  // Function to update day recipes
-  const updateDayRecipes = (
-    currentSchedule: PlanSchedule,
-    day: string,
-    recipes: Record<string, Recipe>,
-  ) => {
-    const daySchedule = currentSchedule[day as keyof PlanSchedule];
-
-    if (!Array.isArray(daySchedule)) {
-      setDayRecipes([]);
-      return;
-    }
-
-    const dayRecipesList: Recipe[] = [];
-    daySchedule.forEach(item => {
-      const recipeId =
-        typeof item.recipe === 'string' ? item.recipe : item.recipe._id;
-
-      if (recipes[recipeId]) {
-        dayRecipesList.push(recipes[recipeId]);
-      }
-    });
-
-    setDayRecipes(dayRecipesList);
-  };
 
   // Function to open recipe picker
   const handleAddRecipe = () => {
@@ -203,9 +155,6 @@ const EditMealPlanScreen: React.FC = () => {
 
     updatedSchedule[selectedDay as keyof PlanSchedule] = daySchedule;
     setSchedule(updatedSchedule);
-
-    // Update day recipes
-    updateDayRecipes(updatedSchedule, selectedDay, updatedRecipeMap);
   };
 
   // Function to save the updated meal plan
@@ -282,6 +231,31 @@ const EditMealPlanScreen: React.FC = () => {
     return schedule[dayKey as keyof PlanSchedule].length;
   };
 
+  // Get the current day's recipes for display
+  const getCurrentDayRecipes = (): Recipe[] => {
+    const daySchedule = schedule[selectedDay as keyof PlanSchedule];
+
+    if (!Array.isArray(daySchedule)) {
+      return [];
+    }
+
+    const recipes: Recipe[] = [];
+    daySchedule.forEach(item => {
+      const recipeId =
+        typeof item.recipe === 'string' ? item.recipe : item.recipe._id;
+      if (recipeMap[recipeId]) {
+        recipes.push(recipeMap[recipeId]);
+      }
+    });
+
+    return recipes;
+  };
+
+  // Get the selected day label
+  const getSelectedDayLabel = (): string => {
+    return DAYS.find(day => day.key === selectedDay)?.label || 'Selected Day';
+  };
+
   return (
     <PageContainer safeArea={false}>
       <Header
@@ -294,6 +268,7 @@ const EditMealPlanScreen: React.FC = () => {
       />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Plan Name Input */}
         <Section>
           <Input
             label="Plan Name"
@@ -303,77 +278,27 @@ const EditMealPlanScreen: React.FC = () => {
           />
         </Section>
 
+        {/* Day Selection */}
         <Section title="Days">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.daysScrollView}>
-            {DAYS.map(day => (
-              <TouchableOpacity
-                key={day.key}
-                style={[
-                  styles.dayButton,
-                  selectedDay === day.key && styles.selectedDayButton,
-                ]}
-                onPress={() => setSelectedDay(day.key)}>
-                <Text
-                  style={[
-                    styles.dayButtonText,
-                    selectedDay === day.key && styles.selectedDayButtonText,
-                  ]}>
-                  {day.label.substring(0, 3)}
-                </Text>
-                {getRecipeCountByDay(day.key) > 0 && (
-                  <View style={styles.recipeBadge}>
-                    <Text style={styles.recipeBadgeText}>
-                      {getRecipeCountByDay(day.key)}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <DaySelector
+            days={DAYS}
+            selectedDay={selectedDay}
+            onDaySelect={setSelectedDay}
+            getRecipeCountByDay={getRecipeCountByDay}
+          />
         </Section>
 
-        <Section
-          title={`${DAYS.find(day => day.key === selectedDay)?.label} Meals`}>
-          {dayRecipes.length === 0 ? (
-            <View style={styles.emptyDayContainer}>
-              <Text style={styles.emptyDayText}>
-                No recipes scheduled for{' '}
-                {DAYS.find(day => day.key === selectedDay)?.label}. Add recipes
-                using the button below.
-              </Text>
-            </View>
-          ) : (
-            <FlatList
-              data={dayRecipes}
-              renderItem={({ item }) => (
-                <View style={styles.recipeCardContainer}>
-                  <RecipeCard
-                    recipe={item}
-                    showSelectionIcon
-                    isAdded
-                    onRemoveClick={handleRecipeSelect}
-                    onPress={() => {}}
-                  />
-                </View>
-              )}
-              keyExtractor={item => item._id}
-              scrollEnabled={false}
-              showsVerticalScrollIndicator={false}
-              showsHorizontalScrollIndicator={false}
-              nestedScrollEnabled={true}
-            />
-          )}
+        {/* Meals Section with Header */}
+        <Section>
+          <MealPlanFormHeader
+            selectedDayLabel={getSelectedDayLabel()}
+            onAddRecipe={handleAddRecipe}
+          />
 
-          <Button
-            title="Add Recipe"
-            onPress={handleAddRecipe}
-            variant="primary"
-            size="medium"
-            icon={<Icon name="plus" size={18} color={colors.white} />}
-            style={styles.addRecipeButton}
+          <RecipeListDisplay
+            recipes={getCurrentDayRecipes()}
+            selectedDayLabel={getSelectedDayLabel()}
+            onRecipeSelect={handleRecipeSelect}
           />
         </Section>
       </ScrollView>
@@ -382,7 +307,7 @@ const EditMealPlanScreen: React.FC = () => {
         visible={showRecipePicker}
         onClose={() => setShowRecipePicker(false)}
         onSelect={handleRecipeSelect}
-        selectedRecipes={dayRecipes}
+        selectedRecipes={getCurrentDayRecipes()}
       />
 
       <LoadingOverlay visible={loading} message="Saving meal plan..." />
@@ -393,67 +318,6 @@ const EditMealPlanScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  daysScrollView: {
-    flexDirection: 'row',
-    paddingVertical: spacing.sm,
-  },
-  dayButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginRight: spacing.sm,
-    backgroundColor: colors.gray[100],
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 80,
-  },
-  selectedDayButton: {
-    backgroundColor: colors.primary,
-  },
-  dayButtonText: {
-    ...typography.bodyRegular,
-    color: colors.text.primary,
-    fontWeight: fontWeights.medium,
-  },
-  selectedDayButtonText: {
-    color: colors.white,
-  },
-  recipeBadge: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: colors.semantic.info,
-    borderRadius: borderRadius.full,
-    width: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  recipeBadgeText: {
-    ...typography.caption,
-    color: colors.white,
-    fontWeight: fontWeights.bold,
-  },
-  emptyDayContainer: {
-    backgroundColor: colors.gray[50],
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.md,
-  },
-  emptyDayText: {
-    ...typography.bodyRegular,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-  listContainer: {
-    paddingBottom: spacing.lg,
-  },
-  recipeCardContainer: {
-    marginBottom: spacing.md,
-  },
-  addRecipeButton: {
-    marginBottom: spacing.md,
   },
 });
 
