@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Switch,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import { PageContainer } from '../../components/layout/PageContainer';
@@ -24,13 +17,6 @@ import {
 
 const PreferencesScreen: React.FC = () => {
   const navigation = useNavigation();
-
-  // Dietary Preferences
-  const [isVegetarian, setIsVegetarian] = useState(false);
-  const [isVegan, setIsVegan] = useState(false);
-  const [isGlutenFree, setIsGlutenFree] = useState(false);
-  const [isDairyFree, setIsDairyFree] = useState(false);
-  const [isKeto, setIsKeto] = useState(false);
 
   // Macro Targets
   const [calorieTarget, setCalorieTarget] = useState('2000');
@@ -51,7 +37,7 @@ const PreferencesScreen: React.FC = () => {
     console.log('Saving preferences...');
   };
 
-  const renderDietaryPreference = (
+  const renderNotification = (
     title: string,
     description: string,
     value: boolean,
@@ -83,45 +69,6 @@ const PreferencesScreen: React.FC = () => {
       <Header title="Preferences" showBack={true} />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Dietary Restrictions */}
-        <Section title="Dietary Restrictions">
-          {renderDietaryPreference(
-            'Vegetarian',
-            'Exclude meat and fish',
-            isVegetarian,
-            setIsVegetarian,
-            'leaf',
-          )}
-          {renderDietaryPreference(
-            'Vegan',
-            'Exclude all animal products',
-            isVegan,
-            setIsVegan,
-            'heart',
-          )}
-          {renderDietaryPreference(
-            'Gluten-Free',
-            'Exclude gluten-containing ingredients',
-            isGlutenFree,
-            setIsGlutenFree,
-            'shield',
-          )}
-          {renderDietaryPreference(
-            'Dairy-Free',
-            'Exclude dairy products',
-            isDairyFree,
-            setIsDairyFree,
-            'droplet',
-          )}
-          {renderDietaryPreference(
-            'Ketogenic',
-            'High-fat, low-carb diet',
-            isKeto,
-            setIsKeto,
-            'zap',
-          )}
-        </Section>
-
         {/* Macro Targets */}
         <Section title="Daily Macro Targets">
           <Input
@@ -163,37 +110,26 @@ const PreferencesScreen: React.FC = () => {
 
         {/* Notifications */}
         <Section title="Notifications">
-          {renderDietaryPreference(
+          {renderNotification(
             'Meal Reminders',
             'Get reminded about meal times',
             mealReminders,
             setMealReminders,
             'bell',
           )}
-          {renderDietaryPreference(
+          {renderNotification(
             'Shopping List Reminders',
             'Weekly shopping list notifications',
             shoppingListReminders,
             setShoppingListReminders,
             'shopping-cart',
           )}
-          {renderDietaryPreference(
+          {renderNotification(
             'Weekly Meal Plan',
             'Reminders to plan your week',
             weeklyMealPlan,
             setWeeklyMealPlan,
             'calendar',
-          )}
-        </Section>
-
-        {/* Units */}
-        <Section title="Units & Display">
-          {renderDietaryPreference(
-            'Metric Units',
-            'Use metric measurements (kg, cm)',
-            useMetric,
-            setUseMetric,
-            'globe',
           )}
         </Section>
 

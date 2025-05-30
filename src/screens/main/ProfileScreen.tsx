@@ -297,6 +297,7 @@ const ProfileScreen: React.FC = () => {
                   error={profileErrors.username?.message}
                   leftIcon="at-sign"
                   autoCapitalize="none"
+                  disabled
                 />
               )}
             />

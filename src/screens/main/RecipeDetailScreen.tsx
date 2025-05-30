@@ -271,19 +271,6 @@ const RecipeDetailScreen: React.FC = () => {
     setActiveTab('reviews');
   };
 
-  // Calculate scaled nutrition values based on serving size
-  const getScaledNutrition = () => {
-    if (!recipe) return { protein: 0, carbs: 0, fat: 0, calories: 0 };
-
-    const factor = recipe.servings || 1;
-    return {
-      protein: Math.round(recipe.nutrition.protein * factor),
-      carbs: Math.round(recipe.nutrition.carbohydrates * factor),
-      fat: Math.round(recipe.nutrition.fat * factor),
-      calories: Math.round(recipe.nutrition.calories * factor),
-    };
-  };
-
   // Render ingredient with adjusted amounts
   const renderIngredient = (item: IngredientItem, index: number) => {
     const factor = recipe?.servings || 1;
@@ -438,8 +425,6 @@ const RecipeDetailScreen: React.FC = () => {
       </PageContainer>
     );
   }
-
-  const nutrition = getScaledNutrition();
 
   return (
     <PageContainer safeArea={false} padding={false}>
@@ -599,10 +584,10 @@ const RecipeDetailScreen: React.FC = () => {
           <Section title="Nutrition Information">
             <View style={styles.macroSection}>
               <MacroDisplay
-                protein={nutrition.protein}
-                carbs={nutrition.carbs}
-                fat={nutrition.fat}
-                calories={nutrition.calories}
+                protein={recipe.nutrition.protein}
+                carbs={recipe.nutrition.carbohydrates}
+                fat={recipe.nutrition.fat}
+                calories={recipe.nutrition.calories}
                 variant="circle"
                 size="medium"
               />

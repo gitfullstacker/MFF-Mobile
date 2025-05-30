@@ -112,7 +112,7 @@ const AccountScreen: React.FC = () => {
     {
       icon: 'settings',
       title: 'Preferences',
-      subtitle: 'Dietary restrictions & macro targets',
+      subtitle: 'Macro targets & notifications',
       onPress: () =>
         navigation.navigate('AccountStack', { screen: 'Preferences' }),
       showArrow: true,

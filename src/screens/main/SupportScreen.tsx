@@ -118,14 +118,6 @@ const SupportScreen: React.FC = () => {
       action: handleEmailSupport,
       type: 'external',
     },
-    {
-      id: 'phone',
-      title: 'Phone Support',
-      description: 'Call our support team (Mon-Fri 9AM-5PM EST)',
-      icon: 'phone',
-      action: handleCallSupport,
-      type: 'external',
-    },
   ];
 
   const resourceOptions: SupportOption[] = [
@@ -195,14 +187,14 @@ const SupportScreen: React.FC = () => {
           </Text>
         </View>
 
-        {/* Support Options */}
-        <Section title="Get Support">
-          {supportOptions.map(renderSupportCard)}
-        </Section>
-
         {/* Resources */}
         <Section title="Self-Help Resources">
           {resourceOptions.map(renderSupportCard)}
+        </Section>
+
+        {/* Support Options */}
+        <Section title="Get Support">
+          {supportOptions.map(renderSupportCard)}
         </Section>
 
         {/* Quick Tips */}
@@ -418,8 +410,8 @@ const styles = StyleSheet.create({
 
   // Emergency Section
   emergencySection: {
-    padding: spacing.md,
-    marginTop: spacing.lg,
+    paddingBottom: spacing.xl,
+    marginTop: spacing.md,
   },
   emergencyCard: {
     flexDirection: 'row',

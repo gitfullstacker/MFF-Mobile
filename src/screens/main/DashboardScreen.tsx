@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   FlatList,
   ScrollView,
   Image,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
@@ -36,11 +38,14 @@ import { Plan, PlanSchedule } from '../../types/plan';
 import { RECIPE_CATEGORIES } from '@/constants';
 import { useActivePlan } from '../../hooks/useActivePlan';
 import { SetActivePlanModal } from '../../components/modals/SetActivePlanModal';
+import { SwipeIndicator } from '@/components/ui/SwipeIndicator';
 
 type DashboardNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Dashboard'>,
   StackNavigationProp<RootStackParamList>
 >;
+
+const { width: screenWidth } = Dimensions.get('window');
 
 const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<DashboardNavigationProp>();
@@ -65,6 +70,16 @@ const DashboardScreen: React.FC = () => {
     fat: 0,
     calories: 0,
   });
+
+  // Refs for scroll indicators
+  const mealsScrollRef = useRef<FlatList>(null);
+  const recipesScrollRef = useRef<FlatList>(null);
+  const categoriesScrollRef = useRef<FlatList>(null);
+
+  // Animated values for scroll tracking
+  const mealsScrollX = useRef(new Animated.Value(0)).current;
+  const recipesScrollX = useRef(new Animated.Value(0)).current;
+  const categoriesScrollX = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     loadDashboardData();
@@ -187,7 +202,7 @@ const DashboardScreen: React.FC = () => {
       icon: string;
     };
   }) => (
-    <View style={styles.recentRecipeCard}>
+    <View style={styles.categoryItemContainer}>
       <TouchableOpacity
         key={item.id}
         style={styles.categoryButton}
@@ -233,6 +248,11 @@ const DashboardScreen: React.FC = () => {
     // Navigation code to category
     console.log('Navigate to category', category);
   };
+
+  // Calculate item dimensions for indicators
+  const mealCardWidth = screenWidth - spacing.md * 2 - spacing.sm * 2; // Approximate width of meal card
+  const recipeCardWidth = screenWidth - spacing.md * 2 - spacing.sm * 2; // Approximate width of recipe card
+  const categoryItemWidth = 75; // Width of category item
 
   return (
     <PageContainer>
@@ -308,21 +328,37 @@ const DashboardScreen: React.FC = () => {
         <Section
           title="Today's Plan"
           action={
-            todaysMeals
+            todaysMeals.length > 0
               ? { label: 'View All', onPress: navigateToMealPlans }
               : undefined
           }>
           {todaysMeals ? (
             <>
               {todaysMeals.length > 0 ? (
-                <FlatList
-                  data={todaysMeals}
-                  renderItem={renderTodaysMeal}
-                  keyExtractor={item => item._id}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.mealsContainer}
-                />
+                <View style={styles.sectionWithIndicator}>
+                  <FlatList
+                    ref={mealsScrollRef}
+                    data={todaysMeals}
+                    renderItem={renderTodaysMeal}
+                    keyExtractor={item => item._id}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.mealsContainer}
+                    decelerationRate="fast"
+                    pagingEnabled={false}
+                    onScroll={Animated.event(
+                      [{ nativeEvent: { contentOffset: { x: mealsScrollX } } }],
+                      { useNativeDriver: false },
+                    )}
+                    scrollEventThrottle={16}
+                  />
+                  <SwipeIndicator
+                    itemCount={todaysMeals.length}
+                    itemWidth={mealCardWidth}
+                    scrollX={mealsScrollX}
+                    style={styles.mealsIndicator}
+                  />
+                </View>
               ) : (
                 <Text style={styles.noMealsText}>
                   No meals planned for today
@@ -389,14 +425,30 @@ const DashboardScreen: React.FC = () => {
           title="Recent Recipes"
           action={{ label: 'View All', onPress: navigateToRecipes }}>
           {recipes.length > 0 ? (
-            <FlatList
-              data={recipes.slice(0, 6)}
-              renderItem={renderRecentRecipe}
-              keyExtractor={item => item._id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.recipesContainer}
-            />
+            <View style={styles.sectionWithIndicator}>
+              <FlatList
+                ref={recipesScrollRef}
+                data={recipes.slice(0, 6)}
+                renderItem={renderRecentRecipe}
+                keyExtractor={item => item._id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.recipesContainer}
+                decelerationRate="fast"
+                pagingEnabled={false}
+                onScroll={Animated.event(
+                  [{ nativeEvent: { contentOffset: { x: recipesScrollX } } }],
+                  { useNativeDriver: false },
+                )}
+                scrollEventThrottle={16}
+              />
+              <SwipeIndicator
+                itemCount={Math.min(6, recipes.length)}
+                itemWidth={recipeCardWidth}
+                scrollX={recipesScrollX}
+                style={styles.recipesIndicator}
+              />
+            </View>
           ) : (
             <EmptyState
               title="No recipes yet"
@@ -411,14 +463,30 @@ const DashboardScreen: React.FC = () => {
 
         {/* Recipe Categories */}
         <Section title="Recipe Categories">
-          <FlatList
-            data={RECIPE_CATEGORIES}
-            renderItem={renderRecipeCategory}
-            keyExtractor={item => item.slug}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.recipesContainer}
-          />
+          <View style={styles.sectionWithIndicator}>
+            <FlatList
+              ref={categoriesScrollRef}
+              data={RECIPE_CATEGORIES}
+              renderItem={renderRecipeCategory}
+              keyExtractor={item => item.slug}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoriesContainer}
+              decelerationRate="fast"
+              pagingEnabled={false}
+              onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { x: categoriesScrollX } } }],
+                { useNativeDriver: false },
+              )}
+              scrollEventThrottle={16}
+            />
+            <SwipeIndicator
+              itemCount={RECIPE_CATEGORIES.length}
+              itemWidth={categoryItemWidth}
+              scrollX={categoriesScrollX}
+              style={styles.categoriesIndicator}
+            />
+          </View>
         </Section>
       </ScrollView>
 
@@ -576,12 +644,18 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.medium,
   },
 
+  // Section with indicator wrapper
+  sectionWithIndicator: {
+    position: 'relative',
+  },
+
   // Today's Plan
   mealsContainer: {
     paddingRight: spacing.md,
   },
   mealCard: {
     marginRight: spacing.md,
+    width: screenWidth - spacing.md * 2 - spacing.sm * 2,
   },
   noMealsText: {
     ...typography.bodyRegular,
@@ -625,13 +699,19 @@ const styles = StyleSheet.create({
   },
   recentRecipeCard: {
     marginRight: spacing.md,
+    width: screenWidth - spacing.md * 2 - spacing.sm * 2,
   },
 
   // Categories
+  categoriesContainer: {
+    paddingRight: spacing.md,
+  },
+  categoryItemContainer: {
+    marginRight: spacing.md,
+  },
   categoryButton: {
     alignItems: 'center',
-    marginRight: spacing.md,
-    width: 60,
+    width: 75,
   },
   categoryIcon: {
     width: 60,
@@ -646,6 +726,17 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.text.primary,
     textAlign: 'center',
+  },
+
+  // Specific indicator positioning
+  mealsIndicator: {
+    marginTop: spacing.sm,
+  },
+  recipesIndicator: {
+    marginTop: spacing.sm,
+  },
+  categoriesIndicator: {
+    marginTop: spacing.sm,
   },
 });
 

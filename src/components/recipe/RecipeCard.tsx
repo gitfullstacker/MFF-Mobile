@@ -26,7 +26,6 @@ const { width: screenWidth } = Dimensions.get('window');
 interface RecipeCardProps {
   recipe: Recipe;
   onPress: () => void;
-  openInModal?: boolean;
   isAdded?: boolean;
   showSelectionIcon?: boolean;
   onAddClick?: (recipe: Recipe) => void;
@@ -37,7 +36,6 @@ interface RecipeCardProps {
 export const RecipeCard: React.FC<RecipeCardProps> = ({
   recipe,
   onPress,
-  openInModal = false,
   isAdded = false,
   showSelectionIcon = false,
   onAddClick,
@@ -267,7 +265,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingVertical: spacing.sm,
     justifyContent: 'space-between',
-    maxWidth: screenWidth - spacing.md * 2 - 130,
   },
   titleSection: {
     gap: spacing.xs,

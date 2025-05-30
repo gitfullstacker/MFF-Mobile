@@ -9,33 +9,17 @@ import {
 } from 'react-native';
 import { RangeSlider } from 'react-native-product-sliders';
 import Icon from 'react-native-vector-icons/Feather';
-import { BottomSheet } from './BottomSheet';
 import { Button } from '../forms/Button';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { RecipeFilters } from '../../types/recipe';
-
-interface FilterModalProps {
-  visible: boolean;
-  onClose: () => void;
-  filters: RecipeFilters;
-  onApply: (filters: RecipeFilters) => void;
-}
+import { RECIPE_CATEGORIES } from '@/constants';
 
 interface CategoryOption {
-  id: string;
+  id: number;
   name: string;
+  slug: string;
 }
 
-// Meal types configuration
-const MEAL_TYPES: CategoryOption[] = [
-  { id: 'breakfast', name: 'Breakfast' },
-  { id: 'lunch', name: 'Lunch' },
-  { id: 'dinner', name: 'Dinner' },
-  { id: 'snack', name: 'Snack' },
-  { id: 'dessert', name: 'Dessert' },
-];
-
-// Sort options configuration
 const SORT_OPTIONS = [
   { id: 'newest', name: 'Newest' },
   { id: 'oldest', name: 'Oldest' },
@@ -43,32 +27,32 @@ const SORT_OPTIONS = [
   { id: 'timeDesc', name: 'Cooking Time (High to Low)' },
 ];
 
-export const FilterModal: React.FC<FilterModalProps> = ({
-  visible,
-  onClose,
+interface RecipeFilterPanelProps {
+  filters: RecipeFilters;
+  onApply: (filters: RecipeFilters) => void;
+}
+
+export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
   filters,
   onApply,
 }) => {
   const [localFilters, setLocalFilters] = useState<RecipeFilters>(filters);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
-  // Reset local state when modal opens
   useEffect(() => {
-    if (visible) {
-      setLocalFilters(filters);
-      setShowFavoritesOnly(!!filters.favorites);
-    }
-  }, [visible, filters]);
+    setLocalFilters(filters);
+    setShowFavoritesOnly(!!filters.favorites);
+  }, [filters]);
 
   const handleReset = useCallback(() => {
-    setLocalFilters({});
+    const resetFilters = {};
+    setLocalFilters(resetFilters);
     setShowFavoritesOnly(false);
   }, []);
 
   const handleApply = useCallback(() => {
     const updatedFilters = { ...localFilters };
 
-    // Set favorites filter if enabled
     if (showFavoritesOnly) {
       updatedFilters.favorites = true;
     } else {
@@ -76,20 +60,22 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     }
 
     onApply(updatedFilters);
-    onClose();
-  }, [localFilters, showFavoritesOnly, onApply, onClose]);
+  }, [localFilters, showFavoritesOnly, onApply]);
 
-  const updateFilter = useCallback((key: keyof RecipeFilters, value: any) => {
-    setLocalFilters(prev => ({
-      ...prev,
-      [key]: value,
-    }));
-  }, []);
+  const updateFilter = useCallback(
+    (key: keyof RecipeFilters, value: any) => {
+      const newFilters = {
+        ...localFilters,
+        [key]: value,
+      };
+      setLocalFilters(newFilters);
+    },
+    [localFilters],
+  );
 
-  // Handle category selection (meal types)
-  const toggleCategorySelection = useCallback((category: string) => {
-    setLocalFilters(prev => {
-      const currentCategories = prev.types?.split(',') || [];
+  const toggleCategorySelection = useCallback(
+    (category: string) => {
+      const currentCategories = localFilters.types?.split(',') || [];
       let updatedCategories: string[];
 
       if (currentCategories.includes(category)) {
@@ -98,18 +84,14 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         updatedCategories = [...currentCategories, category];
       }
 
-      if (updatedCategories.length === 0) {
-        const newFilters = { ...prev };
-        delete newFilters.types;
-        return newFilters;
-      } else {
-        return {
-          ...prev,
-          types: updatedCategories.join(','),
-        };
-      }
-    });
-  }, []);
+      const newTypes =
+        updatedCategories.length === 0
+          ? undefined
+          : updatedCategories.join(',');
+      updateFilter('types', newTypes);
+    },
+    [localFilters.types, updateFilter],
+  );
 
   const isCategorySelected = useCallback(
     (category: string) => {
@@ -119,7 +101,6 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     [localFilters.types],
   );
 
-  // Render category selection chips
   const renderCategoryChips = useCallback(
     (categories: CategoryOption[]) => {
       return (
@@ -129,13 +110,13 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               key={category.id}
               style={[
                 styles.chip,
-                isCategorySelected(category.id) && styles.chipSelected,
+                isCategorySelected(category.slug) && styles.chipSelected,
               ]}
-              onPress={() => toggleCategorySelection(category.id)}>
+              onPress={() => toggleCategorySelection(category.slug)}>
               <Text
                 style={[
                   styles.chipText,
-                  isCategorySelected(category.id) && styles.chipTextSelected,
+                  isCategorySelected(category.slug) && styles.chipTextSelected,
                 ]}>
                 {category.name}
               </Text>
@@ -147,7 +128,6 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     [isCategorySelected, toggleCategorySelection],
   );
 
-  // Render sort options
   const renderSortOptions = useCallback(() => {
     return (
       <View style={styles.sortOptionsContainer}>
@@ -176,7 +156,6 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     );
   }, [localFilters.sort, updateFilter]);
 
-  // Render range slider
   const renderSlider = useCallback(
     (
       label: string,
@@ -185,7 +164,6 @@ export const FilterModal: React.FC<FilterModalProps> = ({
       sliderRange: [number, number],
       unit: string = 'g',
     ) => {
-      // Ensure we always have valid values, defaulting to the slider range
       const minValue =
         localFilters[minKey] !== undefined
           ? (localFilters[minKey] as number)
@@ -196,11 +174,12 @@ export const FilterModal: React.FC<FilterModalProps> = ({
           : sliderRange[1];
 
       const handleRangeChange = (low: number, high: number) => {
-        setLocalFilters(prev => ({
-          ...prev,
+        const newFilters = {
+          ...localFilters,
           [minKey]: low === sliderRange[0] ? undefined : low,
           [maxKey]: high === sliderRange[1] ? undefined : high,
-        }));
+        };
+        setLocalFilters(newFilters);
       };
 
       return (
@@ -240,33 +219,36 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   );
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} height={600}>
+    <View style={styles.container}>
+      {/* Action Buttons at the top */}
       <View style={styles.header}>
-        <Text style={styles.title}>Filter Recipes</Text>
         <Button
           title="Reset"
           onPress={handleReset}
-          variant="text"
-          size="small"
+          variant="outline"
+          size='small'
+          style={styles.resetButton}
+          icon={<Icon name="refresh-cw" size={16} color={colors.primary} />}
+        />
+        <Button
+          title="Apply Filters"
+          onPress={handleApply}
+          size='small'
+          variant="primary"
+          style={styles.applyButton}
+          icon={<Icon name="check" size={16} color={colors.white} />}
         />
       </View>
 
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
-        bounces={false} // Prevents the scroll from bouncing
-        scrollEventThrottle={16} // Ensures smooth scrolling
-        // Prevent scroll gestures from being passed to the parent when we're at the top
-        onScrollBeginDrag={e => {
-          const offsetY = e.nativeEvent.contentOffset.y;
-          if (offsetY <= 0) {
-            e.stopPropagation();
-          }
-        }}>
+        bounces={false}
+        scrollEventThrottle={16}>
         {/* Recipe Categories */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Meal Type</Text>
-          {renderCategoryChips(MEAL_TYPES)}
+          {renderCategoryChips(RECIPE_CATEGORIES)}
         </View>
 
         {/* Nutrition Ranges */}
@@ -291,7 +273,15 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
         {/* Favorites Switch */}
         <View style={styles.switchSection}>
-          <Text style={styles.switchLabel}>Show favorites only</Text>
+          <View style={styles.switchLabelContainer}>
+            <Icon
+              name="heart"
+              size={18}
+              color={colors.primary}
+              style={styles.switchIcon}
+            />
+            <Text style={styles.switchLabel}>Show favorites only</Text>
+          </View>
           <Switch
             value={showFavoritesOnly}
             onValueChange={setShowFavoritesOnly}
@@ -302,38 +292,28 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             thumbColor={showFavoritesOnly ? colors.primary : colors.gray[100]}
           />
         </View>
-
-        {/* Add extra padding at the bottom to ensure content is fully scrollable */}
-        <View style={styles.bottomPadding} />
       </ScrollView>
-
-      <View style={styles.footer}>
-        <Button
-          title="Apply Filters"
-          onPress={handleApply}
-          variant="primary"
-          fullWidth
-        />
-      </View>
-    </BottomSheet>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.white,
+    paddingBottom: spacing.md,
+  },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingBottom: spacing.md,
+    padding: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.light,
-  },
-  title: {
-    ...typography.h5,
-    color: colors.text.primary,
+    backgroundColor: colors.white,
+    gap: spacing.sm,
   },
   content: {
     flex: 1,
+    paddingHorizontal: spacing.md,
   },
   section: {
     paddingVertical: spacing.md,
@@ -344,6 +324,7 @@ const styles = StyleSheet.create({
     ...typography.h6,
     color: colors.text.primary,
     marginBottom: spacing.md,
+    fontWeight: typography.fontWeights.semibold,
   },
   chipContainer: {
     flexDirection: 'row',
@@ -351,15 +332,18 @@ const styles = StyleSheet.create({
     marginHorizontal: -spacing.xs,
   },
   chip: {
-    backgroundColor: colors.gray[100],
+    backgroundColor: colors.gray[50],
     borderRadius: borderRadius.full,
     paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     marginHorizontal: spacing.xs,
     marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
   },
   chipSelected: {
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   chipText: {
     ...typography.bodySmall,
@@ -370,7 +354,6 @@ const styles = StyleSheet.create({
   },
   sliderContainer: {
     marginBottom: spacing.lg,
-    paddingHorizontal: spacing.xs,
   },
   sliderLabelContainer: {
     flexDirection: 'row',
@@ -432,9 +415,12 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     marginBottom: spacing.xs,
     backgroundColor: colors.gray[50],
+    borderWidth: 1,
+    borderColor: colors.gray[200],
   },
   sortOptionSelected: {
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   sortOptionText: {
     ...typography.bodyRegular,
@@ -448,20 +434,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.light,
+  },
+  switchLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  switchIcon: {
+    marginRight: spacing.sm,
   },
   switchLabel: {
     ...typography.bodyRegular,
     color: colors.text.primary,
+    fontWeight: typography.fontWeights.medium,
   },
-  footer: {
-    paddingVertical: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border.light,
+  resetButton: {
+    flex: 1,
   },
-  bottomPadding: {
-    height: 50, // Extra padding at the bottom for better scrolling
+  applyButton: {
+    flex: 2,
   },
 });

@@ -1,5 +1,3 @@
-// This is an example update for RecipesScreen.tsx where RecipeCard is likely used
-
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -19,7 +17,7 @@ import { PageContainer } from '../../components/layout/PageContainer';
 import { Header } from '../../components/navigation/Header';
 import { Input } from '../../components/forms/Input';
 import { RecipeCard } from '../../components/recipe/RecipeCard';
-import { FilterModal } from '../../components/modals/FilterModal';
+import { RecipeFilterModal } from '../../components/modals/RecipeFilterModal';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { useRecipes } from '../../hooks/useRecipes';
 import {
@@ -51,7 +49,7 @@ const RecipesScreen: React.FC = () => {
   } = useRecipes();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showRecipeFilterModal, setShowRecipeFilterModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -97,7 +95,7 @@ const RecipesScreen: React.FC = () => {
   const handleApplyFilters = useCallback(
     (newFilters: RecipeFilters) => {
       applyFilters(newFilters);
-      setShowFilterModal(false);
+      setShowRecipeFilterModal(false);
     },
     [applyFilters],
   );
@@ -179,7 +177,7 @@ const RecipesScreen: React.FC = () => {
         showBack={false}
         rightAction={{
           icon: 'filter',
-          onPress: () => setShowFilterModal(true),
+          onPress: () => setShowRecipeFilterModal(true),
         }}
       />
 
@@ -203,7 +201,7 @@ const RecipesScreen: React.FC = () => {
         {filterCount > 0 && (
           <TouchableOpacity
             style={styles.filterBadge}
-            onPress={() => setShowFilterModal(true)}>
+            onPress={() => setShowRecipeFilterModal(true)}>
             <Text style={styles.filterBadgeText}>{filterCount} filters</Text>
             <Icon name="x" size={14} color={colors.primary} />
           </TouchableOpacity>
@@ -231,9 +229,9 @@ const RecipesScreen: React.FC = () => {
         ListEmptyComponent={renderEmptyState}
       />
 
-      <FilterModal
-        visible={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
+      <RecipeFilterModal
+        visible={showRecipeFilterModal}
+        onClose={() => setShowRecipeFilterModal(false)}
         filters={filters}
         onApply={handleApplyFilters}
       />
