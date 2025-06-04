@@ -42,7 +42,7 @@ const SupportScreen: React.FC = () => {
   const navigation = useNavigation<SupportNavigationProp>();
 
   const handleEmailSupport = () => {
-    const email = 'support@macrofriendlyfood.com';
+    const email = 'contact@macrofriendlyfood.com';
     const subject = 'Support Request';
     const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
 
@@ -52,17 +52,6 @@ const SupportScreen: React.FC = () => {
         `Please send your support request to: ${email}`,
         [{ text: 'OK' }],
       );
-    });
-  };
-
-  const handleCallSupport = () => {
-    const phoneNumber = '+1-555-SUPPORT';
-    const telUrl = `tel:${phoneNumber}`;
-
-    Linking.openURL(telUrl).catch(() => {
-      Alert.alert('Phone Not Available', `Please call us at: ${phoneNumber}`, [
-        { text: 'OK' },
-      ]);
     });
   };
 
@@ -255,12 +244,8 @@ const SupportScreen: React.FC = () => {
             <View style={styles.contactItem}>
               <Icon name="mail" size={20} color={colors.primary} />
               <Text style={styles.contactText}>
-                support@macrofriendlyfood.com
+                contact@macrofriendlyfood.com
               </Text>
-            </View>
-            <View style={styles.contactItem}>
-              <Icon name="phone" size={20} color={colors.primary} />
-              <Text style={styles.contactText}>+1-555-SUPPORT</Text>
             </View>
             <View style={styles.contactItem}>
               <Icon name="clock" size={20} color={colors.primary} />

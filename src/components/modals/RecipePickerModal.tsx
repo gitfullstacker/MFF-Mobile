@@ -142,7 +142,9 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.listContainer}>
+      <ScrollView
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}>
         {recipes.map(item => (
           <View key={item._id} style={styles.recipeCardContainer}>
             <RecipeCard

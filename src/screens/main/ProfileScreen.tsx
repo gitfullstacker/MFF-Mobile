@@ -34,7 +34,6 @@ const profileSchema = yup.object({
   first_name: yup.string().required('First name is required'),
   last_name: yup.string().required('Last name is required'),
   email: yup.string().email('Invalid email').required('Email is required'),
-  username: yup.string().required('Username is required'),
 });
 
 const passwordSchema = yup.object({
@@ -53,7 +52,6 @@ type ProfileFormData = {
   first_name: string;
   last_name: string;
   email: string;
-  username: string;
 };
 
 type PasswordFormData = {
@@ -82,7 +80,6 @@ const ProfileScreen: React.FC = () => {
       first_name: '',
       last_name: '',
       email: '',
-      username: '',
     },
   });
 
@@ -108,7 +105,6 @@ const ProfileScreen: React.FC = () => {
         first_name: user.first_name || '',
         last_name: user.last_name || '',
         email: user.email || '',
-        username: user.username || '',
       });
     }
   }, [user, resetProfile]);
@@ -284,24 +280,6 @@ const ProfileScreen: React.FC = () => {
               )}
             />
 
-            <Controller
-              control={profileControl}
-              name="username"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <Input
-                  label="Username"
-                  placeholder="Enter your username"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  error={profileErrors.username?.message}
-                  leftIcon="at-sign"
-                  autoCapitalize="none"
-                  disabled
-                />
-              )}
-            />
-
             <Button
               title="Update Profile"
               onPress={handleProfileSubmit(onSubmitProfile)}
@@ -380,22 +358,6 @@ const ProfileScreen: React.FC = () => {
             />
           </Section>
         )}
-
-        {/* Account Information */}
-        <Section title="Account Information">
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Member Since</Text>
-            <Text style={styles.infoValue}>
-              {user?.created_at
-                ? new Date(user.created_at).toLocaleDateString()
-                : 'Unknown'}
-            </Text>
-          </View>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>User ID</Text>
-            <Text style={styles.infoValue}>{user?.id || 'Unknown'}</Text>
-          </View>
-        </Section>
       </ScrollView>
 
       <LoadingOverlay visible={loading} message="Updating profile..." />
@@ -482,23 +444,6 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: spacing.md,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
-  },
-  infoLabel: {
-    ...typography.bodyRegular,
-    color: colors.text.secondary,
-    fontWeight: fontWeights.medium,
-  },
-  infoValue: {
-    ...typography.bodyRegular,
-    color: colors.text.primary,
   },
 });
 

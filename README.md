@@ -215,7 +215,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 📞 Support
 
-For support, email support@macrofriendlyfood.com or create a ticket in the app.
+For support, email contact@macrofriendlyfood.com or create a ticket in the app.
 
 ---
 
