@@ -19,7 +19,6 @@ import Icon from 'react-native-vector-icons/Feather';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Section } from '../../components/layout/Section';
 import { RecipeCard } from '../../components/recipe/RecipeCard';
-import { MacroDisplay } from '../../components/recipe/MacroDisplay';
 import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { useAuth } from '../../hooks/useAuth';
@@ -39,6 +38,9 @@ import { RECIPE_CATEGORIES } from '@/constants';
 import { useActivePlan } from '../../hooks/useActivePlan';
 import { SetActivePlanModal } from '../../components/modals/SetActivePlanModal';
 import { SwipeIndicator } from '@/components/ui/SwipeIndicator';
+import { MacroDisplayWithGoals } from '@/components/recipe/MacroDisplayWithGoals';
+import { useAtom } from 'jotai';
+import { userPreferencesAtom } from '@/store/atoms/userPreferences';
 
 type DashboardNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Dashboard'>,
@@ -61,6 +63,7 @@ const DashboardScreen: React.FC = () => {
     loading: activePlanLoading,
     fetchActivePlan,
   } = useActivePlan();
+  const [userPreferences] = useAtom(userPreferencesAtom);
   const [showSetActivePlanModal, setShowSetActivePlanModal] = useState(false);
 
   const [todaysMeals, setTodaysMeals] = useState<Recipe[]>([]);
@@ -365,17 +368,20 @@ const DashboardScreen: React.FC = () => {
                 </Text>
               )}
 
-              <View style={styles.macroSummary}>
-                <MacroDisplay
-                  protein={dailyMacros.protein}
-                  carbs={dailyMacros.carbs}
-                  fat={dailyMacros.fat}
-                  calories={dailyMacros.calories}
-                  variant="circle"
-                  size="medium"
-                  precision={0}
-                />
-              </View>
+              {/* Replace the old macro display with: */}
+              <MacroDisplayWithGoals
+                protein={dailyMacros.protein}
+                carbs={dailyMacros.carbs}
+                fat={dailyMacros.fat}
+                calories={dailyMacros.calories}
+                goals={{
+                  protein: userPreferences.proteinTarget,
+                  carbs: userPreferences.carbsTarget,
+                  fat: userPreferences.fatTarget,
+                  calories: userPreferences.calorieTarget,
+                }}
+                title="Today's Nutrition"
+              />
             </>
           ) : (
             <EmptyState
