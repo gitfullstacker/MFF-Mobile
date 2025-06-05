@@ -150,11 +150,13 @@ export const MacroDisplayWithGoals: React.FC<MacroDisplayWithGoalsProps> = ({
         {/* Calories section */}
         <View style={styles.caloriesSection}>
           <View style={styles.caloriesBox}>
-            <Text style={styles.caloriesValue}>{calories}</Text>
-            {goals && (
-              <Text style={styles.caloriesGoal}>/{goals.calories}</Text>
-            )}
-            <Text style={styles.caloriesLabel}>calories</Text>
+            <View style={styles.valuesBox}>
+              <Text style={styles.caloriesValue}>{calories}</Text>
+              {goals && (
+                <Text style={styles.caloriesGoal}>/ {goals.calories}</Text>
+              )}
+              <Text style={styles.caloriesLabel}>calories</Text>
+            </View>
             {goals && (
               <View style={styles.caloriesProgress}>
                 <View
@@ -275,16 +277,24 @@ const styles = StyleSheet.create({
   },
   caloriesSection: {
     alignItems: 'center',
+    width: '100%',
   },
   caloriesBox: {
     backgroundColor: colors.macros.calories + '15',
     padding: spacing.md,
     borderRadius: borderRadius.lg,
     alignItems: 'center',
-    minWidth: 120,
+    width: '100%',
+  },
+  valuesBox: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 6,
   },
   caloriesValue: {
     ...typography.h4,
+    lineHeight: 18,
     color: colors.text.primary,
     fontWeight: typography.fontWeights.bold,
   },
@@ -298,7 +308,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   caloriesProgress: {
-    width: 80,
+    width: '100%',
     height: 4,
     backgroundColor: colors.gray[200],
     borderRadius: 2,

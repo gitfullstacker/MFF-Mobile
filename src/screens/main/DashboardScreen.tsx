@@ -38,7 +38,7 @@ import { RECIPE_CATEGORIES } from '@/constants';
 import { useActivePlan } from '../../hooks/useActivePlan';
 import { SetActivePlanModal } from '../../components/modals/SetActivePlanModal';
 import { SwipeIndicator } from '@/components/ui/SwipeIndicator';
-import { MacroDisplayWithGoals } from '@/components/recipe/MacroDisplayWithGoals';
+import { MacroDisplayWithGoals } from '@/components/dashboard/MacroDisplayWithGoals';
 import { useAtom } from 'jotai';
 import { userPreferencesAtom } from '@/store/atoms/userPreferences';
 
