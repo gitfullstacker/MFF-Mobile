@@ -65,7 +65,7 @@ const DashboardScreen: React.FC = () => {
   } = useActivePlan();
   const [userPreferences] = useAtom(userPreferencesAtom);
   const [showSetActivePlanModal, setShowSetActivePlanModal] = useState(false);
-
+  const [isTodayPlanExpanded, setIsTodayPlanExpanded] = useState(false);
   const [todaysMeals, setTodaysMeals] = useState<Recipe[]>([]);
   const [dailyMacros, setDailyMacros] = useState({
     protein: 0,
@@ -100,6 +100,10 @@ const DashboardScreen: React.FC = () => {
       fetchRecipes({ sort: 'newest' }, true),
       fetchActivePlan(), // This will load the active plan
     ]);
+  };
+
+  const toggleTodayPlan = () => {
+    setIsTodayPlanExpanded(!isTodayPlanExpanded);
   };
 
   const calculateTodaysMeals = () => {
@@ -328,72 +332,88 @@ const DashboardScreen: React.FC = () => {
         </View>
 
         {/* Today's Plan */}
-        <Section
-          title="Today's Plan"
-          action={
-            todaysMeals.length > 0
-              ? { label: 'View All', onPress: navigateToMealPlans }
-              : undefined
-          }>
-          {todaysMeals ? (
-            <>
-              {todaysMeals.length > 0 ? (
-                <View style={styles.sectionWithIndicator}>
-                  <FlatList
-                    ref={mealsScrollRef}
-                    data={todaysMeals}
-                    renderItem={renderTodaysMeal}
-                    keyExtractor={item => item._id}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.mealsContainer}
-                    decelerationRate="fast"
-                    pagingEnabled={false}
-                    onScroll={Animated.event(
-                      [{ nativeEvent: { contentOffset: { x: mealsScrollX } } }],
-                      { useNativeDriver: false },
-                    )}
-                    scrollEventThrottle={16}
-                  />
-                  <SwipeIndicator
-                    itemCount={todaysMeals.length}
-                    itemWidth={mealCardWidth}
-                    scrollX={mealsScrollX}
-                    style={styles.mealsIndicator}
-                  />
-                </View>
-              ) : (
-                <Text style={styles.noMealsText}>
-                  No meals planned for today
-                </Text>
-              )}
-
-              {/* Replace the old macro display with: */}
-              <MacroDisplayWithGoals
-                protein={dailyMacros.protein}
-                carbs={dailyMacros.carbs}
-                fat={dailyMacros.fat}
-                calories={dailyMacros.calories}
-                goals={{
-                  protein: userPreferences.proteinTarget,
-                  carbs: userPreferences.carbsTarget,
-                  fat: userPreferences.fatTarget,
-                  calories: userPreferences.calorieTarget,
-                }}
-                title="Today's Nutrition"
-              />
-            </>
-          ) : (
-            <EmptyState
-              title="No meal plan for this week"
-              description="Create a meal plan to track your daily nutrition"
-              action={{
-                label: 'Create Meal Plan',
-                onPress: navigateToCreatePlan,
-              }}
+        <TouchableOpacity
+          style={styles.todayPlanHeader}
+          onPress={toggleTodayPlan}
+          activeOpacity={0.8}>
+          <Text style={styles.todayPlanHeaderText}>Today's Plan</Text>
+          <View style={styles.todayPlanHeaderRight}>
+            <Text style={styles.todayPlanGuideText}>
+              {isTodayPlanExpanded ? 'Tap to collapse' : 'Tap to expand'}
+            </Text>
+            <Icon
+              name={isTodayPlanExpanded ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={colors.text.primary}
             />
-          )}
-        </Section>
+          </View>
+        </TouchableOpacity>
+
+        {isTodayPlanExpanded && (
+          <View style={styles.todayPlanContent}>
+            {todaysMeals ? (
+              <>
+                {todaysMeals.length > 0 ? (
+                  <View style={styles.sectionWithIndicator}>
+                    <FlatList
+                      ref={mealsScrollRef}
+                      data={todaysMeals}
+                      renderItem={renderTodaysMeal}
+                      keyExtractor={item => item._id}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.mealsContainer}
+                      decelerationRate="fast"
+                      pagingEnabled={false}
+                      onScroll={Animated.event(
+                        [
+                          {
+                            nativeEvent: { contentOffset: { x: mealsScrollX } },
+                          },
+                        ],
+                        { useNativeDriver: false },
+                      )}
+                      scrollEventThrottle={16}
+                    />
+                    <SwipeIndicator
+                      itemCount={todaysMeals.length}
+                      itemWidth={mealCardWidth}
+                      scrollX={mealsScrollX}
+                      style={styles.mealsIndicator}
+                    />
+                  </View>
+                ) : (
+                  <Text style={styles.noMealsText}>
+                    No meals planned for today
+                  </Text>
+                )}
+
+                <MacroDisplayWithGoals
+                  protein={dailyMacros.protein}
+                  carbs={dailyMacros.carbs}
+                  fat={dailyMacros.fat}
+                  calories={dailyMacros.calories}
+                  goals={{
+                    protein: userPreferences.proteinTarget,
+                    carbs: userPreferences.carbsTarget,
+                    fat: userPreferences.fatTarget,
+                    calories: userPreferences.calorieTarget,
+                  }}
+                  title="Today's Nutrition"
+                />
+              </>
+            ) : (
+              <EmptyState
+                title="No meal plan for this week"
+                description="Create a meal plan to track your daily nutrition"
+                action={{
+                  label: 'Create Meal Plan',
+                  onPress: navigateToCreatePlan,
+                }}
+              />
+            )}
+          </View>
+        )}
 
         {/* Quick Actions */}
         <Section title="Quick Actions">
@@ -656,7 +676,32 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
 
-  // Today's Plan
+  // Today's Plan Collapsible Section
+  todayPlanHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: spacing.md,
+  },
+  todayPlanHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: spacing.sm,
+  },
+  todayPlanGuideText: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    marginRight: spacing.xs,
+    fontStyle: 'italic',
+  },
+  todayPlanHeaderText: {
+    ...typography.h5,
+    fontWeight: fontWeights.bold,
+    color: colors.text.primary,
+  },
+  todayPlanContent: {
+    paddingBottom: spacing.md,
+  },
   mealsContainer: {
     paddingRight: spacing.md,
   },
