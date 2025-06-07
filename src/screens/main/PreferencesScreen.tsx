@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Switch,
+  Alert,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import { PageContainer } from '../../components/layout/PageContainer';
@@ -14,15 +21,27 @@ import {
   borderRadius,
   fontWeights,
 } from '../../theme';
+import { useAtom } from 'jotai';
+import { userPreferencesAtom } from '@/store/atoms/userPreferences';
 
 const PreferencesScreen: React.FC = () => {
   const navigation = useNavigation();
 
-  // Macro Targets
-  const [calorieTarget, setCalorieTarget] = useState('2000');
-  const [proteinTarget, setProteinTarget] = useState('150');
-  const [carbsTarget, setCarbsTarget] = useState('200');
-  const [fatTarget, setFatTarget] = useState('65');
+  const [userPreferences, setUserPreferences] = useAtom(userPreferencesAtom);
+
+  // Initialize state from stored preferences
+  const [calorieTarget, setCalorieTarget] = useState(
+    userPreferences.calorieTarget.toString(),
+  );
+  const [proteinTarget, setProteinTarget] = useState(
+    userPreferences.proteinTarget.toString(),
+  );
+  const [carbsTarget, setCarbsTarget] = useState(
+    userPreferences.carbsTarget.toString(),
+  );
+  const [fatTarget, setFatTarget] = useState(
+    userPreferences.fatTarget.toString(),
+  );
 
   // Notifications
   const [mealReminders, setMealReminders] = useState(true);
@@ -32,9 +51,21 @@ const PreferencesScreen: React.FC = () => {
   // Units
   const [useMetric, setUseMetric] = useState(false);
 
+  // Update save handler:
   const handleSavePreferences = () => {
-    // TODO: Implement save functionality
-    console.log('Saving preferences...');
+    const newPreferences = {
+      ...userPreferences,
+      calorieTarget: parseInt(calorieTarget) || 2000,
+      proteinTarget: parseInt(proteinTarget) || 150,
+      carbsTarget: parseInt(carbsTarget) || 200,
+      fatTarget: parseInt(fatTarget) || 65,
+    };
+
+    setUserPreferences(newPreferences);
+
+    Alert.alert('Success', 'Your preferences have been saved!', [
+      { text: 'OK' },
+    ]);
   };
 
   const renderNotification = (

@@ -48,6 +48,8 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
     const resetFilters = {};
     setLocalFilters(resetFilters);
     setShowFavoritesOnly(false);
+
+    onApply({});
   }, []);
 
   const handleApply = useCallback(() => {
@@ -226,14 +228,14 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
           title="Reset"
           onPress={handleReset}
           variant="outline"
-          size='small'
+          size="small"
           style={styles.resetButton}
           icon={<Icon name="refresh-cw" size={16} color={colors.primary} />}
         />
         <Button
           title="Apply Filters"
           onPress={handleApply}
-          size='small'
+          size="small"
           variant="primary"
           style={styles.applyButton}
           icon={<Icon name="check" size={16} color={colors.white} />}
@@ -243,7 +245,6 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
-        bounces={false}
         scrollEventThrottle={16}>
         {/* Recipe Categories */}
         <View style={styles.section}>

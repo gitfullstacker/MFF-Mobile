@@ -51,7 +51,7 @@ export const colors = {
     success: '#22C55E',
     warning: '#F59E0B',
     error: '#EF4444',
-    info: '#3B82F6',
+    info: '#1CA9C9',
   },
 
   border: {
