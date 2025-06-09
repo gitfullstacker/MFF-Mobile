@@ -52,6 +52,7 @@ export interface Recipe {
   slug: string;
   name: string;
   image_url: string;
+  thumb_image_url: string;
   description: string;
   prep_time: number;
   cook_time: number;

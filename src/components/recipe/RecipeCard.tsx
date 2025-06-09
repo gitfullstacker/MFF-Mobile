@@ -44,7 +44,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 }) => {
   const {
     name,
-    image_url,
+    thumb_image_url,
     total_time,
     nutrition,
     is_favorite,
@@ -223,7 +223,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
             {/* Recipe Image */}
             <Image
-              source={{ uri: image_url || undefined }}
+              source={{ uri: thumb_image_url || undefined }}
               defaultSource={require('../../../assets/images/recipe-placeholder.jpg')}
               style={styles.recipeImage}
               resizeMode="cover"
