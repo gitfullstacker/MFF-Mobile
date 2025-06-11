@@ -16,6 +16,7 @@ interface MacroDisplayWithGoalsProps {
   };
   showTitle?: boolean;
   title?: string;
+  description?: string;
 }
 
 export const MacroDisplayWithGoals: React.FC<MacroDisplayWithGoalsProps> = ({
@@ -26,6 +27,7 @@ export const MacroDisplayWithGoals: React.FC<MacroDisplayWithGoalsProps> = ({
   goals,
   showTitle = true,
   title = "Today's Macros",
+  description = "From today's planned recipes",
 }) => {
   const radius = 40;
   const strokeWidth = 6;
@@ -100,7 +102,7 @@ export const MacroDisplayWithGoals: React.FC<MacroDisplayWithGoalsProps> = ({
       {showTitle && (
         <View style={styles.titleSection}>
           <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>From today's planned recipes</Text>
+          <Text style={styles.subtitle}>{description}</Text>
         </View>
       )}
 

@@ -9,6 +9,7 @@ import {
   Image,
   Animated,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
@@ -41,6 +42,7 @@ import { SwipeIndicator } from '@/components/ui/SwipeIndicator';
 import { MacroDisplayWithGoals } from '@/components/dashboard/MacroDisplayWithGoals';
 import { useAtom } from 'jotai';
 import { userPreferencesAtom } from '@/store/atoms/userPreferences';
+import { SuggestedMealPlanSection } from '@/components/dashboard/SuggestedMealPlanSection';
 
 type DashboardNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Dashboard'>,
@@ -73,6 +75,8 @@ const DashboardScreen: React.FC = () => {
     fat: 0,
     calories: 0,
   });
+  const [isSuggestedPlanExpanded, setIsSuggestedPlanExpanded] = useState(false);
+  const [suggestedPlan, setSuggestedPlan] = useState(null);
 
   // Refs for scroll indicators
   const mealsScrollRef = useRef<FlatList>(null);
@@ -228,6 +232,30 @@ const DashboardScreen: React.FC = () => {
 
   const handleSetActivePlan = () => {
     setShowSetActivePlanModal(true);
+  };
+
+  const handleSaveSuggestedPlan = async (plan: Plan) => {
+    try {
+      // Here you would call your API to save the suggested plan
+      // For now, we'll just show an alert
+      Alert.alert(
+        'Plan Saved',
+        `"${plan.name}" has been saved to your meal plans.`,
+        [
+          {
+            text: 'View Plans',
+            onPress: () => navigation.navigate('Meal Plans'),
+          },
+          {
+            text: 'OK',
+            style: 'default',
+          },
+        ],
+      );
+    } catch (error) {
+      console.error('Error saving suggested plan:', error);
+      Alert.alert('Error', 'Failed to save meal plan. Please try again.');
+    }
   };
 
   const navigateToMealPlans = () => {
@@ -414,6 +442,14 @@ const DashboardScreen: React.FC = () => {
             )}
           </View>
         )}
+
+        {/* Suggested Meal Plan Section */}
+        <SuggestedMealPlanSection
+          suggestedPlan={suggestedPlan ?? undefined} // This will come from your backend API
+          onSavePlan={handleSaveSuggestedPlan}
+          onToggleExpanded={setIsSuggestedPlanExpanded}
+          userPreferences={userPreferences}
+        />
 
         {/* Quick Actions */}
         <Section title="Quick Actions">
