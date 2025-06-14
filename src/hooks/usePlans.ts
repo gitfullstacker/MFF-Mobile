@@ -90,11 +90,14 @@ export const usePlans = () => {
         setLoading(true);
         const updatedPlan = await planService.updatePlan(id, data);
 
-        setPlans(plans.map(plan => (plan._id === id ? updatedPlan : plan)));
+        // Use functional updates to avoid dependency on current state
+        setPlans(currentPlans =>
+          currentPlans.map(plan => (plan._id === id ? updatedPlan : plan)),
+        );
 
-        if (selectedPlan?._id === id) {
-          setSelectedPlan(updatedPlan);
-        }
+        setSelectedPlan(currentSelected =>
+          currentSelected?._id === id ? updatedPlan : currentSelected,
+        );
 
         addToast({
           message: 'Meal plan updated successfully!',
@@ -115,7 +118,7 @@ export const usePlans = () => {
         setLoading(false);
       }
     },
-    [plans, selectedPlan, setPlans, setSelectedPlan, addToast],
+    [addToast],
   );
 
   const deletePlan = useCallback(

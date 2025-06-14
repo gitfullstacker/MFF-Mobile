@@ -13,7 +13,7 @@ export const useSubscription = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Default empty subscription stats with empty allowed categories
-  const defaultStats: SubscriptionStats = {
+  const DEFAULT_STATS: SubscriptionStats = {
     status: null,
     name: null,
     expire_date: null,
@@ -52,7 +52,7 @@ export const useSubscription = () => {
             'Failed to fetch subscription information',
         );
 
-        setSubscriptionStats(defaultStats);
+        setSubscriptionStats(DEFAULT_STATS);
 
         if (showToast) {
           addToast({
@@ -62,7 +62,7 @@ export const useSubscription = () => {
           });
         }
 
-        return defaultStats;
+        return DEFAULT_STATS;
       } finally {
         setLoading(false);
       }
@@ -135,8 +135,13 @@ export const useSubscription = () => {
 
       try {
         await subscriptionService.cancelSubscription(subscriptionId);
-        // Refresh subscription stats after cancellation
-        await fetchSubscriptionStats();
+
+        if (subscriptionStats) {
+          setSubscriptionStats({
+            ...subscriptionStats,
+            status: 'pending-cancel',
+          });
+        }
 
         addToast({
           message: 'Subscription cancelled successfully',
@@ -163,7 +168,7 @@ export const useSubscription = () => {
         setLoading(false);
       }
     },
-    [fetchSubscriptionStats, addToast],
+    [subscriptionStats, setSubscriptionStats, addToast],
   );
 
   // Resume subscription
@@ -174,8 +179,13 @@ export const useSubscription = () => {
 
       try {
         await subscriptionService.resumeSubscription(subscriptionId);
-        // Refresh subscription stats after resuming
-        await fetchSubscriptionStats();
+
+        if (subscriptionStats) {
+          setSubscriptionStats({
+            ...subscriptionStats,
+            status: 'active',
+          });
+        }
 
         addToast({
           message: 'Subscription resumed successfully',
@@ -202,7 +212,7 @@ export const useSubscription = () => {
         setLoading(false);
       }
     },
-    [fetchSubscriptionStats, addToast],
+    [subscriptionStats, setSubscriptionStats, addToast],
   );
 
   // Get all subscriptions
@@ -233,7 +243,7 @@ export const useSubscription = () => {
   }, [addToast]);
 
   return {
-    subscriptionStats: subscriptionStats || defaultStats,
+    subscriptionStats: subscriptionStats || DEFAULT_STATS,
     allowedCategoryIds: subscriptionStats?.allowed_category_ids || [],
     loading,
     error,

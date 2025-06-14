@@ -9,11 +9,6 @@ export const useActivePlan = () => {
   const [activePlan, setActivePlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Auto-fetch active plan on hook initialization
-  useEffect(() => {
-    fetchActivePlan();
-  }, []);
-
   const fetchActivePlan = useCallback(async () => {
     try {
       setLoading(true);

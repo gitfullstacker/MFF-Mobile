@@ -53,11 +53,7 @@ const SubscriptionScreen: React.FC = () => {
     useState<Subscription | null>(null);
   const [operationLoading, setOperationLoading] = useState(false);
 
-  useEffect(() => {
-    loadSubscriptions();
-  }, []);
-
-  const loadSubscriptions = async () => {
+  const loadSubscriptions = useCallback(async () => {
     try {
       await fetchSubscriptionStats();
       const subs = await getSubscriptions();
@@ -65,7 +61,11 @@ const SubscriptionScreen: React.FC = () => {
     } catch (error) {
       console.error('Error loading subscriptions:', error);
     }
-  };
+  }, [fetchSubscriptionStats, getSubscriptions]);
+
+  useEffect(() => {
+    loadSubscriptions();
+  }, [loadSubscriptions]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
