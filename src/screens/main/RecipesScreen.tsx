@@ -29,6 +29,7 @@ import {
 } from '../../theme';
 import { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { Recipe, RecipeFilters } from '../../types/recipe';
+import { useFavorites } from '@/hooks/useFavorites';
 
 type RecipesNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Recipes'>,
@@ -37,6 +38,7 @@ type RecipesNavigationProp = CompositeNavigationProp<
 
 const RecipesScreen: React.FC = () => {
   const navigation = useNavigation<RecipesNavigationProp>();
+  const { toggleFavorite } = useFavorites();
   const {
     recipes,
     loading,
@@ -44,7 +46,6 @@ const RecipesScreen: React.FC = () => {
     filters,
     fetchRecipes,
     searchRecipes,
-    toggleFavorite,
     applyFilters,
   } = useRecipes();
 

@@ -8,14 +8,13 @@ import {
   addToastAtom,
 } from '../store';
 import { recipeService } from '../services/recipe';
-import { favoriteService } from '../services/favorite';
 import { RecipeFilters } from '../types/recipe';
 
 export const useRecipes = () => {
   const [recipes, setRecipes] = useAtom(recipesAtom);
   const [selectedRecipe, setSelectedRecipe] = useAtom(selectedRecipeAtom);
   const [filters, setFilters] = useAtom(recipeFiltersAtom);
-  const [favoriteIds, setFavoriteIds] = useAtom(favoriteRecipeIdsAtom);
+  const [favoriteIds] = useAtom(favoriteRecipeIdsAtom); // Read-only for syncing
   const [, addToast] = useAtom(addToastAtom);
 
   const [loading, setLoading] = useState(false);
@@ -37,10 +36,16 @@ export const useRecipes = () => {
           pageSize: 20,
         });
 
+        // Sync favorite status with global state when fetching recipes
+        const recipesWithFavoriteStatus = response.data.map(recipe => ({
+          ...recipe,
+          is_favorite: favoriteIds.includes(recipe._id),
+        }));
+
         if (reset) {
-          setRecipes(response.data);
+          setRecipes(recipesWithFavoriteStatus);
         } else {
-          setRecipes([...recipes, ...response.data]);
+          setRecipes([...recipes, ...recipesWithFavoriteStatus]);
         }
 
         setHasMore(response.hasMore);
@@ -55,7 +60,16 @@ export const useRecipes = () => {
         setLoading(false);
       }
     },
-    [recipes, filters, page, hasMore, loading, setRecipes, addToast],
+    [
+      recipes,
+      filters,
+      page,
+      hasMore,
+      loading,
+      setRecipes,
+      addToast,
+      favoriteIds,
+    ],
   );
 
   const fetchRecipe = useCallback(
@@ -63,8 +77,15 @@ export const useRecipes = () => {
       try {
         setLoading(true);
         const recipe = await recipeService.getRecipe(slug);
-        setSelectedRecipe(recipe);
-        return recipe;
+
+        // Sync favorite status with global state
+        const recipeWithFavoriteStatus = {
+          ...recipe,
+          is_favorite: favoriteIds.includes(recipe._id),
+        };
+
+        setSelectedRecipe(recipeWithFavoriteStatus);
+        return recipeWithFavoriteStatus;
       } catch (error: any) {
         addToast({
           message: error.response?.data?.message || 'Failed to fetch recipe',
@@ -76,56 +97,7 @@ export const useRecipes = () => {
         setLoading(false);
       }
     },
-    [setSelectedRecipe, addToast],
-  );
-
-  const toggleFavorite = useCallback(
-    async (recipeId: string) => {
-      try {
-        const { isFavorite } = await favoriteService.toggleFavorite(recipeId);
-
-        if (isFavorite) {
-          setFavoriteIds([...favoriteIds, recipeId]);
-        } else {
-          setFavoriteIds(favoriteIds.filter(id => id !== recipeId));
-        }
-
-        // Update the recipe in the list
-        setRecipes(
-          recipes.map(recipe =>
-            recipe._id === recipeId
-              ? { ...recipe, is_favorite: isFavorite }
-              : recipe,
-          ),
-        );
-
-        // Update selected recipe if it's the same
-        if (selectedRecipe?._id === recipeId) {
-          setSelectedRecipe({ ...selectedRecipe, is_favorite: isFavorite });
-        }
-
-        addToast({
-          message: isFavorite ? 'Added to favorites' : 'Removed from favorites',
-          type: 'success',
-          duration: 3000,
-        });
-      } catch (error: any) {
-        addToast({
-          message: error.response?.data?.message || 'Failed to update favorite',
-          type: 'error',
-          duration: 5000,
-        });
-      }
-    },
-    [
-      recipes,
-      selectedRecipe,
-      favoriteIds,
-      setRecipes,
-      setSelectedRecipe,
-      setFavoriteIds,
-      addToast,
-    ],
+    [setSelectedRecipe, addToast, favoriteIds],
   );
 
   const searchRecipes = useCallback(
@@ -133,7 +105,14 @@ export const useRecipes = () => {
       try {
         setLoading(true);
         const response = await recipeService.searchRecipes(query);
-        setRecipes(response.data);
+
+        // Sync favorite status with global state
+        const recipesWithFavoriteStatus = response.data.map(recipe => ({
+          ...recipe,
+          is_favorite: favoriteIds.includes(recipe._id),
+        }));
+
+        setRecipes(recipesWithFavoriteStatus);
         setHasMore(response.hasMore);
         setPage(1);
       } catch (error: any) {
@@ -146,7 +125,7 @@ export const useRecipes = () => {
         setLoading(false);
       }
     },
-    [setRecipes, addToast],
+    [setRecipes, addToast, favoriteIds],
   );
 
   const applyFilters = useCallback(
@@ -158,15 +137,16 @@ export const useRecipes = () => {
   );
 
   return {
+    // Recipe data and state
     recipes,
     selectedRecipe,
     filters,
-    favoriteIds,
     loading,
     hasMore,
+
+    // Recipe operations
     fetchRecipes,
     fetchRecipe,
-    toggleFavorite,
     searchRecipes,
     applyFilters,
   };

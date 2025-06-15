@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Dimensions,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -43,6 +43,8 @@ import { MacroDisplayWithGoals } from '@/components/dashboard/MacroDisplayWithGo
 import { useAtom } from 'jotai';
 import { userPreferencesAtom } from '@/store/atoms/userPreferences';
 import { SuggestedMealPlanSection } from '@/components/dashboard/SuggestedMealPlanSection';
+import { useRecentRecipes } from '@/hooks/useRecentRecipes';
+import { useFavorites } from '@/hooks/useFavorites';
 
 type DashboardNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Dashboard'>,
@@ -54,12 +56,13 @@ const { width: screenWidth } = Dimensions.get('window');
 const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<DashboardNavigationProp>();
   const { user } = useAuth();
+  const { toggleFavorite } = useFavorites();
   const {
-    recipes,
-    loading: recipesLoading,
-    fetchRecipes,
-    toggleFavorite,
-  } = useRecipes();
+    recentRecipes,
+    loading: recentRecipesLoading,
+    fetchRecentRecipes,
+    refreshRecentRecipes,
+  } = useRecentRecipes();
   const {
     activePlan,
     loading: activePlanLoading,
@@ -101,10 +104,16 @@ const DashboardScreen: React.FC = () => {
 
   const loadDashboardData = async () => {
     await Promise.all([
-      fetchRecipes({ sort: 'newest' }, true),
+      fetchRecentRecipes(5),
       fetchActivePlan(), // This will load the active plan
     ]);
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshRecentRecipes(5);
+    }, [refreshRecentRecipes]),
+  );
 
   const toggleTodayPlan = () => {
     setIsTodayPlanExpanded(!isTodayPlanExpanded);
@@ -198,7 +207,7 @@ const DashboardScreen: React.FC = () => {
             params: { recipeId: item.slug, recipe: item },
           } as any)
         }
-        onFavoriteToggle={() => toggleFavorite(item._id)}
+        onFavoriteToggle={() => handleRecentRecipeFavoriteToggle(item._id)}
       />
     </View>
   );
@@ -225,6 +234,14 @@ const DashboardScreen: React.FC = () => {
       </TouchableOpacity>
     </View>
   );
+
+  const handleRecentRecipeFavoriteToggle = async (recipeId: string) => {
+    try {
+      await toggleFavorite(recipeId);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
+  };
 
   const handleActivePlanSuccess = (plan: Plan) => {
     calculateTodaysMeals();
@@ -483,22 +500,20 @@ const DashboardScreen: React.FC = () => {
           </View>
         </Section>
 
-        {/* Recent Recipes */}
+        {/* Recent Recipes Section */}
         <Section
           title="Recent Recipes"
           action={{ label: 'View All', onPress: navigateToRecipes }}>
-          {recipes.length > 0 ? (
-            <View style={styles.sectionWithIndicator}>
+          {recentRecipes.length > 0 ? (
+            <View>
               <FlatList
                 ref={recipesScrollRef}
-                data={recipes.slice(0, 6)}
+                data={recentRecipes}
                 renderItem={renderRecentRecipe}
                 keyExtractor={item => item._id}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.recipesContainer}
-                decelerationRate="fast"
-                pagingEnabled={false}
                 onScroll={Animated.event(
                   [{ nativeEvent: { contentOffset: { x: recipesScrollX } } }],
                   { useNativeDriver: false },
@@ -506,7 +521,7 @@ const DashboardScreen: React.FC = () => {
                 scrollEventThrottle={16}
               />
               <SwipeIndicator
-                itemCount={Math.min(6, recipes.length)}
+                itemCount={recentRecipes.length}
                 itemWidth={recipeCardWidth}
                 scrollX={recipesScrollX}
                 style={styles.recipesIndicator}
@@ -514,8 +529,8 @@ const DashboardScreen: React.FC = () => {
             </View>
           ) : (
             <EmptyState
-              title="No recipes yet"
-              description="Start exploring our collection of macro-friendly recipes"
+              title="No Recent Recipes"
+              description="Start exploring recipes to see them here"
               action={{
                 label: 'Browse Recipes',
                 onPress: navigateToRecipes,
@@ -553,15 +568,18 @@ const DashboardScreen: React.FC = () => {
         </Section>
       </ScrollView>
 
+      {/* Loading overlay */}
+      {(activePlanLoading || recentRecipesLoading) && (
+        <LoadingOverlay
+          visible={activePlanLoading || recentRecipesLoading}
+          message="Loading dashboard..."
+        />
+      )}
+
       <SetActivePlanModal
         visible={showSetActivePlanModal}
         onClose={() => setShowSetActivePlanModal(false)}
         onSuccess={handleActivePlanSuccess}
-      />
-
-      <LoadingOverlay
-        visible={recipesLoading || activePlanLoading}
-        message="Loading dashboard..."
       />
     </PageContainer>
   );

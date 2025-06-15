@@ -6,7 +6,6 @@ import {
   Image,
   ScrollView,
   TouchableOpacity,
-  Share,
   Dimensions,
   StatusBar,
   Animated,
@@ -42,6 +41,8 @@ import {
 import { RecipeStackParamList } from '../../navigation/types';
 import { IngredientItem, Recipe, RecipeComment } from '@/types/recipe';
 import { recipeService } from '../../services/recipe';
+import { useRecentRecipes } from '@/hooks/useRecentRecipes';
+import { useFavorites } from '@/hooks/useFavorites';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -63,7 +64,9 @@ const RecipeDetailScreen: React.FC = () => {
   const { recipeId, recipe: routeRecipe } = route.params;
   const { user } = useAuth();
 
-  const { fetchRecipe, toggleFavorite, selectedRecipe, loading } = useRecipes();
+  const { toggleFavorite } = useFavorites();
+  const { addToRecentRecipes } = useRecentRecipes();
+  const { fetchRecipe, selectedRecipe, loading } = useRecipes();
   const [recipe, setRecipe] = useState<Recipe | null>(routeRecipe || null);
   const [activeTab, setActiveTab] = useState<
     'ingredients' | 'instructions' | 'reviews'
@@ -95,6 +98,7 @@ const RecipeDetailScreen: React.FC = () => {
     if (routeRecipe) {
       setRecipe(routeRecipe);
       setIsFavorite(routeRecipe.is_favorite);
+      addToRecentRecipes(routeRecipe);
     } else if (recipeId) {
       // Fallback: fetch recipe if not provided in params
       fetchRecipe(recipeId);
