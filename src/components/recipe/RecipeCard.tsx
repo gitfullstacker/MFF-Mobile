@@ -30,7 +30,7 @@ interface RecipeCardProps {
   showSelectionIcon?: boolean;
   onAddClick?: (recipe: Recipe) => void;
   onRemoveClick?: (recipe: Recipe) => void;
-  onFavoriteToggle?: (recipeId: string, isFavorite: boolean) => void;
+  onFavoriteToggle?: (recipeId: string) => void;
 }
 
 export const RecipeCard: React.FC<RecipeCardProps> = ({
@@ -52,7 +52,6 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
     _id,
     rating,
   } = recipe;
-  const [favorite, setFavorite] = useState(is_favorite);
   const [isSaving, setIsSaving] = useState(false);
   const { allowedCategoryIds, loading: subscriptionLoading } =
     useSubscription();
@@ -91,19 +90,14 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
     if (isSaving) return; // Prevent double taps
 
     setIsSaving(true);
-    const newFavoriteStatus = !favorite;
 
     try {
-      // Update UI optimistically
-      setFavorite(newFavoriteStatus);
-
       // Notify parent component if needed
       if (onFavoriteToggle) {
-        onFavoriteToggle(_id, newFavoriteStatus);
+        onFavoriteToggle(_id);
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      setFavorite(favorite); // Revert on error
     } finally {
       setIsSaving(false);
     }
@@ -206,7 +200,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               {isSaving ? (
                 <ActivityIndicator size="small" color={colors.primary} />
-              ) : favorite ? (
+              ) : is_favorite ? (
                 <MaterialIcon
                   name="favorite"
                   size={18}

@@ -179,26 +179,6 @@ export const SetActivePlanModal: React.FC<SetActivePlanModalProps> = ({
             />
           )}
         </View>
-
-        {/* Action buttons */}
-        {!plansLoading && plans.length > 0 && (
-          <View style={styles.footer}>
-            <Button
-              title="Cancel"
-              onPress={onClose}
-              variant="outline"
-              style={styles.cancelButton}
-            />
-            <Button
-              title="Set as Active"
-              onPress={handleSetActivePlan}
-              variant="primary"
-              style={styles.confirmButton}
-              disabled={!selectedPlan || activePlan?._id === selectedPlan?._id}
-              loading={activeLoading}
-            />
-          </View>
-        )}
       </BottomSheet>
 
       <LoadingOverlay
@@ -344,21 +324,5 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.text.secondary,
     marginBottom: spacing.xs,
-  },
-
-  // Footer
-  footer: {
-    flexDirection: 'row',
-    paddingVertical: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border.light,
-  },
-  cancelButton: {
-    flex: 1,
-    marginRight: spacing.sm,
-  },
-  confirmButton: {
-    flex: 1,
-    marginLeft: spacing.sm,
   },
 });

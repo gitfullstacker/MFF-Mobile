@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Dimensions,
   Alert,
 } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -23,7 +23,6 @@ import { RecipeCard } from '../../components/recipe/RecipeCard';
 import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { useAuth } from '../../hooks/useAuth';
-import { useRecipes } from '../../hooks/useRecipes';
 import {
   colors,
   typography,
@@ -61,7 +60,6 @@ const DashboardScreen: React.FC = () => {
     recentRecipes,
     loading: recentRecipesLoading,
     fetchRecentRecipes,
-    refreshRecentRecipes,
   } = useRecentRecipes();
   const {
     activePlan,
@@ -108,12 +106,6 @@ const DashboardScreen: React.FC = () => {
       fetchActivePlan(), // This will load the active plan
     ]);
   };
-
-  useFocusEffect(
-    useCallback(() => {
-      refreshRecentRecipes(5);
-    }, [refreshRecentRecipes]),
-  );
 
   const toggleTodayPlan = () => {
     setIsTodayPlanExpanded(!isTodayPlanExpanded);
@@ -207,7 +199,7 @@ const DashboardScreen: React.FC = () => {
             params: { recipeId: item.slug, recipe: item },
           } as any)
         }
-        onFavoriteToggle={() => handleRecentRecipeFavoriteToggle(item._id)}
+        onFavoriteToggle={recipeId => toggleFavorite(recipeId)}
       />
     </View>
   );
@@ -234,14 +226,6 @@ const DashboardScreen: React.FC = () => {
       </TouchableOpacity>
     </View>
   );
-
-  const handleRecentRecipeFavoriteToggle = async (recipeId: string) => {
-    try {
-      await toggleFavorite(recipeId);
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-    }
-  };
 
   const handleActivePlanSuccess = (plan: Plan) => {
     calculateTodaysMeals();

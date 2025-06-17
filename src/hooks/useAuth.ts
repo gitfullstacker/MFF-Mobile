@@ -1,38 +1,87 @@
-import { useAtom } from 'jotai';
 import { useCallback } from 'react';
+import { useAtom } from 'jotai';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   authTokenAtom,
   userAtom,
   isAuthenticatedAtom,
   addToastAtom,
   savedCredentialsAtom,
+  subscriptionStatsAtom,
+  favoriteRecipeIdsAtom,
+  activePlanAtom,
 } from '../store';
 import { authService } from '../services/auth';
+import { userService } from '../services/user';
+import { subscriptionService } from '../services/subscription';
+import { favoriteService } from '../services/favorite';
 import { LoginRequest } from '../types/auth';
 import { isTokenExpired } from '../utils/tokenUtils';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useSubscription } from './useSubscription';
-import { userService } from '@/services/user';
 
 export const useAuth = () => {
   const [authToken, setAuthToken] = useAtom(authTokenAtom);
   const [user, setUser] = useAtom(userAtom);
   const [isAuthenticated, setIsAuthenticated] = useAtom(isAuthenticatedAtom);
-  const [, addToast] = useAtom(addToastAtom);
   const [savedCredentials, setSavedCredentials] = useAtom(savedCredentialsAtom);
-  const { fetchSubscriptionStats } = useSubscription();
+  const [, setSubscriptionStats] = useAtom(subscriptionStatsAtom);
+  const [, setFavoriteIds] = useAtom(favoriteRecipeIdsAtom);
+  const [, setActivePlan] = useAtom(activePlanAtom);
+  const [, addToast] = useAtom(addToastAtom);
+
+  const fetchAndSetSubscriptionStats = useCallback(async () => {
+    try {
+      const stats = await subscriptionService.getSubscriptionStats();
+      setSubscriptionStats(stats);
+      return stats;
+    } catch (error) {
+      console.error('Error fetching subscription stats:', error);
+      // Set default stats on error
+      setSubscriptionStats({
+        status: null,
+        name: null,
+        expire_date: null,
+        paid_date: null,
+        total_price: null,
+        subscription_id: null,
+        product_id: null,
+        allowed_category_ids: [],
+      });
+      return null;
+    }
+  }, [setSubscriptionStats]);
+
+  const fetchAndSetFavoriteIds = useCallback(async () => {
+    try {
+      const favoriteRecipes = await favoriteService.getFavorites();
+      const favoriteRecipeIds = favoriteRecipes.data.map(recipe => recipe._id);
+      setFavoriteIds(favoriteRecipeIds);
+      return favoriteRecipeIds;
+    } catch (error) {
+      console.error('Error fetching favorite recipe IDs:', error);
+      setFavoriteIds([]);
+      return [];
+    }
+  }, [setFavoriteIds]);
+
+  const fetchAndSetActivePlan = useCallback(async () => {
+    try {
+      const plan = await userService.getActivePlan();
+      setActivePlan(plan);
+      return plan;
+    } catch (error) {
+      console.error('Error fetching active plan:', error);
+      setActivePlan(null);
+      return null;
+    }
+  }, [setActivePlan]);
 
   const login = useCallback(
     async (credentials: LoginRequest, rememberMe: boolean = false) => {
       try {
-        // Call login endpoint
         const response = await authService.login(credentials);
 
-        // Store token
-        const token = response.token;
-
-        // Then update atoms
-        setAuthToken(token);
+        // Store auth data
+        setAuthToken(response.token);
         setUser(response.user);
         setIsAuthenticated(true);
 
@@ -44,12 +93,15 @@ export const useAuth = () => {
             rememberMe,
           });
         } else {
-          // Clear saved credentials if remember me is turned off
           setSavedCredentials(null);
         }
 
-        // Fetch subscription stats after successful login
-        await fetchSubscriptionStats();
+        // Fetch user-specific data after successful login
+        await Promise.all([
+          fetchAndSetSubscriptionStats(),
+          fetchAndSetFavoriteIds(),
+          fetchAndSetActivePlan(),
+        ]);
 
         addToast({
           message: 'Login successful!',
@@ -75,7 +127,9 @@ export const useAuth = () => {
       setIsAuthenticated,
       setSavedCredentials,
       addToast,
-      fetchSubscriptionStats,
+      fetchAndSetSubscriptionStats,
+      fetchAndSetFavoriteIds,
+      fetchAndSetActivePlan,
     ],
   );
 
@@ -84,16 +138,50 @@ export const useAuth = () => {
       await AsyncStorage.removeItem('authToken');
       await AsyncStorage.removeItem('user');
 
-      setIsAuthenticated(false);
-
-      // Don't clear savedCredentials on logout if rememberMe was true
-      // This allows for quick login next time
-    } catch (error) {
       setAuthToken(null);
       setUser(null);
       setIsAuthenticated(false);
+      // Clear all user-specific data on logout
+      setSubscriptionStats({
+        status: null,
+        name: null,
+        expire_date: null,
+        paid_date: null,
+        total_price: null,
+        subscription_id: null,
+        product_id: null,
+        allowed_category_ids: [],
+      });
+      setFavoriteIds([]);
+      setActivePlan(null);
+
+      // Don't clear savedCredentials on logout if rememberMe was true
+    } catch (error) {
+      console.error('❌ Logout error:', error);
+      setAuthToken(null);
+      setUser(null);
+      setIsAuthenticated(false);
+      setSubscriptionStats({
+        status: null,
+        name: null,
+        expire_date: null,
+        paid_date: null,
+        total_price: null,
+        subscription_id: null,
+        product_id: null,
+        allowed_category_ids: [],
+      });
+      setFavoriteIds([]);
+      setActivePlan(null);
     }
-  }, [setAuthToken, setUser, setIsAuthenticated]);
+  }, [
+    setAuthToken,
+    setUser,
+    setIsAuthenticated,
+    setSubscriptionStats,
+    setFavoriteIds,
+    setActivePlan,
+  ]);
 
   const updateProfile = useCallback(
     async (data: any) => {
@@ -140,7 +228,7 @@ export const useAuth = () => {
         if (isTokenExpired(authToken)) {
           console.log('❌ Token expired, logging out');
           await logout();
-          return;
+          return false;
         }
 
         setIsAuthenticated(true);
@@ -148,19 +236,37 @@ export const useAuth = () => {
         // Verify token is still valid by making a test request
         try {
           await userService.getProfile();
+          // Fetch user-specific data for authenticated users
+          await Promise.all([
+            fetchAndSetSubscriptionStats(),
+            fetchAndSetFavoriteIds(),
+            fetchAndSetActivePlan(),
+          ]);
+          return true;
         } catch (error) {
           console.log('❌ Token is invalid, logging out');
           await logout();
+          return false;
         }
       } else {
         console.log('❌ No stored auth data found');
         setIsAuthenticated(false);
+        return false;
       }
     } catch (error) {
       console.error('❌ Error checking auth status:', error);
       setIsAuthenticated(false);
+      return false;
     }
-  }, [authToken, user, setIsAuthenticated, logout]);
+  }, [
+    authToken,
+    user,
+    setIsAuthenticated,
+    logout,
+    fetchAndSetSubscriptionStats,
+    fetchAndSetFavoriteIds,
+    fetchAndSetActivePlan,
+  ]);
 
   return {
     user,

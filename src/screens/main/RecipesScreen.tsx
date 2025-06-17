@@ -101,13 +101,6 @@ const RecipesScreen: React.FC = () => {
     [applyFilters],
   );
 
-  const handleFavoriteToggle = useCallback(
-    async (recipeId: string, isFavorite: boolean) => {
-      await toggleFavorite(recipeId);
-    },
-    [toggleFavorite],
-  );
-
   const getFilterCount = () => {
     let count = 0;
     Object.entries(filters).forEach(([key, value]) => {
@@ -124,9 +117,7 @@ const RecipesScreen: React.FC = () => {
         <RecipeCard
           recipe={item}
           onPress={() => handleRecipePress(item)}
-          onFavoriteToggle={(recipeId, isFavorite) =>
-            handleFavoriteToggle(recipeId, isFavorite)
-          }
+          onFavoriteToggle={recipeId => toggleFavorite(recipeId)}
         />
       </View>
     );

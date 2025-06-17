@@ -1,12 +1,11 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState } from 'react';
 import { useAtom } from 'jotai';
-import { addToastAtom } from '../store';
+import { activePlanAtom, addToastAtom } from '../store';
 import { userService } from '../services/user';
-import { Plan } from '../types/plan';
 
 export const useActivePlan = () => {
   const [, addToast] = useAtom(addToastAtom);
-  const [activePlan, setActivePlan] = useState<Plan | null>(null);
+  const [activePlan, setActivePlan] = useAtom(activePlanAtom);
   const [loading, setLoading] = useState(false);
 
   const fetchActivePlan = useCallback(async () => {
@@ -17,16 +16,21 @@ export const useActivePlan = () => {
       return plan;
     } catch (error: any) {
       console.error('Error fetching active plan:', error);
-      addToast({
-        message: error.response?.data?.message || 'Failed to fetch active plan',
-        type: 'error',
-        duration: 5000,
-      });
+      // Don't show error toast for missing active plan (it's optional)
+      if (error.response?.status !== 404) {
+        addToast({
+          message:
+            error.response?.data?.message || 'Failed to fetch active plan',
+          type: 'error',
+          duration: 5000,
+        });
+      }
+      setActivePlan(null);
       return null;
     } finally {
       setLoading(false);
     }
-  }, [addToast]);
+  }, [addToast, setActivePlan]);
 
   const setActivePlanById = useCallback(
     async (planId: string) => {
@@ -54,18 +58,13 @@ export const useActivePlan = () => {
         setLoading(false);
       }
     },
-    [addToast],
+    [addToast, setActivePlan],
   );
-
-  const clearActivePlan = useCallback(() => {
-    setActivePlan(null);
-  }, []);
 
   return {
     activePlan,
     loading,
     fetchActivePlan,
     setActivePlanById,
-    clearActivePlan,
   };
 };

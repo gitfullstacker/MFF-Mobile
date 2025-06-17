@@ -1,85 +1,83 @@
-import { useState, useEffect, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useCallback, useEffect } from 'react';
 import { useAtom } from 'jotai';
-import { addToastAtom, favoriteRecipeIdsAtom } from '../store';
-import { recipeService } from '../services/recipe';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  favoriteRecipeIdsAtom,
+  addToastAtom,
+  recentRecipesAtom,
+  recentRecipesLoadingAtom,
+} from '../store';
 import { Recipe } from '../types/recipe';
 
-const RECENT_RECIPES_KEY = '@recent_recipes';
+const RECENT_RECIPES_KEY = 'recentRecipes';
 const MAX_RECENT_RECIPES = 10;
 
 export const useRecentRecipes = () => {
-  const [recentRecipes, setRecentRecipes] = useState<Recipe[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [favoriteIds] = useAtom(favoriteRecipeIdsAtom);
   const [, addToast] = useAtom(addToastAtom);
-  const [favoriteIds] = useAtom(favoriteRecipeIdsAtom); // Use atom directly
+  const [recentRecipes, setRecentRecipes] = useAtom(recentRecipesAtom);
+  const [loading, setLoading] = useAtom(recentRecipesLoadingAtom);
 
-  // Load recent recipes from storage and fetch if needed
   const fetchRecentRecipes = useCallback(
-    async (limit: number = 5, forceRefresh: boolean = false) => {
+    async (limit = 10, forceRefresh = false) => {
       try {
         setLoading(true);
-        setError(null);
 
-        // Always get from local storage first
         const stored = await AsyncStorage.getItem(RECENT_RECIPES_KEY);
         const storedRecipes: Recipe[] = stored ? JSON.parse(stored) : [];
 
-        if (storedRecipes.length > 0 && !forceRefresh) {
-          // Use stored recipes and limit them, sync with current favorite status
-          const syncedRecipes = storedRecipes.map(recipe => ({
-            ...recipe,
-            is_favorite: favoriteIds.includes(recipe._id),
-          }));
-          setRecentRecipes(syncedRecipes.slice(0, limit));
-        } else if (storedRecipes.length > 0 && forceRefresh) {
-          // Force refresh: update state with stored recipes first, sync favorite status
-          const syncedRecipes = storedRecipes.map(recipe => ({
-            ...recipe,
-            is_favorite: favoriteIds.includes(recipe._id),
-          }));
-          setRecentRecipes(syncedRecipes.slice(0, limit));
-        } else {
-          // Fallback to API if no stored recipes - get newest recipes
-          const response = await recipeService.getRecipes({
-            sort: 'newest',
-            page: 0,
-            pageSize: limit,
-          });
-          const syncedRecipes = response.data.map(recipe => ({
-            ...recipe,
-            is_favorite: favoriteIds.includes(recipe._id),
-          }));
-          setRecentRecipes(syncedRecipes || []);
-        }
-      } catch (err: any) {
-        console.error('Error fetching recent recipes:', err);
-        setError('Failed to load recent recipes');
+        // Sync favorite status with global state
+        const recipesWithUpdatedFavoriteStatus = storedRecipes.map(recipe => ({
+          ...recipe,
+          is_favorite: favoriteIds.includes(recipe._id),
+        }));
+
+        const limitedRecipes = recipesWithUpdatedFavoriteStatus.slice(0, limit);
+        setRecentRecipes(limitedRecipes);
+
+        return limitedRecipes;
+      } catch (error) {
+        console.error('Error fetching recent recipes:', error);
         addToast({
           message: 'Failed to load recent recipes',
           type: 'error',
           duration: 3000,
         });
+        return [];
       } finally {
         setLoading(false);
       }
     },
-    [addToast, favoriteIds],
+    [addToast, favoriteIds, setRecentRecipes, setLoading],
   );
 
-  // Sync recent recipes with global favorite changes
+  // Update recent recipes when favoriteIds change
   useEffect(() => {
     if (recentRecipes.length > 0) {
-      const syncedRecipes = recentRecipes.map(recipe => ({
+      const updatedRecipes = recentRecipes.map(recipe => ({
         ...recipe,
         is_favorite: favoriteIds.includes(recipe._id),
       }));
-      setRecentRecipes(syncedRecipes);
-    }
-  }, [favoriteIds]); // This will sync whenever global favorites change
 
-  // Add a recipe to recent recipes
+      // Only update state if there's actually a change
+      const hasChanges = updatedRecipes.some(
+        (recipe, index) =>
+          recipe.is_favorite !== recentRecipes[index]?.is_favorite,
+      );
+
+      if (hasChanges) {
+        setRecentRecipes(updatedRecipes);
+        // Also update AsyncStorage to keep it in sync
+        AsyncStorage.setItem(
+          RECENT_RECIPES_KEY,
+          JSON.stringify(updatedRecipes),
+        ).catch(error =>
+          console.error('Error updating recent recipes storage:', error),
+        );
+      }
+    }
+  }, [favoriteIds, recentRecipes, setRecentRecipes]);
+
   const addToRecentRecipes = useCallback(
     async (recipe: Recipe) => {
       try {
@@ -89,7 +87,6 @@ export const useRecentRecipes = () => {
           is_favorite: favoriteIds.includes(recipe._id),
         };
 
-        // Get existing recent recipes from storage
         const stored = await AsyncStorage.getItem(RECENT_RECIPES_KEY);
         const existingRecipes: Recipe[] = stored ? JSON.parse(stored) : [];
 
@@ -110,11 +107,8 @@ export const useRecentRecipes = () => {
           JSON.stringify(updatedRecipes),
         );
 
-        // Update local state
-        setRecentRecipes(prev => {
-          const filteredPrev = prev.filter(r => r._id !== syncedRecipe._id);
-          return [syncedRecipe, ...filteredPrev].slice(0, MAX_RECENT_RECIPES);
-        });
+        // Update global state immediately
+        setRecentRecipes(updatedRecipes);
       } catch (error) {
         console.error('Error adding to recent recipes:', error);
         addToast({
@@ -124,10 +118,9 @@ export const useRecentRecipes = () => {
         });
       }
     },
-    [addToast, favoriteIds],
+    [addToast, favoriteIds, setRecentRecipes],
   );
 
-  // Remove a specific recipe from recent recipes
   const removeFromRecentRecipes = useCallback(
     async (recipeId: string) => {
       try {
@@ -139,7 +132,7 @@ export const useRecentRecipes = () => {
           RECENT_RECIPES_KEY,
           JSON.stringify(filtered),
         );
-        setRecentRecipes(prev => prev.filter(r => r._id !== recipeId));
+        setRecentRecipes(filtered);
       } catch (error) {
         console.error('Error removing from recent recipes:', error);
         addToast({
@@ -149,10 +142,9 @@ export const useRecentRecipes = () => {
         });
       }
     },
-    [addToast],
+    [addToast, setRecentRecipes],
   );
 
-  // Clear all recent recipes
   const clearRecentRecipes = useCallback(async () => {
     try {
       await AsyncStorage.removeItem(RECENT_RECIPES_KEY);
@@ -170,27 +162,19 @@ export const useRecentRecipes = () => {
         duration: 3000,
       });
     }
-  }, [addToast]);
+  }, [addToast, setRecentRecipes]);
 
-  // Load recent recipes on mount
+  // Load recent recipes on mount (only once)
   useEffect(() => {
-    fetchRecentRecipes();
+    if (recentRecipes.length === 0) {
+      fetchRecentRecipes();
+    }
   }, []);
-
-  // Refresh recent recipes (to be called when screen focuses)
-  const refreshRecentRecipes = useCallback(
-    async (limit?: number) => {
-      await fetchRecentRecipes(limit || 5, true); // Force refresh from storage
-    },
-    [fetchRecentRecipes],
-  );
 
   return {
     recentRecipes,
     loading,
-    error,
     fetchRecentRecipes,
-    refreshRecentRecipes,
     addToRecentRecipes,
     removeFromRecentRecipes,
     clearRecentRecipes,

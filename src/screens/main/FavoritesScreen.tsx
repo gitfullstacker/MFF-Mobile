@@ -19,6 +19,7 @@ import { useRecipes } from '../../hooks/useRecipes';
 import { colors, spacing } from '../../theme';
 import { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { Recipe } from '../../types/recipe';
+import { useFavorites } from '@/hooks/useFavorites';
 
 type FavoritesNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Favorites'>,
@@ -27,7 +28,7 @@ type FavoritesNavigationProp = CompositeNavigationProp<
 
 const FavoritesScreen: React.FC = () => {
   const navigation = useNavigation<FavoritesNavigationProp>();
-  const { toggleFavorite } = useRecipes();
+  const { toggleFavorite } = useFavorites();
   const [favoriteRecipes, setFavoriteRecipes] = useState<Recipe[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -89,33 +90,13 @@ const FavoritesScreen: React.FC = () => {
     [navigation],
   );
 
-  const handleFavoriteToggle = useCallback(
-    async (recipeId: string, isFavorite: boolean) => {
-      // If toggled to unfavorite, remove from the list
-      if (!isFavorite) {
-        setFavoriteRecipes(prev =>
-          prev.filter(recipe => recipe._id !== recipeId),
-        );
-        setFilteredFavorites(prev =>
-          prev.filter(recipe => recipe._id !== recipeId),
-        );
-      }
-
-      // Call the API
-      await toggleFavorite(recipeId);
-    },
-    [toggleFavorite],
-  );
-
   const renderRecipe = ({ item }: { item: Recipe }) => {
     return (
       <View style={styles.recipeCardContainer}>
         <RecipeCard
           recipe={item}
           onPress={() => handleRecipePress(item)}
-          onFavoriteToggle={(recipeId, isFavorite) =>
-            handleFavoriteToggle(recipeId, isFavorite)
-          }
+          onFavoriteToggle={recipeId => toggleFavorite(recipeId)}
         />
       </View>
     );

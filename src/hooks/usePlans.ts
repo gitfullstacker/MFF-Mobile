@@ -8,7 +8,6 @@ export const usePlans = () => {
   const [plans, setPlans] = useAtom(plansAtom);
   const [selectedPlan, setSelectedPlan] = useAtom(selectedPlanAtom);
   const [, addToast] = useAtom(addToastAtom);
-
   const [loading, setLoading] = useState(false);
 
   const fetchPlans = useCallback(
@@ -17,7 +16,6 @@ export const usePlans = () => {
         setLoading(true);
         const response = await planService.getPlans(page, pageSize);
         setPlans(response.data);
-
         return response;
       } catch (error: any) {
         addToast({
@@ -60,7 +58,7 @@ export const usePlans = () => {
       try {
         setLoading(true);
         const newPlan = await planService.createPlan(data);
-        setPlans([newPlan, ...plans]);
+        setPlans(prev => [newPlan, ...prev]);
 
         addToast({
           message: 'Meal plan created successfully!',
@@ -81,7 +79,7 @@ export const usePlans = () => {
         setLoading(false);
       }
     },
-    [plans, setPlans, addToast],
+    [setPlans, addToast],
   );
 
   const updatePlan = useCallback(
@@ -90,13 +88,12 @@ export const usePlans = () => {
         setLoading(true);
         const updatedPlan = await planService.updatePlan(id, data);
 
-        // Use functional updates to avoid dependency on current state
-        setPlans(currentPlans =>
-          currentPlans.map(plan => (plan._id === id ? updatedPlan : plan)),
+        setPlans(prev =>
+          prev.map(plan => (plan._id === id ? updatedPlan : plan)),
         );
 
-        setSelectedPlan(currentSelected =>
-          currentSelected?._id === id ? updatedPlan : currentSelected,
+        setSelectedPlan(current =>
+          current?._id === id ? updatedPlan : current,
         );
 
         addToast({
@@ -118,7 +115,7 @@ export const usePlans = () => {
         setLoading(false);
       }
     },
-    [addToast],
+    [setPlans, setSelectedPlan, addToast],
   );
 
   const deletePlan = useCallback(
@@ -127,11 +124,9 @@ export const usePlans = () => {
         setLoading(true);
         await planService.deletePlan(id);
 
-        setPlans(plans.filter(plan => plan._id !== id));
+        setPlans(prev => prev.filter(plan => plan._id !== id));
 
-        if (selectedPlan?._id === id) {
-          setSelectedPlan(null);
-        }
+        setSelectedPlan(current => (current?._id === id ? null : current));
 
         addToast({
           message: 'Meal plan deleted successfully!',
@@ -150,7 +145,7 @@ export const usePlans = () => {
         setLoading(false);
       }
     },
-    [plans, selectedPlan, setPlans, setSelectedPlan, addToast],
+    [setPlans, setSelectedPlan, addToast],
   );
 
   const duplicatePlan = useCallback(
@@ -158,7 +153,7 @@ export const usePlans = () => {
       try {
         setLoading(true);
         const duplicatedPlan = await planService.duplicatePlan(id);
-        setPlans([duplicatedPlan, ...plans]);
+        setPlans(prev => [duplicatedPlan, ...prev]);
 
         addToast({
           message: 'Meal plan duplicated successfully!',
@@ -179,7 +174,7 @@ export const usePlans = () => {
         setLoading(false);
       }
     },
-    [plans, setPlans, addToast],
+    [setPlans, addToast],
   );
 
   return {

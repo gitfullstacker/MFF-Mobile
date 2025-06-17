@@ -14,7 +14,7 @@ export const useRecipes = () => {
   const [recipes, setRecipes] = useAtom(recipesAtom);
   const [selectedRecipe, setSelectedRecipe] = useAtom(selectedRecipeAtom);
   const [filters, setFilters] = useAtom(recipeFiltersAtom);
-  const [favoriteIds] = useAtom(favoriteRecipeIdsAtom); // Read-only for syncing
+  const [favoriteIds] = useAtom(favoriteRecipeIdsAtom);
   const [, addToast] = useAtom(addToastAtom);
 
   const [loading, setLoading] = useState(false);
@@ -36,7 +36,7 @@ export const useRecipes = () => {
           pageSize: 20,
         });
 
-        // Sync favorite status with global state when fetching recipes
+        // Sync favorite status with global state
         const recipesWithFavoriteStatus = response.data.map(recipe => ({
           ...recipe,
           is_favorite: favoriteIds.includes(recipe._id),
@@ -44,12 +44,13 @@ export const useRecipes = () => {
 
         if (reset) {
           setRecipes(recipesWithFavoriteStatus);
+          setPage(1);
         } else {
-          setRecipes([...recipes, ...recipesWithFavoriteStatus]);
+          setRecipes(prev => [...prev, ...recipesWithFavoriteStatus]);
+          setPage(currentPage + 1);
         }
 
         setHasMore(response.hasMore);
-        setPage(currentPage + 1);
       } catch (error: any) {
         addToast({
           message: error.response?.data?.message || 'Failed to fetch recipes',
@@ -137,14 +138,11 @@ export const useRecipes = () => {
   );
 
   return {
-    // Recipe data and state
     recipes,
     selectedRecipe,
     filters,
     loading,
     hasMore,
-
-    // Recipe operations
     fetchRecipes,
     fetchRecipe,
     searchRecipes,
