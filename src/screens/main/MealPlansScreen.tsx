@@ -40,7 +40,8 @@ type MealPlansNavigationProp = CompositeNavigationProp<
 
 const MealPlansScreen: React.FC = () => {
   const navigation = useNavigation<MealPlansNavigationProp>();
-  const { plans, loading, fetchPlans, deletePlan, duplicatePlan } = usePlans();
+  const { plans, loading, hasMore, fetchPlans, deletePlan, duplicatePlan } =
+    usePlans();
   const {
     activePlan,
     setActivePlanById,
@@ -50,9 +51,6 @@ const MealPlansScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [filteredPlans, setFilteredPlans] = useState<Plan[]>([]);
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalPlans, setTotalPlans] = useState(0);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
@@ -61,72 +59,35 @@ const MealPlansScreen: React.FC = () => {
   const [planToSetActive, setPlanToSetActive] = useState<Plan | null>(null);
 
   useEffect(() => {
-    loadPlans();
+    // Initial load
+    if (plans.length === 0) {
+      fetchPlans({}, true);
+    }
   }, []);
 
   useEffect(() => {
-    if (plans.length > 0) {
-      filterPlans();
-    }
-  }, [plans, searchQuery]);
-
-  const loadPlans = async () => {
-    setRefreshing(true);
-    try {
-      const response = await fetchPlans(page, pageSize);
-      setTotalPlans(response?.total || 0);
-    } catch (error) {
-      console.error('Error loading plans:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  const filterPlans = () => {
-    if (!searchQuery.trim()) {
-      setFilteredPlans(plans);
-      return;
-    }
-
-    const filtered = plans.filter(plan =>
-      plan.name.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
-    setFilteredPlans(filtered);
-  };
-
-  const confirmSetActivePlan = (plan: Plan) => {
-    setPlanToSetActive(plan);
-    setShowSetActiveDialog(true);
-  };
-
-  const handleSetActivePlan = async () => {
-    if (!planToSetActive) return;
-
-    setShowSetActiveDialog(false);
-    try {
-      await setActivePlanById(planToSetActive._id);
-      Alert.alert(
-        'Success',
-        `"${planToSetActive.name}" is now your active meal plan!`,
+    if (searchQuery.trim()) {
+      setFilteredPlans(
+        plans.filter(plan =>
+          plan.name.toLowerCase().includes(searchQuery.toLowerCase()),
+        ),
       );
-    } catch (error) {
-      Alert.alert('Error', 'Failed to set active plan');
-    } finally {
-      setPlanToSetActive(null);
+    } else {
+      setFilteredPlans(plans);
     }
-  };
+  }, [searchQuery, plans]);
 
   const handleRefresh = useCallback(async () => {
-    setPage(0);
-    loadPlans();
-  }, []);
+    setRefreshing(true);
+    await fetchPlans({}, true);
+    setRefreshing(false);
+  }, [fetchPlans]);
 
-  const handleLoadMore = () => {
-    if (!loading && plans.length < totalPlans) {
-      setPage(prevPage => prevPage + 1);
-      loadPlans();
+  const handleLoadMore = useCallback(() => {
+    if (!loading && hasMore) {
+      fetchPlans();
     }
-  };
+  }, [loading, hasMore, fetchPlans]);
 
   const handleCreatePlan = () => {
     navigation.navigate('MealPlanStack', {
@@ -159,7 +120,6 @@ const MealPlansScreen: React.FC = () => {
     setShowDeleteDialog(false);
     try {
       await deletePlan(planToDelete._id);
-      // Plan will be removed from state in the hook
       Alert.alert('Success', 'Meal plan deleted successfully');
     } catch (error) {
       console.error('Error deleting plan:', error);
@@ -181,12 +141,31 @@ const MealPlansScreen: React.FC = () => {
     try {
       await duplicatePlan(planToDuplicate._id);
       Alert.alert('Success', 'Meal plan duplicated successfully');
-      loadPlans(); // Refresh to show the new plan
     } catch (error) {
       console.error('Error duplicating plan:', error);
       Alert.alert('Error', 'Failed to duplicate meal plan');
     } finally {
       setPlanToDuplicate(null);
+    }
+  };
+
+  const confirmSetActivePlan = (plan: Plan) => {
+    setPlanToSetActive(plan);
+    setShowSetActiveDialog(true);
+  };
+
+  const handleSetActivePlan = async () => {
+    if (!planToSetActive) return;
+
+    setShowSetActiveDialog(false);
+    try {
+      await setActivePlanById(planToSetActive._id);
+      Alert.alert('Success', 'Active meal plan updated successfully');
+    } catch (error) {
+      console.error('Error setting active plan:', error);
+      Alert.alert('Error', 'Failed to set active meal plan');
+    } finally {
+      setPlanToSetActive(null);
     }
   };
 
@@ -202,46 +181,47 @@ const MealPlansScreen: React.FC = () => {
   };
 
   const renderPlanCard = ({ item }: { item: Plan }) => {
-    const isActivePlan = activePlan?._id === item._id;
+    const isActive = activePlan?._id === item._id;
 
     return (
       <TouchableOpacity
-        style={[styles.planCard, isActivePlan && styles.activePlanCard]}
-        onPress={() => handleViewPlan(item)}
-        activeOpacity={0.7}>
+        style={[styles.planCard, isActive && styles.activePlanCard]}
+        onPress={() => handleViewPlan(item)}>
         <View style={styles.planCardContent}>
+          {/* Header */}
           <View style={styles.planCardHeader}>
             <View style={styles.planTitleSection}>
-              <View style={styles.planTitleRow}>
-                <Text style={styles.planName}>{item.name}</Text>
-                {isActivePlan && (
-                  <View style={styles.activeBadge}>
-                    <Icon name="check-circle" size={14} color={colors.white} />
-                    <Text style={styles.activeBadgeText}>Active</Text>
-                  </View>
-                )}
-              </View>
+              {isActive && (
+                <View style={styles.activeBadge}>
+                  <Icon name="check-circle" size={12} color={colors.white} />
+                  <Text style={styles.activeBadgeText}>ACTIVE</Text>
+                </View>
+              )}
+              <Text style={styles.planName} numberOfLines={2}>
+                {item.name}
+              </Text>
+
               <Text style={styles.planDate}>
-                Created {format(parseISO(item.created_at), 'MMM d, yyyy')}
+                Created {format(parseISO(item.created_at), 'MMM dd, yyyy')}
               </Text>
             </View>
             <View style={styles.planActionButtons}>
-              {!isActivePlan && (
+              {!isActive && (
                 <TouchableOpacity
                   style={styles.setActiveButton}
                   onPress={() => confirmSetActivePlan(item)}>
-                  <Icon name="star" size={18} color={colors.semantic.warning} />
+                  <Icon name="star" size={16} color={colors.semantic.warning} />
                 </TouchableOpacity>
               )}
               <TouchableOpacity
                 style={styles.iconButton}
                 onPress={() => handleEditPlan(item)}>
-                <Icon name="edit-2" size={20} color={colors.primary} />
+                <Icon name="edit" size={20} color={colors.text.secondary} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.iconButton}
                 onPress={() => confirmDuplicatePlan(item)}>
-                <Icon name="copy" size={20} color={colors.primary} />
+                <Icon name="copy" size={20} color={colors.text.secondary} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.iconButton}
@@ -272,6 +252,19 @@ const MealPlansScreen: React.FC = () => {
 
   const renderEmptyState = () => {
     if (loading && !refreshing) return null;
+
+    if (searchQuery) {
+      return (
+        <EmptyState
+          title="No meal plans found"
+          description={`We couldn't find any meal plans matching "${searchQuery}"`}
+          action={{
+            label: 'Clear Search',
+            onPress: () => setSearchQuery(''),
+          }}
+        />
+      );
+    }
 
     return (
       <EmptyState
@@ -327,7 +320,7 @@ const MealPlansScreen: React.FC = () => {
         refreshing={refreshing}
         onRefresh={handleRefresh}
         onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
+        onEndReachedThreshold={0.3}
         ListEmptyComponent={renderEmptyState}
         ListFooterComponent={renderFooter}
       />
@@ -412,14 +405,16 @@ const styles = StyleSheet.create({
   },
   planTitleSection: {
     flex: 1,
+    marginRight: spacing.md,
   },
   activePlanCard: {
     borderColor: colors.semantic.success,
     backgroundColor: colors.semantic.success + '08',
   },
-  planTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  planName: {
+    ...typography.h6,
+    color: colors.text.primary,
+    fontWeight: fontWeights.bold,
     marginBottom: spacing.xs,
   },
   activeBadge: {
@@ -429,7 +424,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
     paddingVertical: spacing.xs / 2,
     borderRadius: borderRadius.full,
-    marginLeft: spacing.sm,
+    alignSelf: 'flex-start',
+    marginBottom: spacing.xs,
   },
   activeBadgeText: {
     ...typography.caption,
@@ -447,20 +443,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.semantic.warning + '20',
     marginRight: spacing.xs,
   },
-  planName: {
-    ...typography.h6,
-    color: colors.text.primary,
-    fontWeight: fontWeights.bold,
-    marginBottom: 2,
-  },
   planDate: {
     ...typography.bodySmall,
     color: colors.text.secondary,
   },
   planActionButtons: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+    alignItems: 'flex-start',
+    flexShrink: 0,
   },
   iconButton: {
     padding: spacing.xs,
@@ -470,6 +460,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.gray[50],
+    marginLeft: spacing.xs,
   },
   chipContainer: {
     marginVertical: spacing.xs,

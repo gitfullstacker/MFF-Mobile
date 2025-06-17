@@ -9,13 +9,36 @@ export const usePlans = () => {
   const [selectedPlan, setSelectedPlan] = useAtom(selectedPlanAtom);
   const [, addToast] = useAtom(addToastAtom);
   const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
 
   const fetchPlans = useCallback(
-    async (page = 0, pageSize = 20) => {
+    async (filters = {}, reset = false) => {
       try {
+        if (loading && !reset) return;
+
         setLoading(true);
+
+        const page = reset ? 0 : currentPage + 1;
+        const pageSize = 20;
+
         const response = await planService.getPlans(page, pageSize);
-        setPlans(response.data);
+        const { data, hasMore, total, totalPages } = response;
+
+        if (reset) {
+          setPlans(data);
+          setCurrentPage(0);
+        } else {
+          // Prevent duplicates when adding new data
+          const existingIds = new Set(plans.map(p => p._id));
+          const newPlans = data.filter(plan => !existingIds.has(plan._id));
+          setPlans(prev => [...prev, ...newPlans]);
+          setCurrentPage(page);
+        }
+
+        // Update hasMore from backend response
+        setHasMore(hasMore);
+
         return response;
       } catch (error: any) {
         addToast({
@@ -24,12 +47,13 @@ export const usePlans = () => {
           type: 'error',
           duration: 5000,
         });
+        setHasMore(false);
         throw error;
       } finally {
         setLoading(false);
       }
     },
-    [setPlans, addToast],
+    [setPlans, addToast, loading, plans, currentPage],
   );
 
   const fetchPlan = useCallback(
@@ -177,15 +201,24 @@ export const usePlans = () => {
     [setPlans, addToast],
   );
 
+  // Reset pagination state (useful for refresh)
+  const resetPagination = useCallback(() => {
+    setCurrentPage(0);
+    setHasMore(true);
+  }, []);
+
   return {
     plans,
     selectedPlan,
     loading,
+    hasMore,
+    currentPage,
     fetchPlans,
     fetchPlan,
     createPlan,
     updatePlan,
     deletePlan,
     duplicatePlan,
+    resetPagination,
   };
 };
