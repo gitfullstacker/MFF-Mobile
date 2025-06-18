@@ -211,13 +211,11 @@ const EditMealPlanScreen: React.FC = () => {
         schedule: cleanSchedule,
       };
 
-      const updatedPlan = await updatePlan(planId, updatedPlanData);
+      // Update the plan - this will automatically update plansAtom and selectedPlanAtom via usePlans hook
+      await updatePlan(planId, updatedPlanData);
 
-      // Navigate back to detail screen with updated plan data
-      navigation.navigate('MealPlanDetail', {
-        planId,
-        plan: updatedPlan,
-      });
+      // Navigate back instead of going to detail screen
+      navigation.goBack();
     } catch (error) {
       console.error('Error updating meal plan:', error);
       Alert.alert('Error', 'Failed to update meal plan. Please try again.');
