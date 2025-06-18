@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  FlatList,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Feather';
@@ -21,22 +13,10 @@ import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
 import { DaySelector } from '../../components/meal-plan/DaySelector';
 import { RecipeListDisplay } from '../../components/meal-plan/RecipeListDisplay';
 import { usePlans } from '../../hooks/usePlans';
-import {
-  colors,
-  typography,
-  spacing,
-  borderRadius,
-  fontWeights,
-} from '../../theme';
+import { colors, typography, spacing, fontWeights } from '../../theme';
 import { MealPlanStackParamList } from '../../navigation/types';
-import {
-  Plan,
-  PlanSchedule,
-  ScheduledRecipe,
-  DAYS_OF_WEEK,
-} from '../../types/plan';
+import { Plan, PlanSchedule, ScheduledRecipe } from '../../types/plan';
 import { Recipe } from '@/types/recipe';
-import { RecipeCard } from '@/components/recipe/RecipeCard';
 import { ShoppingListModal } from '@/components/modals/ShoppingListModal';
 
 type MealPlanDetailNavigationProp = StackNavigationProp<
@@ -113,16 +93,6 @@ const MealPlanDetailScreen: React.FC = () => {
       extractDayRecipes();
     }
   }, [selectedDay, mealPlan]);
-
-  // Helper function to extract recipe ID from a scheduled recipe item
-  const getRecipeId = (item: ScheduledRecipe): string => {
-    if (typeof item.recipe === 'string') {
-      return item.recipe;
-    } else if (item.recipe && typeof item.recipe === 'object') {
-      return (item.recipe as Recipe)._id;
-    }
-    return '';
-  };
 
   // Helper function to extract recipe object from a scheduled recipe item
   const getRecipeObject = (item: ScheduledRecipe): Recipe | null => {
@@ -336,17 +306,6 @@ const MealPlanDetailScreen: React.FC = () => {
     }
 
     setShowShoppingList(true);
-  };
-
-  // View recipe details
-  const handleViewRecipe = (recipe: Recipe) => {
-    navigation.navigate(
-      'RecipeStack' as any,
-      {
-        screen: 'RecipeDetail',
-        params: { recipeId: recipe.slug, recipe },
-      } as any,
-    );
   };
 
   // Get the selected day label

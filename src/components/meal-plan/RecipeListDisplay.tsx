@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, FlatList, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { RecipeCard } from '../recipe/RecipeCard';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { Recipe } from '../../types/recipe';
 
 interface RecipeListDisplayProps {
   recipes: Recipe[];
+  showSelectionIcon?: boolean;
   selectedDayLabel: string;
   onRecipeSelect: (recipe: Recipe) => void;
   emptyStateText?: string;
@@ -13,6 +14,7 @@ interface RecipeListDisplayProps {
 
 export const RecipeListDisplay: React.FC<RecipeListDisplayProps> = ({
   recipes,
+  showSelectionIcon = false,
   selectedDayLabel,
   onRecipeSelect,
   emptyStateText,
@@ -37,7 +39,7 @@ export const RecipeListDisplay: React.FC<RecipeListDisplayProps> = ({
         <View key={item._id} style={styles.recipeCardContainer}>
           <RecipeCard
             recipe={item}
-            showSelectionIcon
+            showSelectionIcon={showSelectionIcon}
             isAdded
             onRemoveClick={onRecipeSelect}
             onPress={() => {}}

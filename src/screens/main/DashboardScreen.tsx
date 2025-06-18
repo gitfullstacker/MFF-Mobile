@@ -56,16 +56,8 @@ const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<DashboardNavigationProp>();
   const { user } = useAuth();
   const { toggleFavorite } = useFavorites();
-  const {
-    recentRecipes,
-    loading: recentRecipesLoading,
-    fetchRecentRecipes,
-  } = useRecentRecipes();
-  const {
-    activePlan,
-    loading: activePlanLoading,
-    fetchActivePlan,
-  } = useActivePlan();
+  const { recentRecipes, loading: recentRecipesLoading } = useRecentRecipes();
+  const { activePlan, loading: activePlanLoading } = useActivePlan();
   const [userPreferences] = useAtom(userPreferencesAtom);
   const [showSetActivePlanModal, setShowSetActivePlanModal] = useState(false);
   const [isTodayPlanExpanded, setIsTodayPlanExpanded] = useState(false);
@@ -90,22 +82,11 @@ const DashboardScreen: React.FC = () => {
   const categoriesScrollX = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  useEffect(() => {
     // Calculate today's meals when active plan changes
     if (activePlan) {
       calculateTodaysMeals();
     }
   }, [activePlan]);
-
-  const loadDashboardData = async () => {
-    await Promise.all([
-      fetchRecentRecipes(5),
-      fetchActivePlan(), // This will load the active plan
-    ]);
-  };
 
   const toggleTodayPlan = () => {
     setIsTodayPlanExpanded(!isTodayPlanExpanded);

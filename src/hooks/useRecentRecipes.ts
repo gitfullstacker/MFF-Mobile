@@ -164,13 +164,6 @@ export const useRecentRecipes = () => {
     }
   }, [addToast, setRecentRecipes]);
 
-  // Load recent recipes on mount (only once)
-  useEffect(() => {
-    if (recentRecipes.length === 0) {
-      fetchRecentRecipes();
-    }
-  }, []);
-
   return {
     recentRecipes,
     loading,

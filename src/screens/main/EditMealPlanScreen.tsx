@@ -297,6 +297,7 @@ const EditMealPlanScreen: React.FC = () => {
 
           <RecipeListDisplay
             recipes={getCurrentDayRecipes()}
+            showSelectionIcon
             selectedDayLabel={getSelectedDayLabel()}
             onRecipeSelect={handleRecipeSelect}
           />
