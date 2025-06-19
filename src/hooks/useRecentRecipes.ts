@@ -1,11 +1,10 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAtom } from 'jotai';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   favoriteRecipeIdsAtom,
   addToastAtom,
   recentRecipesAtom,
-  recentRecipesLoadingAtom,
 } from '../store';
 import { Recipe } from '../types/recipe';
 
@@ -16,7 +15,7 @@ export const useRecentRecipes = () => {
   const [favoriteIds] = useAtom(favoriteRecipeIdsAtom);
   const [, addToast] = useAtom(addToastAtom);
   const [recentRecipes, setRecentRecipes] = useAtom(recentRecipesAtom);
-  const [loading, setLoading] = useAtom(recentRecipesLoadingAtom);
+  const [loading, setLoading] = useState(false);
 
   const fetchRecentRecipes = useCallback(
     async (limit = 10, forceRefresh = false) => {
