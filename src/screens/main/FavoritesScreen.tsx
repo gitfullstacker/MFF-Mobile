@@ -19,6 +19,8 @@ import { colors, spacing } from '../../theme';
 import { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { Recipe } from '../../types/recipe';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useAtom } from 'jotai';
+import { favoriteRecipesAtom } from '@/store';
 
 type FavoritesNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Favorites'>,
@@ -27,60 +29,29 @@ type FavoritesNavigationProp = CompositeNavigationProp<
 
 const FavoritesScreen: React.FC = () => {
   const navigation = useNavigation<FavoritesNavigationProp>();
-  const { toggleFavorite } = useFavorites();
-  const [favoriteRecipes, setFavoriteRecipes] = useState<Recipe[]>([]);
+  const [favoriteRecipes] = useAtom(favoriteRecipesAtom);
+  const {
+    loading,
+    refreshing,
+    hasMore,
+    toggleFavorite,
+    fetchFavorites,
+    loadMoreFavorites,
+    refreshFavorites,
+  } = useFavorites();
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [filteredFavorites, setFilteredFavorites] = useState<Recipe[]>([]);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Use the favoriteService directly
-  const { favoriteService } = require('../../services/favorite');
-
-  // Fetch favorite recipes with pagination
-  const fetchFavorites = useCallback(
-    async (pageNum = 1, reset = false) => {
-      try {
-        if (loading && !reset) return;
-
-        setLoading(true);
-        const response = await favoriteService.getFavorites(pageNum);
-
-        if (reset) {
-          setFavoriteRecipes(response.data);
-          setPage(1);
-        } else {
-          // Prevent duplicates when adding new data
-          const existingIds = new Set(favoriteRecipes.map(r => r._id));
-          const newRecipes = response.data.filter(
-            (recipe: Recipe) => !existingIds.has(recipe._id),
-          );
-          setFavoriteRecipes(prev => [...prev, ...newRecipes]);
-        }
-
-        setHasMore(response.hasMore);
-        setLoading(false);
-        return response;
-      } catch (error) {
-        console.error('Error fetching favorites:', error);
-        setLoading(false);
-        setHasMore(false);
-        return { data: [], total: 0, hasMore: false };
-      }
-    },
-    [loading, favoriteRecipes],
-  );
-
+  // Initial load
   useEffect(() => {
-    // Initial load
     if (favoriteRecipes.length === 0) {
-      loadFavorites();
+      fetchFavorites(0, true);
     }
-  }, []);
+  }, [favoriteRecipes.length, fetchFavorites]);
 
+  // Filter favorites based on search query
   useEffect(() => {
     if (searchQuery.trim()) {
       setIsSearching(true);
@@ -95,23 +66,15 @@ const FavoritesScreen: React.FC = () => {
     }
   }, [searchQuery, favoriteRecipes]);
 
-  const loadFavorites = async () => {
-    await fetchFavorites(1, true);
-  };
-
   const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchFavorites(1, true);
-    setRefreshing(false);
-  }, [fetchFavorites]);
+    await refreshFavorites();
+  }, [refreshFavorites]);
 
   const handleLoadMore = useCallback(() => {
     if (!loading && hasMore && !isSearching) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchFavorites(nextPage, false);
+      loadMoreFavorites();
     }
-  }, [loading, hasMore, isSearching, page, fetchFavorites]);
+  }, [loading, hasMore, isSearching, loadMoreFavorites]);
 
   const handleSearch = useCallback(() => {
     if (searchQuery.trim()) {
@@ -139,10 +102,6 @@ const FavoritesScreen: React.FC = () => {
           onPress={() => handleRecipePress(item)}
           onFavoriteToggle={recipeId => {
             toggleFavorite(recipeId);
-            // Remove from local state when unfavorited
-            setFavoriteRecipes(prev =>
-              prev.filter(recipe => recipe._id !== recipeId),
-            );
           }}
         />
       </View>

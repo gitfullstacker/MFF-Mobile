@@ -111,18 +111,11 @@ export const useTickets = () => {
   const addComment = useCallback(
     async (ticketId: string, content: string) => {
       try {
-        const comment = await ticketService.addComment(ticketId, content);
+        const updatedTicket = await ticketService.addComment(ticketId, content);
 
         // Update the selected ticket if it matches
         if (selectedTicket?._id === ticketId) {
-          setSelectedTicket(prev =>
-            prev
-              ? {
-                  ...prev,
-                  comments: [...(prev.comments || []), comment],
-                }
-              : null,
-          );
+          setSelectedTicket(updatedTicket);
         }
 
         addToast({
@@ -131,7 +124,7 @@ export const useTickets = () => {
           duration: 3000,
         });
 
-        return comment;
+        return updatedTicket;
       } catch (error: any) {
         addToast({
           message: error.response?.data?.message || 'Failed to add comment',

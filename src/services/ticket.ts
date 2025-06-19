@@ -20,15 +20,19 @@ export const ticketService = {
     return apiClient.get(`/tickets?${params.toString()}`);
   },
 
+  async getTicket(id: string): Promise<Ticket> {
+    return apiClient.get(`/tickets/${id}`);
+  },
+
   async createTicket(data: CreateTicketRequest): Promise<Ticket> {
     return apiClient.post('/tickets', data);
   },
 
-  async addComment(ticketId: string, content: string): Promise<void> {
+  async addComment(ticketId: string, content: string): Promise<Ticket> {
     return apiClient.post(`/tickets/${ticketId}/comments`, { content });
   },
 
-  async addAttachment(ticketId: string, file: any): Promise<void> {
+  async addAttachment(ticketId: string, file: any): Promise<Ticket> {
     const formData = new FormData();
     formData.append('file', file);
     return apiClient.upload(`/tickets/${ticketId}/attachments`, formData);

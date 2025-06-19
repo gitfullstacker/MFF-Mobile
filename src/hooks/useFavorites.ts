@@ -1,21 +1,30 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useAtom } from 'jotai';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   favoriteRecipeIdsAtom,
+  favoriteRecipesAtom,
+  addToastAtom,
   recipesAtom,
   selectedRecipeAtom,
-  addToastAtom,
 } from '../store';
 import { favoriteService } from '../services/favorite';
+import { Recipe } from '../types/recipe';
 
 const RECENT_RECIPES_KEY = 'recentRecipes';
 
 export const useFavorites = () => {
   const [favoriteIds, setFavoriteIds] = useAtom(favoriteRecipeIdsAtom);
+  const [favoriteRecipes, setFavoriteRecipes] = useAtom(favoriteRecipesAtom);
   const [recipes, setRecipes] = useAtom(recipesAtom);
   const [selectedRecipe, setSelectedRecipe] = useAtom(selectedRecipeAtom);
   const [, addToast] = useAtom(addToastAtom);
+
+  // Local state for pagination
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Helper function to update recent recipes in AsyncStorage
   const updateRecentRecipesStorage = useCallback(
@@ -23,8 +32,8 @@ export const useFavorites = () => {
       try {
         const stored = await AsyncStorage.getItem(RECENT_RECIPES_KEY);
         if (stored) {
-          const recentRecipes = JSON.parse(stored);
-          const updatedRecipes = recentRecipes.map((recipe: any) =>
+          const recentRecipes: Recipe[] = JSON.parse(stored);
+          const updatedRecipes = recentRecipes.map(recipe =>
             recipe._id === recipeId
               ? { ...recipe, is_favorite: isFavorite }
               : recipe,
@@ -44,16 +53,17 @@ export const useFavorites = () => {
   const toggleFavorite = useCallback(
     async (recipeId: string) => {
       try {
-        const { isFavorite } = await favoriteService.toggleFavorite(recipeId);
+        const response = await favoriteService.toggleFavorite(recipeId);
+        const isFavorite = response.isFavorite;
 
-        // Update global favorite IDs
+        // Update favorite IDs
         if (isFavorite) {
           setFavoriteIds(prev => [...prev, recipeId]);
         } else {
           setFavoriteIds(prev => prev.filter(id => id !== recipeId));
         }
 
-        // Update recipes in main recipes list
+        // Update recipes list
         setRecipes(prev =>
           prev.map(recipe =>
             recipe._id === recipeId
@@ -62,9 +72,16 @@ export const useFavorites = () => {
           ),
         );
 
-        // Update selected recipe if it's the same
+        // Update selected recipe
         if (selectedRecipe?._id === recipeId) {
           setSelectedRecipe({ ...selectedRecipe, is_favorite: isFavorite });
+        }
+
+        // Update favorite recipes list (remove if unfavorited)
+        if (!isFavorite) {
+          setFavoriteRecipes(prev =>
+            prev.filter(recipe => recipe._id !== recipeId),
+          );
         }
 
         // Update recent recipes in AsyncStorage
@@ -75,11 +92,9 @@ export const useFavorites = () => {
           type: 'success',
           duration: 3000,
         });
-
-        return { isFavorite };
       } catch (error: any) {
         addToast({
-          message: error.response?.data?.message || 'Failed to update favorite',
+          message: error.response?.data?.message || 'Failed to toggle favorite',
           type: 'error',
           duration: 5000,
         });
@@ -93,6 +108,7 @@ export const useFavorites = () => {
       setFavoriteIds,
       setRecipes,
       setSelectedRecipe,
+      setFavoriteRecipes,
       addToast,
       updateRecentRecipesStorage,
     ],
@@ -102,6 +118,8 @@ export const useFavorites = () => {
     async (recipeId: string) => {
       try {
         await favoriteService.addFavorite(recipeId);
+
+        // Update favorite IDs
         setFavoriteIds(prev => [...prev, recipeId]);
 
         // Update recipes list
@@ -150,6 +168,8 @@ export const useFavorites = () => {
     async (recipeId: string) => {
       try {
         await favoriteService.removeFavorite(recipeId);
+
+        // Update favorite IDs
         setFavoriteIds(prev => prev.filter(id => id !== recipeId));
 
         // Update recipes list
@@ -165,6 +185,11 @@ export const useFavorites = () => {
         if (selectedRecipe?._id === recipeId) {
           setSelectedRecipe({ ...selectedRecipe, is_favorite: false });
         }
+
+        // Remove from favorite recipes list
+        setFavoriteRecipes(prev =>
+          prev.filter(recipe => recipe._id !== recipeId),
+        );
 
         // Update recent recipes in AsyncStorage
         await updateRecentRecipesStorage(recipeId, false);
@@ -191,31 +216,91 @@ export const useFavorites = () => {
       setFavoriteIds,
       setRecipes,
       setSelectedRecipe,
+      setFavoriteRecipes,
       addToast,
       updateRecentRecipesStorage,
     ],
   );
 
-  const fetchFavorites = useCallback(async () => {
-    try {
-      const favoriteRecipes = await favoriteService.getFavorites();
-      return favoriteRecipes.data;
-    } catch (error: any) {
-      console.error('Error fetching favorites:', error);
-      addToast({
-        message: error.response?.data?.message || 'Failed to fetch favorites',
-        type: 'error',
-        duration: 5000,
-      });
-      return [];
+  const fetchFavorites = useCallback(
+    async (pageNum = 0, reset = false) => {
+      try {
+        if (loading && !reset && !refreshing) return;
+
+        setLoading(true);
+        const response = await favoriteService.getFavorites(pageNum, 20);
+
+        // Sync favorite status with global state
+        const recipesWithFavoriteStatus = response.data.map(
+          (recipe: Recipe) => ({
+            ...recipe,
+            is_favorite: favoriteIds.includes(recipe._id),
+          }),
+        );
+
+        if (reset) {
+          setFavoriteRecipes(recipesWithFavoriteStatus);
+          setPage(0);
+        } else {
+          // Prevent duplicates when adding new data
+          const existingIds = new Set(favoriteRecipes.map(r => r._id));
+          const newRecipes = recipesWithFavoriteStatus.filter(
+            (recipe: Recipe) => !existingIds.has(recipe._id),
+          );
+          setFavoriteRecipes(prev => [...prev, ...newRecipes]);
+        }
+
+        setHasMore(response.hasMore);
+        setLoading(false);
+        return response;
+      } catch (error: any) {
+        console.error('Error fetching favorites:', error);
+        setLoading(false);
+        setHasMore(false);
+        addToast({
+          message: error.response?.data?.message || 'Failed to fetch favorites',
+          type: 'error',
+          duration: 5000,
+        });
+        return { data: [], total: 0, hasMore: false };
+      }
+    },
+    [
+      loading,
+      refreshing,
+      favoriteRecipes,
+      favoriteIds,
+      setFavoriteRecipes,
+      addToast,
+    ],
+  );
+
+  const loadMoreFavorites = useCallback(() => {
+    if (!loading && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchFavorites(nextPage, false);
     }
-  }, [addToast]);
+  }, [loading, hasMore, page, fetchFavorites]);
+
+  const refreshFavorites = useCallback(async () => {
+    setRefreshing(true);
+    await fetchFavorites(0, true);
+    setRefreshing(false);
+  }, [fetchFavorites]);
 
   return {
     favoriteIds,
+    favoriteRecipes,
+    loading,
+    refreshing,
+    hasMore,
+    page,
     toggleFavorite,
     addFavorite,
     removeFavorite,
     fetchFavorites,
+    loadMoreFavorites,
+    refreshFavorites,
   };
 };
