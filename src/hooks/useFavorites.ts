@@ -199,8 +199,6 @@ export const useFavorites = () => {
   const fetchFavorites = useCallback(async () => {
     try {
       const favoriteRecipes = await favoriteService.getFavorites();
-      const favoriteRecipeIds = favoriteRecipes.data.map(recipe => recipe._id);
-      setFavoriteIds(favoriteRecipeIds);
       return favoriteRecipes.data;
     } catch (error: any) {
       console.error('Error fetching favorites:', error);
@@ -211,7 +209,7 @@ export const useFavorites = () => {
       });
       return [];
     }
-  }, [setFavoriteIds, addToast]);
+  }, [addToast]);
 
   return {
     favoriteIds,

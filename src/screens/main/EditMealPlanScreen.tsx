@@ -20,6 +20,8 @@ import {
   ScheduledRecipe,
   DAYS_OF_WEEK,
 } from '../../types/plan';
+import { useAtom } from 'jotai';
+import { selectedPlanAtom } from '@/store';
 
 type EditMealPlanNavigationProp = StackNavigationProp<
   MealPlanStackParamList,
@@ -42,9 +44,10 @@ const DAYS: DayOption[] = [
 const EditMealPlanScreen: React.FC = () => {
   const navigation = useNavigation<EditMealPlanNavigationProp>();
   const route = useRoute<EditMealPlanRouteProp>();
-  const { planId, plan } = route.params;
+  const { planId } = route.params;
   const { updatePlan } = usePlans();
 
+  const [selectedPlan] = useAtom(selectedPlanAtom);
   const [planName, setPlanName] = useState('');
   const [selectedDay, setSelectedDay] = useState<string>('su');
   const [schedule, setSchedule] = useState<PlanSchedule>({
@@ -62,8 +65,8 @@ const EditMealPlanScreen: React.FC = () => {
 
   // Use plan from route params
   useEffect(() => {
-    if (plan) {
-      const mealPlan = plan;
+    if (selectedPlan) {
+      const mealPlan = selectedPlan;
 
       // Set initial state from plan
       setPlanName(mealPlan.name);
@@ -115,7 +118,7 @@ const EditMealPlanScreen: React.FC = () => {
         'No plan provided in params. This should not happen in normal flow.',
       );
     }
-  }, [plan]);
+  }, [selectedPlan]);
 
   // Function to open recipe picker
   const handleAddRecipe = () => {

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useAtom } from 'jotai';
 import { activePlanAtom, addToastAtom } from '../store';
-import { userService } from '../services/user';
+import { planService } from '@/services/plan';
 
 export const useActivePlan = () => {
   const [, addToast] = useAtom(addToastAtom);
@@ -11,7 +11,7 @@ export const useActivePlan = () => {
   const fetchActivePlan = useCallback(async () => {
     try {
       setLoading(true);
-      const plan = await userService.getActivePlan();
+      const plan = await planService.getActivePlan();
       setActivePlan(plan);
       return plan;
     } catch (error: any) {
@@ -36,7 +36,7 @@ export const useActivePlan = () => {
     async (planId: string) => {
       try {
         setLoading(true);
-        const plan = await userService.setActivePlan(planId);
+        const plan = await planService.setActivePlan(planId);
         setActivePlan(plan);
 
         addToast({

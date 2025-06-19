@@ -18,6 +18,8 @@ import { MealPlanStackParamList } from '../../navigation/types';
 import { Plan, PlanSchedule, ScheduledRecipe } from '../../types/plan';
 import { Recipe } from '@/types/recipe';
 import { ShoppingListModal } from '@/components/modals/ShoppingListModal';
+import { selectedPlanAtom } from '@/store';
+import { useAtom } from 'jotai';
 
 type MealPlanDetailNavigationProp = StackNavigationProp<
   MealPlanStackParamList,
@@ -43,12 +45,17 @@ const DAYS = [
 const MealPlanDetailScreen: React.FC = () => {
   const navigation = useNavigation<MealPlanDetailNavigationProp>();
   const route = useRoute<MealPlanDetailRouteProp>();
-  const { planId, plan } = route.params;
-  const { deletePlan, duplicatePlan } = usePlans();
+  const { planId } = route.params;
+  const {
+    loading: planLoading,
+    selectedPlan,
+    fetchPlan,
+    deletePlan,
+    duplicatePlan,
+  } = usePlans();
 
   const [selectedDay, setSelectedDay] = useState<string>('su');
   const [loading, setLoading] = useState(false);
-  const [mealPlan, setMealPlan] = useState<Plan | null>(null);
   const [dailyMacros, setDailyMacros] = useState({
     protein: 0,
     carbs: 0,
@@ -65,34 +72,27 @@ const MealPlanDetailScreen: React.FC = () => {
   const [dayRecipes, setDayRecipes] = useState<Recipe[]>([]);
   const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
 
-  // Use plan from route params or fetch if not available
   useEffect(() => {
-    if (plan) {
-      // Use plan from params (passed from EditMealPlan or other screens)
-      setMealPlan(plan);
-    } else {
-      // Fallback: This shouldn't happen in normal flow, but just in case
-      console.warn(
-        'No plan provided in params. This should not happen in normal flow.',
-      );
+    if (planId && (!selectedPlan || selectedPlan._id !== planId)) {
+      fetchPlan(planId);
     }
-  }, [plan]);
+  }, [planId, selectedPlan, fetchPlan]);
 
   // Calculate macros and extract recipes when meal plan changes
   useEffect(() => {
-    if (mealPlan) {
+    if (selectedPlan) {
       calculateMacros();
       extractRecipes();
     }
-  }, [mealPlan]);
+  }, [selectedPlan]);
 
   // Recalculate daily macros and extract day recipes when selected day changes
   useEffect(() => {
-    if (mealPlan) {
+    if (selectedPlan) {
       calculateDailyMacros();
       extractDayRecipes();
     }
-  }, [selectedDay, mealPlan]);
+  }, [selectedDay, selectedPlan]);
 
   // Helper function to extract recipe object from a scheduled recipe item
   const getRecipeObject = (item: ScheduledRecipe): Recipe | null => {
@@ -106,13 +106,13 @@ const MealPlanDetailScreen: React.FC = () => {
 
   // Extract all recipes from the meal plan
   const extractRecipes = () => {
-    if (!mealPlan) return;
+    if (!selectedPlan) return;
 
     const allExtractedRecipes: Recipe[] = [];
     const validDayKeys = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
 
     validDayKeys.forEach(dayKey => {
-      const daySchedule = mealPlan.schedule[dayKey as keyof PlanSchedule];
+      const daySchedule = selectedPlan.schedule[dayKey as keyof PlanSchedule];
 
       if (!Array.isArray(daySchedule)) return;
 
@@ -132,10 +132,11 @@ const MealPlanDetailScreen: React.FC = () => {
 
   // Extract recipes for the currently selected day
   const extractDayRecipes = () => {
-    if (!mealPlan) return;
+    if (!selectedPlan) return;
 
     const recipes: Recipe[] = [];
-    const daySchedule = mealPlan.schedule[selectedDay as keyof PlanSchedule];
+    const daySchedule =
+      selectedPlan.schedule[selectedDay as keyof PlanSchedule];
 
     if (!Array.isArray(daySchedule)) {
       setDayRecipes([]);
@@ -154,16 +155,17 @@ const MealPlanDetailScreen: React.FC = () => {
 
   // Calculate macros for the selected day and the whole week
   const calculateMacros = () => {
-    if (!mealPlan) return;
+    if (!selectedPlan) return;
 
     calculateWeeklyMacros();
   };
 
   // Calculate daily macros
   const calculateDailyMacros = () => {
-    if (!mealPlan) return;
+    if (!selectedPlan) return;
 
-    const daySchedule = mealPlan.schedule[selectedDay as keyof PlanSchedule];
+    const daySchedule =
+      selectedPlan.schedule[selectedDay as keyof PlanSchedule];
 
     // Check if it's actually an array
     if (!Array.isArray(daySchedule)) {
@@ -201,7 +203,7 @@ const MealPlanDetailScreen: React.FC = () => {
 
   // Calculate weekly macros
   const calculateWeeklyMacros = () => {
-    if (!mealPlan) return;
+    if (!selectedPlan) return;
 
     let weeklyProtein = 0;
     let weeklyCarbs = 0;
@@ -212,7 +214,7 @@ const MealPlanDetailScreen: React.FC = () => {
     const validDayKeys = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
 
     validDayKeys.forEach(dayKey => {
-      const daySchedule = mealPlan.schedule[dayKey as keyof PlanSchedule];
+      const daySchedule = selectedPlan.schedule[dayKey as keyof PlanSchedule];
 
       // Skip if not an array or undefined
       if (!Array.isArray(daySchedule)) return;
@@ -238,17 +240,17 @@ const MealPlanDetailScreen: React.FC = () => {
 
   // Get recipe counts by day
   const getRecipeCountByDay = (dayKey: string) => {
-    if (!mealPlan) return 0;
+    if (!selectedPlan) return 0;
 
-    const daySchedule = mealPlan.schedule[dayKey as keyof PlanSchedule];
+    const daySchedule = selectedPlan.schedule[dayKey as keyof PlanSchedule];
     // Check if it's actually an array
     return Array.isArray(daySchedule) ? daySchedule.length : 0;
   };
 
   // Handle edit plan
   const handleEditPlan = () => {
-    if (mealPlan) {
-      navigation.navigate('EditMealPlan', { planId, plan: mealPlan });
+    if (selectedPlan) {
+      navigation.navigate('EditMealPlan', { planId });
     }
   };
 
@@ -314,7 +316,7 @@ const MealPlanDetailScreen: React.FC = () => {
   };
 
   // Show loading if no meal plan is available
-  if (!mealPlan) {
+  if (planLoading || !selectedPlan) {
     return <LoadingOverlay visible={true} message="Loading meal plan..." />;
   }
 
@@ -332,9 +334,9 @@ const MealPlanDetailScreen: React.FC = () => {
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Plan Header */}
         <View style={styles.planHeader}>
-          <Text style={styles.planName}>{mealPlan.name}</Text>
+          <Text style={styles.planName}>{selectedPlan.name}</Text>
           <Text style={styles.planDate}>
-            Created {format(parseISO(mealPlan.created_at), 'MMM d, yyyy')}
+            Created {format(parseISO(selectedPlan.created_at), 'MMM d, yyyy')}
           </Text>
         </View>
 

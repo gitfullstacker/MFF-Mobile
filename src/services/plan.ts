@@ -26,4 +26,20 @@ export const planService = {
   async duplicatePlan(id: string): Promise<Plan> {
     return apiClient.post(`/plans/${id}/duplicate`);
   },
+
+  async getActivePlan(): Promise<Plan | null> {
+    try {
+      return await apiClient.get('/plans/active');
+    } catch (error: any) {
+      // If no active plan is set, the API might return 404 or null
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  },
+
+  async setActivePlan(planId: string): Promise<Plan> {
+    return apiClient.post(`/plans/active/${planId}`);
+  },
 };

@@ -17,6 +17,7 @@ import { subscriptionService } from '../services/subscription';
 import { favoriteService } from '../services/favorite';
 import { LoginRequest } from '../types/auth';
 import { isTokenExpired } from '../utils/tokenUtils';
+import { planService } from '@/services/plan';
 
 export const useAuth = () => {
   const [authToken, setAuthToken] = useAtom(authTokenAtom);
@@ -52,8 +53,8 @@ export const useAuth = () => {
 
   const fetchAndSetFavoriteIds = useCallback(async () => {
     try {
-      const favoriteRecipes = await favoriteService.getFavorites();
-      const favoriteRecipeIds = favoriteRecipes.data.map(recipe => recipe._id);
+      const favoriteIds = await favoriteService.getFavoriteIds();
+      const favoriteRecipeIds = favoriteIds.ids;
       setFavoriteIds(favoriteRecipeIds);
       return favoriteRecipeIds;
     } catch (error) {
@@ -65,7 +66,7 @@ export const useAuth = () => {
 
   const fetchAndSetActivePlan = useCallback(async () => {
     try {
-      const plan = await userService.getActivePlan();
+      const plan = await planService.getActivePlan();
       setActivePlan(plan);
       return plan;
     } catch (error) {

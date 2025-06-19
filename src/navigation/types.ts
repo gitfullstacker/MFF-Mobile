@@ -19,14 +19,14 @@ export type MainTabParamList = {
 
 export type RecipeStackParamList = {
   RecipeList: undefined;
-  RecipeDetail: { recipeId: string; recipe?: Recipe };
+  RecipeDetail: { recipeId: string };
 };
 
 export type MealPlanStackParamList = {
   MealPlanList: undefined;
   CreateMealPlan: undefined;
-  EditMealPlan: { planId: string; plan?: Plan };
-  MealPlanDetail: { planId: string; plan?: Plan };
+  EditMealPlan: { planId: string };
+  MealPlanDetail: { planId: string };
 };
 
 export type AccountStackParamList = {
