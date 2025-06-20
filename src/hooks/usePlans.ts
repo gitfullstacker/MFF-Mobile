@@ -8,6 +8,7 @@ export const usePlans = () => {
   const [plans, setPlans] = useAtom(plansAtom);
   const [selectedPlan, setSelectedPlan] = useAtom(selectedPlanAtom);
   const [, addToast] = useAtom(addToastAtom);
+
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);

@@ -3,7 +3,6 @@ import { useAtom } from 'jotai';
 import {
   recipesAtom,
   selectedRecipeAtom,
-  recipeFiltersAtom,
   favoriteRecipeIdsAtom,
   addToastAtom,
 } from '../store';
@@ -13,10 +12,10 @@ import { RecipeFilters } from '../types/recipe';
 export const useRecipes = () => {
   const [recipes, setRecipes] = useAtom(recipesAtom);
   const [selectedRecipe, setSelectedRecipe] = useAtom(selectedRecipeAtom);
-  const [filters, setFilters] = useAtom(recipeFiltersAtom);
   const [favoriteIds] = useAtom(favoriteRecipeIdsAtom);
   const [, addToast] = useAtom(addToastAtom);
 
+  const [filters, setFilters] = useState<RecipeFilters>({});
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
@@ -28,10 +27,10 @@ export const useRecipes = () => {
       try {
         setLoading(true);
         const currentPage = reset ? 0 : page;
+        const filtersToUse = appliedFilters || filters;
 
         const response = await recipeService.getRecipes({
-          ...filters,
-          ...appliedFilters,
+          ...filtersToUse,
           page: currentPage,
           pageSize: 20,
         });
