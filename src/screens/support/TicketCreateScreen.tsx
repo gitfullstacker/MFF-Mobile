@@ -56,7 +56,7 @@ interface AttachedFile {
   size: number;
 }
 
-const CreateTicketScreen: React.FC = () => {
+const TicketCreateScreen: React.FC = () => {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -569,4 +569,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreateTicketScreen;
+export default TicketCreateScreen;

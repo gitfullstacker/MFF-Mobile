@@ -2,11 +2,11 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from './types';
 import { TabBar } from '../components/navigation/TabBar';
-import DashboardScreen from '../screens/main/DashboardScreen';
-import RecipesScreen from '../screens/main/RecipesScreen';
-import MealPlansScreen from '../screens/main/MealPlansScreen';
-import FavoritesScreen from '../screens/main/FavoritesScreen';
-import AccountScreen from '../screens/main/AccountScreen';
+import DashboardScreen from '../screens/dashboard/DashboardScreen';
+import RecipeListScreen from '../screens/recipes/RecipeListScreen';
+import MealPlanListScreen from '../screens/meal-plans/MealPlanListScreen';
+import FavoritesScreen from '../screens/favorites/FavoritesScreen';
+import AccountScreen from '../screens/account/AccountScreen';
 import { View } from 'react-native';
 import ThriveDeskFAB from '@/components/support/ThriveDeskFAB';
 
@@ -21,8 +21,8 @@ export const MainNavigator = () => {
           headerShown: false,
         }}>
         <Tab.Screen name="Dashboard" component={DashboardScreen} />
-        <Tab.Screen name="Recipes" component={RecipesScreen} />
-        <Tab.Screen name="Meal Plans" component={MealPlansScreen} />
+        <Tab.Screen name="Recipes" component={RecipeListScreen} />
+        <Tab.Screen name="Meal Plans" component={MealPlanListScreen} />
         <Tab.Screen name="Favorites" component={FavoritesScreen} />
         <Tab.Screen name="Account" component={AccountScreen} />
       </Tab.Navigator>

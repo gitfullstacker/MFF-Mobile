@@ -43,7 +43,7 @@ const DAYS: DayOption[] = [
   { key: 'sa', label: 'Saturday' },
 ];
 
-const CreateMealPlanScreen: React.FC = () => {
+const MealPlanCreateScreen: React.FC = () => {
   const navigation = useNavigation<CreateMealPlanNavigationProp>();
   const route = useRoute<CreateMealPlanRouteProp>();
   const { createPlan } = usePlans();
@@ -258,4 +258,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreateMealPlanScreen;
+export default MealPlanCreateScreen;

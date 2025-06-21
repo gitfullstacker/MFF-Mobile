@@ -35,7 +35,7 @@ type TicketsNavigationProp = CompositeNavigationProp<
   StackNavigationProp<any>
 >;
 
-const TicketsScreen: React.FC = () => {
+const TicketListScreen: React.FC = () => {
   const navigation = useNavigation<TicketsNavigationProp>();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
@@ -483,4 +483,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TicketsScreen;
+export default TicketListScreen;

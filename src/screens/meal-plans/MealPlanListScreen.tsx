@@ -38,7 +38,7 @@ type MealPlansNavigationProp = CompositeNavigationProp<
   StackNavigationProp<RootStackParamList>
 >;
 
-const MealPlansScreen: React.FC = () => {
+const MealPlanListScreen: React.FC = () => {
   const navigation = useNavigation<MealPlansNavigationProp>();
   const { plans, loading, hasMore, fetchPlans, deletePlan, duplicatePlan } =
     usePlans();
@@ -543,4 +543,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MealPlansScreen;
+export default MealPlanListScreen;

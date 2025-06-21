@@ -41,7 +41,7 @@ const DAYS: DayOption[] = [
   { key: 'sa', label: 'Saturday' },
 ];
 
-const EditMealPlanScreen: React.FC = () => {
+const MealPlanEditScreen: React.FC = () => {
   const navigation = useNavigation<EditMealPlanNavigationProp>();
   const route = useRoute<EditMealPlanRouteProp>();
   const { planId } = route.params;
@@ -323,4 +323,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EditMealPlanScreen;
+export default MealPlanEditScreen;

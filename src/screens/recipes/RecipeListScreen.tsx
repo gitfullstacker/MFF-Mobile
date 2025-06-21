@@ -36,7 +36,7 @@ type RecipesNavigationProp = CompositeNavigationProp<
   StackNavigationProp<RootStackParamList>
 >;
 
-const RecipesScreen: React.FC = () => {
+const RecipeListScreen: React.FC = () => {
   const navigation = useNavigation<RecipesNavigationProp>();
   const { toggleFavorite } = useFavorites();
   const {
@@ -269,4 +269,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RecipesScreen;
+export default RecipeListScreen;
