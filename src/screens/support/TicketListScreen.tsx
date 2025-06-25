@@ -8,9 +8,6 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { CompositeNavigationProp } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Feather';
 import { format, parseISO } from 'date-fns';
 import { PageContainer } from '../../components/layout/PageContainer';
@@ -28,15 +25,12 @@ import {
   shadows,
 } from '../../theme';
 import { Ticket } from '../../types/ticket';
-import { RootStackParamList } from '../../navigation/types';
-
-type TicketsNavigationProp = CompositeNavigationProp<
-  StackNavigationProp<RootStackParamList>,
-  StackNavigationProp<any>
->;
+import { useNavigationHelpers } from '@/hooks/useNavigation';
 
 const TicketListScreen: React.FC = () => {
-  const navigation = useNavigation<TicketsNavigationProp>();
+  const { navigateToCreateTicket, navigateToTicketDetail } =
+    useNavigationHelpers();
+
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
@@ -111,17 +105,6 @@ const TicketListScreen: React.FC = () => {
     }
   }, [loading, hasMore, page]);
 
-  const handleTicketPress = (ticket: Ticket) => {
-    navigation.navigate('TicketDetail' as any, {
-      ticketId: ticket._id,
-      ticket,
-    });
-  };
-
-  const handleCreateTicket = () => {
-    navigation.navigate('CreateTicket' as any);
-  };
-
   const getStatusColor = (commentsCount: number) => {
     // Simple status logic based on comments
     if (commentsCount === 0) return colors.semantic.warning; // New/Open
@@ -175,7 +158,7 @@ const TicketListScreen: React.FC = () => {
     return (
       <TouchableOpacity
         style={styles.ticketCard}
-        onPress={() => handleTicketPress(item)}
+        onPress={() => navigateToTicketDetail(item._id, item)}
         activeOpacity={0.7}>
         {/* Header */}
         <View style={styles.ticketHeader}>
@@ -268,7 +251,7 @@ const TicketListScreen: React.FC = () => {
         description="You haven't created any support tickets yet"
         action={{
           label: 'Create Ticket',
-          onPress: handleCreateTicket,
+          onPress: navigateToCreateTicket,
         }}
       />
     );
@@ -290,7 +273,7 @@ const TicketListScreen: React.FC = () => {
         showBack={true}
         rightAction={{
           icon: 'plus',
-          onPress: handleCreateTicket,
+          onPress: navigateToCreateTicket,
         }}
       />
 

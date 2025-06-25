@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Feather';
 import { format, parseISO } from 'date-fns';
 import { PageContainer } from '../../components/layout/PageContainer';
@@ -14,22 +12,15 @@ import { DaySelector } from '../../components/meal-plan/DaySelector';
 import { RecipeListDisplay } from '../../components/meal-plan/RecipeListDisplay';
 import { usePlans } from '../../hooks/usePlans';
 import { colors, typography, spacing, fontWeights } from '../../theme';
-import { MealPlanStackParamList } from '../../navigation/types';
-import { Plan, PlanSchedule, ScheduledRecipe } from '../../types/plan';
+import { PlanSchedule, ScheduledRecipe } from '../../types/plan';
 import { Recipe } from '@/types/recipe';
 import { ShoppingListModal } from '@/components/modals/ShoppingListModal';
-import { selectedPlanAtom } from '@/store';
-import { useAtom } from 'jotai';
-
-type MealPlanDetailNavigationProp = StackNavigationProp<
-  MealPlanStackParamList,
-  'MealPlanDetail'
->;
-
-type MealPlanDetailRouteProp = RouteProp<
-  MealPlanStackParamList,
-  'MealPlanDetail'
->;
+import { MealPlanRouteProp } from '@/types';
+import {
+  useCurrentRoute,
+  useNavigationHelpers,
+  useSafeNavigation,
+} from '@/hooks/useNavigation';
 
 // Days of the week for DaySelector
 const DAYS = [
@@ -43,9 +34,9 @@ const DAYS = [
 ];
 
 const MealPlanDetailScreen: React.FC = () => {
-  const navigation = useNavigation<MealPlanDetailNavigationProp>();
-  const route = useRoute<MealPlanDetailRouteProp>();
-  const { planId } = route.params;
+  const { params } = useCurrentRoute();
+  const { safeGoBack } = useSafeNavigation();
+  const { navigateToEditMealPlan } = useNavigationHelpers();
   const {
     loading: planLoading,
     selectedPlan,
@@ -53,6 +44,9 @@ const MealPlanDetailScreen: React.FC = () => {
     deletePlan,
     duplicatePlan,
   } = usePlans();
+
+  const routeParams = params as MealPlanRouteProp<'MealPlanDetail'>['params'];
+  const planId = routeParams?.planId;
 
   const [selectedDay, setSelectedDay] = useState<string>('su');
   const [loading, setLoading] = useState(false);
@@ -247,19 +241,12 @@ const MealPlanDetailScreen: React.FC = () => {
     return Array.isArray(daySchedule) ? daySchedule.length : 0;
   };
 
-  // Handle edit plan
-  const handleEditPlan = () => {
-    if (selectedPlan) {
-      navigation.navigate('EditMealPlan', { planId });
-    }
-  };
-
   // Handle duplicate plan
   const handleDuplicatePlan = async () => {
     try {
       setLoading(true);
       await duplicatePlan(planId);
-      navigation.goBack();
+      safeGoBack();
     } catch (error) {
       console.error('Error duplicating plan:', error);
       Alert.alert('Error', 'Failed to duplicate meal plan. Please try again.');
@@ -285,7 +272,7 @@ const MealPlanDetailScreen: React.FC = () => {
             try {
               setLoading(true);
               await deletePlan(planId);
-              navigation.goBack();
+              safeGoBack();
             } catch (error) {
               console.error('Error deleting plan:', error);
               Alert.alert(
@@ -327,7 +314,7 @@ const MealPlanDetailScreen: React.FC = () => {
         showBack={true}
         rightAction={{
           icon: 'edit-2',
-          onPress: handleEditPlan,
+          onPress: () => navigateToEditMealPlan(planId),
         }}
       />
 

@@ -6,29 +6,21 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { CompositeNavigationProp } from '@react-navigation/native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Header } from '../../components/navigation/Header';
 import { Input } from '../../components/forms/Input';
 import { RecipeCard } from '../../components/recipe/RecipeCard';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { colors, spacing } from '../../theme';
-import { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { Recipe } from '../../types/recipe';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useAtom } from 'jotai';
 import { favoriteRecipesAtom } from '@/store';
-
-type FavoritesNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<MainTabParamList, 'Favorites'>,
-  StackNavigationProp<RootStackParamList>
->;
+import { SCREEN_NAMES } from '@/constants';
+import { useNavigationHelpers } from '@/hooks/useNavigation';
 
 const FavoritesScreen: React.FC = () => {
-  const navigation = useNavigation<FavoritesNavigationProp>();
+  const { navigateToMainTab, navigateToRecipeDetail } = useNavigationHelpers();
   const [favoriteRecipes] = useAtom(favoriteRecipesAtom);
   const {
     loading,
@@ -84,22 +76,12 @@ const FavoritesScreen: React.FC = () => {
     }
   }, [searchQuery]);
 
-  const handleRecipePress = useCallback(
-    (recipe: Recipe) => {
-      navigation.navigate('RecipeStack', {
-        screen: 'RecipeDetail',
-        params: { recipeId: recipe.slug, recipe },
-      } as any);
-    },
-    [navigation],
-  );
-
   const renderRecipe = ({ item }: { item: Recipe }) => {
     return (
       <View style={styles.recipeCardContainer}>
         <RecipeCard
           recipe={item}
-          onPress={() => handleRecipePress(item)}
+          onPress={() => navigateToRecipeDetail(item.slug, item)}
           onFavoriteToggle={recipeId => {
             toggleFavorite(recipeId);
           }}
@@ -142,7 +124,7 @@ const FavoritesScreen: React.FC = () => {
         description="Save your favorite recipes for quick access"
         action={{
           label: 'Browse Recipes',
-          onPress: () => navigation.navigate('Recipes'),
+          onPress: () => navigateToMainTab(SCREEN_NAMES.MAIN_TAB.RECIPES),
         }}
       />
     );

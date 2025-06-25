@@ -12,7 +12,6 @@ import { DaySelector, DayOption } from '../../components/meal-plan/DaySelector';
 import { RecipeListDisplay } from '../../components/meal-plan/RecipeListDisplay';
 import { MealPlanFormHeader } from '../../components/meal-plan/MealPlanFormHeader';
 import { usePlans } from '../../hooks/usePlans';
-import { MealPlanStackParamList } from '../../navigation/types';
 import { Recipe } from '../../types/recipe';
 import {
   Plan,
@@ -22,6 +21,7 @@ import {
 } from '../../types/plan';
 import { useAtom } from 'jotai';
 import { selectedPlanAtom } from '@/store';
+import { MealPlanStackParamList } from '@/types';
 
 type EditMealPlanNavigationProp = StackNavigationProp<
   MealPlanStackParamList,

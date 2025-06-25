@@ -8,7 +8,6 @@ import {
   Linking,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Header } from '../../components/navigation/Header';
@@ -23,8 +22,7 @@ import {
   fontWeights,
   shadows,
 } from '../../theme';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { AccountStackParamList } from '@/navigation/types';
+import { useNavigationHelpers } from '@/hooks/useNavigation';
 
 interface SupportOption {
   id: string;
@@ -36,13 +34,8 @@ interface SupportOption {
   featured?: boolean;
 }
 
-type SupportNavigationProp = StackNavigationProp<
-  AccountStackParamList,
-  'Support'
->;
-
 const SupportScreen: React.FC = () => {
-  const navigation = useNavigation<SupportNavigationProp>();
+  const { navigateToTickets } = useNavigationHelpers();
 
   // ThriveDesk integration
   const {
@@ -139,7 +132,7 @@ const SupportScreen: React.FC = () => {
       title: 'Support Tickets',
       description: 'View and manage your support tickets',
       icon: 'message-square',
-      action: () => navigation.navigate('Tickets' as any),
+      action: navigateToTickets,
       type: 'navigation',
     },
     {

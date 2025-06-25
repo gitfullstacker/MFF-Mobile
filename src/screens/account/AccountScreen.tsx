@@ -8,10 +8,6 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { CompositeNavigationProp } from '@react-navigation/native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Feather';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Header } from '../../components/navigation/Header';
@@ -24,12 +20,7 @@ import {
   borderRadius,
   fontWeights,
 } from '../../theme';
-import { MainTabParamList, RootStackParamList } from '../../navigation/types';
-
-type AccountNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<MainTabParamList, 'Account'>,
-  StackNavigationProp<RootStackParamList>
->;
+import { useNavigationHelpers } from '@/hooks/useNavigation';
 
 interface MenuItem {
   icon: string;
@@ -41,7 +32,17 @@ interface MenuItem {
 }
 
 const AccountScreen: React.FC = () => {
-  const navigation = useNavigation<AccountNavigationProp>();
+  const {
+    navigateToProfile,
+    navigateToPreferences,
+    navigateToSubscription,
+    navigateToDownloads,
+    navigateToSupport,
+    navigateToTickets,
+    navigateToAbout,
+    navigateToPrivacy,
+    navigateToTerms,
+  } = useNavigationHelpers();
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
@@ -106,15 +107,14 @@ const AccountScreen: React.FC = () => {
       icon: 'user',
       title: 'Profile',
       subtitle: 'Manage your personal information',
-      onPress: () => navigation.navigate('AccountStack', { screen: 'Profile' }),
+      onPress: () => navigateToProfile(),
       showArrow: true,
     },
     {
       icon: 'settings',
       title: 'Preferences',
       subtitle: 'Macro targets & notifications',
-      onPress: () =>
-        navigation.navigate('AccountStack', { screen: 'Preferences' }),
+      onPress: () => navigateToPreferences(),
       showArrow: true,
     },
   ];
@@ -124,16 +124,14 @@ const AccountScreen: React.FC = () => {
       icon: 'credit-card',
       title: 'Subscription',
       subtitle: 'Manage your subscription & billing',
-      onPress: () =>
-        navigation.navigate('AccountStack', { screen: 'Subscription' }),
+      onPress: () => navigateToSubscription(),
       showArrow: true,
     },
     {
       icon: 'download',
       title: 'Downloads',
       subtitle: 'Access your downloaded content',
-      onPress: () =>
-        navigation.navigate('AccountStack', { screen: 'Downloads' }),
+      onPress: () => navigateToDownloads(),
       showArrow: true,
     },
   ];
@@ -143,14 +141,14 @@ const AccountScreen: React.FC = () => {
       icon: 'help-circle',
       title: 'Help Center',
       subtitle: 'Get help and find answers',
-      onPress: () => navigation.navigate('AccountStack', { screen: 'Support' }),
+      onPress: () => navigateToSupport(),
       showArrow: true,
     },
     {
       icon: 'message-square',
       title: 'Support Tickets',
       subtitle: 'View and manage your tickets',
-      onPress: () => navigation.navigate('AccountStack', { screen: 'Tickets' }),
+      onPress: () => navigateToTickets(),
       showArrow: true,
     },
   ];
@@ -160,21 +158,21 @@ const AccountScreen: React.FC = () => {
       icon: 'info',
       title: 'About',
       subtitle: 'App version and information',
-      onPress: () => navigation.navigate('AccountStack', { screen: 'About' }),
+      onPress: () => navigateToAbout(),
       showArrow: true,
     },
     {
       icon: 'shield',
       title: 'Privacy Policy',
       subtitle: 'How we handle your data',
-      onPress: () => navigation.navigate('AccountStack', { screen: 'Privacy' }),
+      onPress: () => navigateToPrivacy(),
       showArrow: true,
     },
     {
       icon: 'file-text',
       title: 'Terms of Service',
       subtitle: 'Terms and conditions',
-      onPress: () => navigation.navigate('AccountStack', { screen: 'Terms' }),
+      onPress: () => navigateToTerms(),
       showArrow: true,
     },
   ];

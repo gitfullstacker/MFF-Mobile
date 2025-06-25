@@ -2,15 +2,14 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAtom } from 'jotai';
-import { RootStackParamList } from './types';
+import { RootStackParamList } from '../types/navigation';
+import { SCREEN_NAMES, NAVIGATION_OPTIONS } from '../constants/navigation';
 import { isAuthenticatedAtom } from '../store';
 import { AuthNavigator } from './AuthNavigator';
 import { MainNavigator } from './MainNavigator';
 import { RecipeNavigator } from './RecipeNavigator';
 import { MealPlanNavigator } from './MealPlanNavigator';
 import { AccountNavigator } from './AccountNavigator';
-// import BarcodeScannerScreen from '../screens/mobile/BarcodeScannerScreen';
-// import RecipePhotoCaptureScreen from '../screens/mobile/RecipePhotoCaptureScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -19,26 +18,16 @@ export const AppNavigator = () => {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={NAVIGATION_OPTIONS.DEFAULT_SCREEN_OPTIONS}>
         {isAuthenticated ? (
           <>
-            <Stack.Screen name="Main" component={MainNavigator} />
-            <Stack.Screen name="MealPlanStack" component={MealPlanNavigator} />
-            <Stack.Screen name="RecipeStack" component={RecipeNavigator} />
-            <Stack.Screen name="AccountStack" component={AccountNavigator} />
-            {/* <Stack.Screen
-              name="BarcodeScanner"
-              component={BarcodeScannerScreen}
-              options={{ presentation: 'modal' }}
-            />
-            <Stack.Screen
-              name="RecipePhotoCapture"
-              component={RecipePhotoCaptureScreen}
-              options={{ presentation: 'modal' }}
-            /> */}
+            <Stack.Screen name={SCREEN_NAMES.ROOT.MAIN} component={MainNavigator} />
+            <Stack.Screen name={SCREEN_NAMES.ROOT.MEAL_PLAN_STACK} component={MealPlanNavigator} />
+            <Stack.Screen name={SCREEN_NAMES.ROOT.RECIPE_STACK} component={RecipeNavigator} />
+            <Stack.Screen name={SCREEN_NAMES.ROOT.ACCOUNT_STACK} component={AccountNavigator} />
           </>
         ) : (
-          <Stack.Screen name="Auth" component={AuthNavigator} />
+          <Stack.Screen name={SCREEN_NAMES.ROOT.AUTH} component={AuthNavigator} />
         )}
       </Stack.Navigator>
     </NavigationContainer>

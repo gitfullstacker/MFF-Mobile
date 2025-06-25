@@ -8,10 +8,6 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { CompositeNavigationProp } from '@react-navigation/native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Feather';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Header } from '../../components/navigation/Header';
@@ -27,17 +23,12 @@ import {
   borderRadius,
   fontWeights,
 } from '../../theme';
-import { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { Recipe, RecipeFilters } from '../../types/recipe';
 import { useFavorites } from '@/hooks/useFavorites';
-
-type RecipesNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<MainTabParamList, 'Recipes'>,
-  StackNavigationProp<RootStackParamList>
->;
+import { useNavigationHelpers } from '@/hooks/useNavigation';
 
 const RecipeListScreen: React.FC = () => {
-  const navigation = useNavigation<RecipesNavigationProp>();
+  const { navigateToRecipeDetail } = useNavigationHelpers();
   const { toggleFavorite } = useFavorites();
   const {
     recipes,
@@ -83,16 +74,6 @@ const RecipeListScreen: React.FC = () => {
     }
   }, [loading, hasMore, isSearching, fetchRecipes]);
 
-  const handleRecipePress = useCallback(
-    (recipe: Recipe) => {
-      navigation.navigate('RecipeStack', {
-        screen: 'RecipeDetail',
-        params: { recipeId: recipe.slug, recipe },
-      } as any);
-    },
-    [navigation],
-  );
-
   const handleApplyFilters = useCallback(
     (newFilters: RecipeFilters) => {
       applyFilters(newFilters);
@@ -116,7 +97,7 @@ const RecipeListScreen: React.FC = () => {
       <View style={styles.recipeCardContainer}>
         <RecipeCard
           recipe={item}
-          onPress={() => handleRecipePress(item)}
+          onPress={() => navigateToRecipeDetail(item.slug, item)}
           onFavoriteToggle={recipeId => toggleFavorite(recipeId)}
         />
       </View>

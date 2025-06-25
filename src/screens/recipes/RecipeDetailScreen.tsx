@@ -38,20 +38,20 @@ import {
   borderRadius,
   shadows,
 } from '../../theme';
-import { RecipeStackParamList } from '../../navigation/types';
 import { IngredientItem, RecipeComment } from '@/types/recipe';
 import { recipeService } from '../../services/recipe';
 import { useRecentRecipes } from '@/hooks/useRecentRecipes';
 import { useFavorites } from '@/hooks/useFavorites';
+import { RecipeStackParamList } from '@/types';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-
-type RecipeDetailRouteProps = RouteProp<RecipeStackParamList, 'RecipeDetail'>;
 
 type RecipeDetailNavigationProps = StackNavigationProp<
   RecipeStackParamList,
   'RecipeDetail'
 >;
+
+type RecipeDetailRouteProps = RouteProp<RecipeStackParamList, 'RecipeDetail'>;
 
 interface ReviewSubmission {
   rating: number;

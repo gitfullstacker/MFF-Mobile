@@ -8,10 +8,6 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { CompositeNavigationProp } from '@react-navigation/native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Feather';
 import { format, parseISO } from 'date-fns';
 import { PageContainer } from '../../components/layout/PageContainer';
@@ -27,19 +23,18 @@ import {
   shadows,
   fontWeights,
 } from '../../theme';
-import { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { Plan } from '../../types/plan';
 import { PlanWeekdayIndicator } from '@/components/meal-plan/PlanWeekdayIndicator';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { useActivePlan } from '../../hooks/useActivePlan';
-
-type MealPlansNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<MainTabParamList, 'Meal Plans'>,
-  StackNavigationProp<RootStackParamList>
->;
+import { useNavigationHelpers } from '@/hooks/useNavigation';
 
 const MealPlanListScreen: React.FC = () => {
-  const navigation = useNavigation<MealPlansNavigationProp>();
+  const {
+    navigateToMealPlanDetail,
+    navigateToCreateMealPlan,
+    navigateToEditMealPlan,
+  } = useNavigationHelpers();
   const { plans, loading, hasMore, fetchPlans, deletePlan, duplicatePlan } =
     usePlans();
   const {
@@ -88,26 +83,6 @@ const MealPlanListScreen: React.FC = () => {
       fetchPlans();
     }
   }, [loading, hasMore, fetchPlans]);
-
-  const handleCreatePlan = () => {
-    navigation.navigate('MealPlanStack', {
-      screen: 'CreateMealPlan',
-    } as any);
-  };
-
-  const handleEditPlan = (plan: Plan) => {
-    navigation.navigate('MealPlanStack', {
-      screen: 'EditMealPlan',
-      params: { planId: plan._id, plan },
-    } as any);
-  };
-
-  const handleViewPlan = (plan: Plan) => {
-    navigation.navigate('MealPlanStack', {
-      screen: 'MealPlanDetail',
-      params: { planId: plan._id, plan },
-    } as any);
-  };
 
   const confirmDeletePlan = (plan: Plan) => {
     setPlanToDelete(plan);
@@ -186,7 +161,7 @@ const MealPlanListScreen: React.FC = () => {
     return (
       <TouchableOpacity
         style={[styles.planCard, isActive && styles.activePlanCard]}
-        onPress={() => handleViewPlan(item)}>
+        onPress={() => navigateToMealPlanDetail(item._id, item)}>
         <View style={styles.planCardContent}>
           {/* Header */}
           <View style={styles.planCardHeader}>
@@ -215,7 +190,7 @@ const MealPlanListScreen: React.FC = () => {
               )}
               <TouchableOpacity
                 style={styles.iconButton}
-                onPress={() => handleEditPlan(item)}>
+                onPress={() => navigateToEditMealPlan(item._id, item)}>
                 <Icon name="edit" size={20} color={colors.text.secondary} />
               </TouchableOpacity>
               <TouchableOpacity
@@ -272,7 +247,7 @@ const MealPlanListScreen: React.FC = () => {
         description="Create your first meal plan to track your nutrition goals"
         action={{
           label: 'Create Meal Plan',
-          onPress: handleCreatePlan,
+          onPress: () => navigateToCreateMealPlan(),
         }}
       />
     );
@@ -295,7 +270,7 @@ const MealPlanListScreen: React.FC = () => {
         showBack={false}
         rightAction={{
           icon: 'plus',
-          onPress: handleCreatePlan,
+          onPress: () => navigateToCreateMealPlan(),
         }}
       />
 

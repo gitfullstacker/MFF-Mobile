@@ -1,6 +1,7 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import { MealPlanStackParamList } from './types';
+import { MealPlanStackParamList } from '../types/navigation';
+import { SCREEN_NAMES, NAVIGATION_OPTIONS } from '../constants/navigation';
 import MealPlanListScreen from '../screens/meal-plans/MealPlanListScreen';
 import MealPlanCreateScreen from '../screens/meal-plans/MealPlanCreateScreen';
 import MealPlanEditScreen from '../screens/meal-plans/MealPlanEditScreen';
@@ -10,14 +11,11 @@ const Stack = createStackNavigator<MealPlanStackParamList>();
 
 export const MealPlanNavigator = () => {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}>
-      <Stack.Screen name="MealPlanList" component={MealPlanListScreen} />
-      <Stack.Screen name="CreateMealPlan" component={MealPlanCreateScreen} />
-      <Stack.Screen name="EditMealPlan" component={MealPlanEditScreen} />
-      <Stack.Screen name="MealPlanDetail" component={MealPlanDetailScreen} />
+    <Stack.Navigator screenOptions={NAVIGATION_OPTIONS.DEFAULT_SCREEN_OPTIONS}>
+      <Stack.Screen name={SCREEN_NAMES.MEAL_PLAN.LIST} component={MealPlanListScreen} />
+      <Stack.Screen name={SCREEN_NAMES.MEAL_PLAN.CREATE} component={MealPlanCreateScreen} />
+      <Stack.Screen name={SCREEN_NAMES.MEAL_PLAN.EDIT} component={MealPlanEditScreen} />
+      <Stack.Screen name={SCREEN_NAMES.MEAL_PLAN.DETAIL} component={MealPlanDetailScreen} />
     </Stack.Navigator>
   );
 };

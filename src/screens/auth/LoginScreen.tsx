@@ -27,8 +27,8 @@ import {
   fontWeights,
   borderRadius,
 } from '../../theme';
-import { AuthStackParamList } from '../../navigation/types';
 import Icon from 'react-native-vector-icons/Feather';
+import { AuthStackParamList } from '@/types';
 
 type LoginScreenNavigationProp = StackNavigationProp<
   AuthStackParamList,

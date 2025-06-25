@@ -11,10 +11,6 @@ import {
   Dimensions,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { CompositeNavigationProp } from '@react-navigation/native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { format } from 'date-fns';
 import Icon from 'react-native-vector-icons/Feather';
 import { PageContainer } from '../../components/layout/PageContainer';
@@ -31,10 +27,9 @@ import {
   fontWeights,
   shadows,
 } from '../../theme';
-import { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { Recipe } from '../../types/recipe';
 import { Plan, PlanSchedule } from '../../types/plan';
-import { RECIPE_CATEGORIES } from '@/constants';
+import { RECIPE_CATEGORIES, SCREEN_NAMES } from '@/constants';
 import { useActivePlan } from '../../hooks/useActivePlan';
 import { SetActivePlanModal } from '../../components/modals/SetActivePlanModal';
 import { SwipeIndicator } from '@/components/ui/SwipeIndicator';
@@ -44,17 +39,19 @@ import { userPreferencesAtom } from '@/store/atoms/userPreferences';
 import { SuggestedMealPlanSection } from '@/components/dashboard/SuggestedMealPlanSection';
 import { useRecentRecipes } from '@/hooks/useRecentRecipes';
 import { useFavorites } from '@/hooks/useFavorites';
-
-type DashboardNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<MainTabParamList, 'Dashboard'>,
-  StackNavigationProp<RootStackParamList>
->;
+import { useNavigationHelpers } from '@/hooks/useNavigation';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 const DashboardScreen: React.FC = () => {
-  const navigation = useNavigation<DashboardNavigationProp>();
   const { user } = useAuth();
+  const {
+    navigateToMainTab,
+    navigateToRecipeDetail,
+    navigateToCreateMealPlan,
+    navigateToMealPlanDetail,
+    navigateToDownloads,
+  } = useNavigationHelpers();
   const { toggleFavorite } = useFavorites();
   const { recentRecipes, loading: recentRecipesLoading } = useRecentRecipes();
   const { activePlan, loading: activePlanLoading } = useActivePlan();
@@ -160,12 +157,7 @@ const DashboardScreen: React.FC = () => {
   const renderTodaysMeal = ({ item }: { item: Recipe }) => (
     <TouchableOpacity
       style={styles.mealCard}
-      onPress={() =>
-        navigation.navigate('RecipeStack', {
-          screen: 'RecipeDetail',
-          params: { recipeId: item.slug, recipe: item },
-        } as any)
-      }>
+      onPress={() => navigateToRecipeDetail(item.slug, item)}>
       <RecipeCard recipe={item} onPress={() => {}} />
     </TouchableOpacity>
   );
@@ -174,12 +166,7 @@ const DashboardScreen: React.FC = () => {
     <View style={styles.recentRecipeCard}>
       <RecipeCard
         recipe={item}
-        onPress={() =>
-          navigation.navigate('RecipeStack', {
-            screen: 'RecipeDetail',
-            params: { recipeId: item.slug, recipe: item },
-          } as any)
-        }
+        onPress={() => navigateToRecipeDetail(item.slug, item)}
         onFavoriteToggle={recipeId => toggleFavorite(recipeId)}
       />
     </View>
@@ -226,7 +213,7 @@ const DashboardScreen: React.FC = () => {
         [
           {
             text: 'View Plans',
-            onPress: () => navigation.navigate('Meal Plans'),
+            onPress: () => navigateToMainTab(SCREEN_NAMES.MAIN_TAB.MEAL_PLANS),
           },
           {
             text: 'OK',
@@ -238,27 +225,6 @@ const DashboardScreen: React.FC = () => {
       console.error('Error saving suggested plan:', error);
       Alert.alert('Error', 'Failed to save meal plan. Please try again.');
     }
-  };
-
-  const navigateToMealPlans = () => {
-    navigation.navigate('Meal Plans');
-  };
-
-  const navigateToRecipes = () => {
-    navigation.navigate('Recipes');
-  };
-
-  const navigateToCreatePlan = () => {
-    navigation.navigate('MealPlanStack', {
-      screen: 'CreateMealPlan',
-    } as any);
-  };
-
-  const navigateToPlanDetail = (plan: Plan) => {
-    navigation.navigate('MealPlanStack', {
-      screen: 'MealPlanDetail',
-      params: { planId: plan._id, plan },
-    } as any);
   };
 
   const navigateToCategory = (category: string) => {
@@ -296,7 +262,9 @@ const DashboardScreen: React.FC = () => {
           {activePlan ? (
             <TouchableOpacity
               style={styles.planCard}
-              onPress={() => navigateToPlanDetail(activePlan)}
+              onPress={() =>
+                navigateToMealPlanDetail(activePlan._id, activePlan)
+              }
               activeOpacity={0.9}>
               <Image
                 source={require('../../../assets/images/plan-placeholder.jpg')}
@@ -328,7 +296,7 @@ const DashboardScreen: React.FC = () => {
               <View style={styles.emptyPlanActions}>
                 <TouchableOpacity
                   style={styles.createPlanButton}
-                  onPress={navigateToCreatePlan}>
+                  onPress={navigateToCreateMealPlan}>
                   <Text style={styles.createPlanButtonText}>Create Plan</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -418,7 +386,7 @@ const DashboardScreen: React.FC = () => {
                 description="Create a meal plan to track your daily nutrition"
                 action={{
                   label: 'Create Meal Plan',
-                  onPress: navigateToCreatePlan,
+                  onPress: navigateToCreateMealPlan,
                 }}
               />
             )}
@@ -438,7 +406,7 @@ const DashboardScreen: React.FC = () => {
           <View style={styles.quickActions}>
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={navigateToCreatePlan}>
+              onPress={navigateToCreateMealPlan}>
               <View style={styles.actionIconContainer}>
                 <Icon name="calendar" size={24} color={colors.primary} />
               </View>
@@ -447,7 +415,7 @@ const DashboardScreen: React.FC = () => {
 
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={navigateToRecipes}>
+              onPress={() => navigateToMainTab(SCREEN_NAMES.MAIN_TAB.RECIPES)}>
               <View style={styles.actionIconContainer}>
                 <Icon name="book-open" size={24} color={colors.primary} />
               </View>
@@ -456,7 +424,7 @@ const DashboardScreen: React.FC = () => {
 
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => navigation.navigate('Downloads' as any)}>
+              onPress={navigateToDownloads}>
               <View style={styles.actionIconContainer}>
                 <Icon name="download" size={24} color={colors.primary} />
               </View>
@@ -468,7 +436,10 @@ const DashboardScreen: React.FC = () => {
         {/* Recent Recipes Section */}
         <Section
           title="Recent Recipes"
-          action={{ label: 'View All', onPress: navigateToRecipes }}>
+          action={{
+            label: 'View All',
+            onPress: () => navigateToMainTab(SCREEN_NAMES.MAIN_TAB.RECIPES),
+          }}>
           {recentRecipes.length > 0 ? (
             <View>
               <FlatList
@@ -498,7 +469,7 @@ const DashboardScreen: React.FC = () => {
               description="Start exploring recipes to see them here"
               action={{
                 label: 'Browse Recipes',
-                onPress: navigateToRecipes,
+                onPress: () => navigateToMainTab(SCREEN_NAMES.MAIN_TAB.RECIPES),
               }}
             />
           )}

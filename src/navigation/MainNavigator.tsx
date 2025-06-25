@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { MainTabParamList } from './types';
+import { MainTabParamList } from '../types/navigation';
+import { NAVIGATION_OPTIONS, SCREEN_NAMES } from '../constants/navigation';
 import { TabBar } from '../components/navigation/TabBar';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import RecipeListScreen from '../screens/recipes/RecipeListScreen';
@@ -17,17 +18,33 @@ export const MainNavigator = () => {
     <View style={{ flex: 1 }}>
       <Tab.Navigator
         tabBar={props => <TabBar {...props} />}
-        screenOptions={{
-          headerShown: false,
-        }}>
-        <Tab.Screen name="Dashboard" component={DashboardScreen} />
-        <Tab.Screen name="Recipes" component={RecipeListScreen} />
-        <Tab.Screen name="Meal Plans" component={MealPlanListScreen} />
-        <Tab.Screen name="Favorites" component={FavoritesScreen} />
-        <Tab.Screen name="Account" component={AccountScreen} />
+        screenOptions={NAVIGATION_OPTIONS.DEFAULT_SCREEN_OPTIONS}>
+        <Tab.Screen
+          name={SCREEN_NAMES.MAIN_TAB.DASHBOARD}
+          component={DashboardScreen}
+          options={{ tabBarLabel: 'Dashboard' }}
+        />
+        <Tab.Screen
+          name={SCREEN_NAMES.MAIN_TAB.RECIPES}
+          component={RecipeListScreen}
+          options={{ tabBarLabel: 'Recipes' }}
+        />
+        <Tab.Screen
+          name={SCREEN_NAMES.MAIN_TAB.MEAL_PLANS}
+          component={MealPlanListScreen}
+          options={{ tabBarLabel: 'Meal Plans' }}
+        />
+        <Tab.Screen
+          name={SCREEN_NAMES.MAIN_TAB.FAVORITES}
+          component={FavoritesScreen}
+          options={{ tabBarLabel: 'Favorites' }}
+        />
+        <Tab.Screen
+          name={SCREEN_NAMES.MAIN_TAB.ACCOUNT}
+          component={AccountScreen}
+          options={{ tabBarLabel: 'Account' }}
+        />
       </Tab.Navigator>
-
-      {/* Global ThriveDesk FAB */}
       <ThriveDeskFAB visible={true} position="bottom-right" showLabel={false} />
     </View>
   );

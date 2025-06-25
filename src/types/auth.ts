@@ -1,11 +1,4 @@
-export interface User {
-  id: number;
-  email: string;
-  first_name: string;
-  last_name: string;
-  username: string;
-  avatar_url?: string;
-}
+import { User } from './user';
 
 export interface LoginResponse {
   token: string;

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
-import { colors, typography, spacing, shadows } from '../../theme';
+import { colors, typography, spacing } from '../../theme';
 
 interface HeaderProps {
   title: string;

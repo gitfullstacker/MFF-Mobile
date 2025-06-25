@@ -8,7 +8,6 @@ import {
   Linking,
   Image,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Header } from '../../components/navigation/Header';
@@ -21,33 +20,19 @@ import {
   fontWeights,
   shadows,
 } from '../../theme';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { AccountStackParamList } from '@/navigation/types';
-
-type AboutNavigationProp = StackNavigationProp<AccountStackParamList, 'About'>;
+import { useNavigationHelpers } from '@/hooks/useNavigation';
 
 const AboutScreen: React.FC = () => {
-  const navigation = useNavigation<AboutNavigationProp>();
+  const { navigateToSupport, navigateToPrivacy, navigateToTerms } =
+    useNavigationHelpers();
 
   const handleOpenWebsite = () => {
     Linking.openURL('https://macrofriendlyfood.com');
   };
 
-  const handleOpenPrivacy = () => {
-    navigation.navigate('Privacy' as any);
-  };
-
-  const handleOpenTerms = () => {
-    navigation.navigate('Terms' as any);
-  };
-
   const handleOpenLicenses = () => {
     // In a real app, you might show a modal or navigate to a licenses screen
     Linking.openURL('https://macrofriendlyfood.com/licenses');
-  };
-
-  const handleContactSupport = () => {
-    navigation.navigate('Support' as any);
   };
 
   const handleRateApp = () => {
@@ -199,7 +184,7 @@ const AboutScreen: React.FC = () => {
             'Contact Support',
             'Get help or report issues',
             'help-circle',
-            handleContactSupport,
+            navigateToSupport,
           )}
         </Section>
 
@@ -209,13 +194,13 @@ const AboutScreen: React.FC = () => {
             'Privacy Policy',
             'How we handle your data',
             'shield',
-            handleOpenPrivacy,
+            navigateToPrivacy,
           )}
           {renderActionCard(
             'Terms of Service',
             'Terms and conditions of use',
             'file-text',
-            handleOpenTerms,
+            navigateToTerms,
           )}
           {renderActionCard(
             'Open Source Licenses',
