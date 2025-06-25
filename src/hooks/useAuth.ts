@@ -15,7 +15,12 @@ import { authService } from '../services/auth';
 import { userService } from '../services/user';
 import { subscriptionService } from '../services/subscription';
 import { favoriteService } from '../services/favorite';
-import { LoginRequest } from '../types/auth';
+import {
+  ChangePasswordRequest,
+  ForgotPasswordRequest,
+  LoginRequest,
+  ResetPasswordRequest,
+} from '../types/auth';
 import { isTokenExpired } from '../utils/tokenUtils';
 import { planService } from '@/services/plan';
 
@@ -222,6 +227,102 @@ export const useAuth = () => {
     [user, setUser, addToast],
   );
 
+  // Password reset functions
+  const forgotPassword = useCallback(
+    async (data: ForgotPasswordRequest) => {
+      try {
+        const response = await authService.forgotPassword(data);
+
+        addToast({
+          message:
+            "If an account with that email exists, we've sent a password reset link.",
+          type: 'success',
+          duration: 5000,
+        });
+
+        return response;
+      } catch (error: any) {
+        console.error('❌ Forgot password failed:', error);
+
+        const errorMessage =
+          error.response?.data?.message ||
+          'Failed to send reset email. Please try again.';
+
+        addToast({
+          message: errorMessage,
+          type: 'error',
+          duration: 5000,
+        });
+
+        throw error;
+      }
+    },
+    [addToast],
+  );
+
+  const resetPassword = useCallback(
+    async (data: ResetPasswordRequest) => {
+      try {
+        const response = await authService.resetPassword(data);
+
+        addToast({
+          message:
+            'Password has been reset successfully! You can now login with your new password.',
+          type: 'success',
+          duration: 5000,
+        });
+
+        return response;
+      } catch (error: any) {
+        console.error('❌ Reset password failed:', error);
+
+        const errorMessage =
+          error.response?.data?.message ||
+          'Failed to reset password. Please try again or request a new reset link.';
+
+        addToast({
+          message: errorMessage,
+          type: 'error',
+          duration: 5000,
+        });
+
+        throw error;
+      }
+    },
+    [addToast],
+  );
+
+  const changePassword = useCallback(
+    async (data: ChangePasswordRequest) => {
+      try {
+        const response = await authService.changePassword(data);
+
+        addToast({
+          message: 'Password changed successfully!',
+          type: 'success',
+          duration: 3000,
+        });
+
+        return response;
+      } catch (error: any) {
+        console.error('❌ Change password failed:', error);
+
+        const errorMessage =
+          error.response?.data?.message ||
+          'Failed to change password. Please try again.';
+
+        addToast({
+          message: errorMessage,
+          type: 'error',
+          duration: 5000,
+        });
+
+        throw error;
+      }
+    },
+    [addToast],
+  );
+
   const checkAuthStatus = useCallback(async () => {
     try {
       if (authToken && user) {
@@ -275,9 +376,14 @@ export const useAuth = () => {
     isAuthenticated,
     savedCredentials,
     isTokenValid: authToken ? !isTokenExpired(authToken) : false,
+    // Authentication functions
     login,
     logout,
     updateProfile,
     checkAuthStatus,
+    // Password reset functions
+    forgotPassword,
+    resetPassword,
+    changePassword,
   };
 };

@@ -9,6 +9,7 @@ export const SCREEN_NAMES = {
     LOGIN: 'Login',
     SIGNUP: 'SignUp',
     FORGOT_PASSWORD: 'ForgotPassword',
+    RESET_PASSWORD: 'ResetPassword',
   },
 
   // Main Tab
@@ -167,6 +168,7 @@ export const DEEP_LINK_CONFIG = {
     MEAL_PLAN_DETAIL: '/meal-plan/:planId',
     ACCOUNT_PROFILE: '/profile',
     AUTH_LOGIN: '/login',
+    AUTH_RESET_PASSWORD: '/reset-password/:token',
   },
 } as const;
 

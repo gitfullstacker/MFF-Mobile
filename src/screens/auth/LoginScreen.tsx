@@ -8,9 +8,8 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
+  Linking,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -28,12 +27,7 @@ import {
   borderRadius,
 } from '../../theme';
 import Icon from 'react-native-vector-icons/Feather';
-import { AuthStackParamList } from '@/types';
-
-type LoginScreenNavigationProp = StackNavigationProp<
-  AuthStackParamList,
-  'Login'
->;
+import { useNavigationHelpers } from '@/hooks/useNavigation';
 
 // Strictly define the form data structure
 type LoginFormData = {
@@ -52,7 +46,7 @@ const loginSchema = yup
   .required();
 
 const LoginScreen: React.FC = () => {
-  const navigation = useNavigation<LoginScreenNavigationProp>();
+  const { navigateToForgotPassword } = useNavigationHelpers();
   const { login, savedCredentials } = useAuth();
   const [loading, setLoading] = useState(false);
 
@@ -98,6 +92,21 @@ const LoginScreen: React.FC = () => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSignUpPress = async () => {
+    const url = 'https://macrofriendlyfood.com/mff-app-recipes/';
+
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Error', 'Cannot open the sign up page');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Cannot open the sign up page');
     }
   };
 
@@ -185,7 +194,7 @@ const LoginScreen: React.FC = () => {
 
               <TouchableOpacity
                 style={styles.forgotPassword}
-                onPress={() => navigation.navigate('ForgotPassword')}>
+                onPress={navigateToForgotPassword}>
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
             </View>
@@ -202,7 +211,7 @@ const LoginScreen: React.FC = () => {
 
             <View style={styles.signUpContainer}>
               <Text style={styles.signUpText}>Don't have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+              <TouchableOpacity onPress={handleSignUpPress}>
                 <Text style={styles.signUpLink}>Sign Up</Text>
               </TouchableOpacity>
             </View>

@@ -159,6 +159,12 @@ export const useNavigationHelpers = () => {
     [navigation],
   );
 
+  const navigateToForgotPassword = useCallback(() => {
+    navigation.navigate(SCREEN_NAMES.ROOT.AUTH, {
+      screen: SCREEN_NAMES.AUTH.FORGOT_PASSWORD,
+    });
+  }, [navigation]);
+
   const navigateToRecipeDetail = useCallback(
     (recipeId: string, recipe?: any) => {
       navigation.navigate(SCREEN_NAMES.ROOT.RECIPE_STACK, {
@@ -267,6 +273,7 @@ export const useNavigationHelpers = () => {
 
   return {
     navigateToMainTab,
+    navigateToForgotPassword,
     navigateToRecipeDetail,
     navigateToMealPlanDetail,
     navigateToCreateMealPlan,

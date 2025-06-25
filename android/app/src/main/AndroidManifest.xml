@@ -17,10 +17,40 @@
         android:launchMode="singleTask"
         android:windowSoftInputMode="adjustResize"
         android:exported="true">
+        <!-- Default launcher intent -->
         <intent-filter>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
+        
+        <!-- Deep link support for custom scheme -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="mealapp" />
+        </intent-filter>
+        
+        <!-- Deep link support for web links (password reset) -->
+        <intent-filter android:autoVerify="true">
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https"
+                  android:host="macrofriendlyfood.com" />
+        </intent-filter>
+        
+        <!-- Optional: Support for custom domain if you have one -->
+        <!-- Uncomment and replace yourdomain.com with your actual domain -->
+        <!--
+        <intent-filter android:autoVerify="true">
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https"
+                  android:host="yourdomain.com" />
+        </intent-filter>
+        -->
       </activity>
     </application>
 </manifest>
