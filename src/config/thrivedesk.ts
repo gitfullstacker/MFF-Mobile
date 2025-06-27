@@ -5,7 +5,7 @@ export const THRIVEDESK_CONFIG = {
   departments: {
     support: 'General Support',
     technical: 'Technical Support',
-    billing: 'Billing & Account',
+    account: 'Account',
     product: 'Product Feedback',
   },
 };

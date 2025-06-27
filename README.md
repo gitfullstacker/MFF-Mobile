@@ -9,7 +9,6 @@ A mobile application for the Macro Friendly Food platform, providing users with 
 - **Meal Planning**: Create and manage weekly meal plans
 - **Favorites System**: Save favorite recipes for quick access
 - **Nutrition Tracking**: Track macros (protein, carbs, fat) and calories
-- **Subscription Management**: Manage premium subscriptions
 - **Support System**: In-app ticket system for user support
 - **Offline Support**: Cache recipes and data for offline viewing
 

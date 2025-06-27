@@ -93,7 +93,7 @@ export const useThriveDesk = (
   const openAccountSupport = useCallback(() => {
     showModal({
       title: 'Account Support',
-      department: 'billing',
+      department: 'account',
       subject: 'Account Issue',
       prefilledMessage: `I need help with my account.\n\nUser ID: ${
         user?.id || 'Not available'
@@ -131,15 +131,6 @@ export const useThriveDesk = (
     [showModal],
   );
 
-  const openSubscriptionSupport = useCallback(() => {
-    showModal({
-      title: 'Subscription Support',
-      department: 'billing',
-      subject: 'Subscription Issue',
-      prefilledMessage: 'I have a question about my subscription',
-    });
-  }, [showModal]);
-
   // Generate the widget URL with user context
   const generateWidgetUrl = useCallback(() => {
     let url = `${config.baseUrl}/widget`;
@@ -166,7 +157,6 @@ export const useThriveDesk = (
     openAccountSupport,
     openRecipeHelp,
     openMealPlanHelp,
-    openSubscriptionSupport,
 
     // Utilities
     generateWidgetUrl,

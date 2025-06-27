@@ -225,7 +225,7 @@ const AboutScreen: React.FC = () => {
               <View style={styles.contactItem}>
                 <Icon name="mail" size={16} color={colors.text.secondary} />
                 <Text style={styles.contactText}>
-                  hello@macrofriendlyfood.com
+                  contact@macrofriendlyfood.com
                 </Text>
               </View>
               <View style={styles.contactItem}>

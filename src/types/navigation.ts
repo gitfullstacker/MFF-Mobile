@@ -45,7 +45,6 @@ export type AccountStackParamList = {
   AccountMain: undefined;
   Profile: undefined;
   Preferences: undefined;
-  Subscription: undefined;
   Downloads: undefined;
   Support: undefined;
   Tickets: undefined;

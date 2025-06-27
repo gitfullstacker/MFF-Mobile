@@ -35,7 +35,6 @@ const AccountScreen: React.FC = () => {
   const {
     navigateToProfile,
     navigateToPreferences,
-    navigateToSubscription,
     navigateToDownloads,
     navigateToSupport,
     navigateToTickets,
@@ -111,27 +110,17 @@ const AccountScreen: React.FC = () => {
       showArrow: true,
     },
     {
-      icon: 'settings',
-      title: 'Preferences',
-      subtitle: 'Macro targets & notifications',
-      onPress: () => navigateToPreferences(),
-      showArrow: true,
-    },
-  ];
-
-  const subscriptionMenuItems: MenuItem[] = [
-    {
-      icon: 'credit-card',
-      title: 'Subscription',
-      subtitle: 'Manage your subscription & billing',
-      onPress: () => navigateToSubscription(),
-      showArrow: true,
-    },
-    {
       icon: 'download',
       title: 'Downloads',
       subtitle: 'Access your downloaded content',
       onPress: () => navigateToDownloads(),
+      showArrow: true,
+    },
+    {
+      icon: 'settings',
+      title: 'Preferences',
+      subtitle: 'Macro targets & notifications',
+      onPress: () => navigateToPreferences(),
       showArrow: true,
     },
   ];
@@ -211,10 +200,6 @@ const AccountScreen: React.FC = () => {
         {/* Menu Sections */}
         <Section title="Profile">
           {profileMenuItems.map(renderMenuItem)}
-        </Section>
-
-        <Section title="Subscription">
-          {subscriptionMenuItems.map(renderMenuItem)}
         </Section>
 
         <Section title="Support">

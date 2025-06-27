@@ -122,7 +122,7 @@ const SupportScreen: React.FC = () => {
     {
       id: 'account-help',
       title: 'Account Support',
-      description: 'Billing, subscription, and account issues',
+      description: 'Account issues',
       icon: 'user',
       action: openAccountSupport,
       type: 'modal',
@@ -385,8 +385,8 @@ const SupportScreen: React.FC = () => {
             <View style={styles.emergencyContent}>
               <Text style={styles.emergencyTitle}>Urgent Account Issues?</Text>
               <Text style={styles.emergencyDescription}>
-                For billing problems, security issues, or account lockouts,
-                start a live chat for immediate assistance.
+                For security issues, or account lockouts, start a live chat for
+                immediate assistance.
               </Text>
               <TouchableOpacity
                 style={styles.emergencyButton}
