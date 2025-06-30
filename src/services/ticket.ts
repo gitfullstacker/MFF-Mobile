@@ -6,7 +6,7 @@ export const ticketService = {
   async getTickets(
     page = 0,
     pageSize = 20,
-    type?: 'bug' | 'feature' | 'all',
+    type?: string,
     search?: string,
   ): Promise<PaginatedResponse<Ticket>> {
     const params = new URLSearchParams({
@@ -38,8 +38,8 @@ export const ticketService = {
     return apiClient.post('/tickets', data);
   },
 
-  async addComment(ticketId: string, content: string): Promise<Ticket> {
-    return apiClient.post(`/tickets/${ticketId}/comments`, { content });
+  async addComment(ticketId: string, text: string): Promise<Ticket> {
+    return apiClient.post(`/tickets/${ticketId}/comments`, { text });
   },
 
   async addAttachment(ticketId: string, file: any): Promise<Ticket> {

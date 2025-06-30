@@ -12,6 +12,7 @@ import TicketCreateScreen from '../screens/support/TicketCreateScreen';
 import AboutScreen from '../screens/account/AboutScreen';
 import PrivacyScreen from '@/screens/account/PrivacyScreen';
 import TermsScreen from '@/screens/account/TermsScreen';
+import TicketDetailScreen from '@/screens/support/TicketDetailScreen';
 
 const Stack = createStackNavigator<AccountStackParamList>();
 
@@ -25,6 +26,7 @@ export const AccountNavigator = () => {
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.SUPPORT} component={SupportScreen} />
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.TICKETS} component={TicketListScreen} />
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.CREATE_TICKET} component={TicketCreateScreen} />
+      <Stack.Screen name={SCREEN_NAMES.ACCOUNT.TICKET_DETAIL} component={TicketDetailScreen} />
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.ABOUT} component={AboutScreen} />
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.PRIVACY} component={PrivacyScreen} />
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.TERMS} component={TermsScreen} />

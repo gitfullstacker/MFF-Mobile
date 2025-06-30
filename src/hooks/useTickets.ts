@@ -11,12 +11,7 @@ export const useTickets = () => {
   const [loading, setLoading] = useState(false);
 
   const fetchTickets = useCallback(
-    async (
-      page = 0,
-      pageSize = 20,
-      type?: 'bug' | 'feature',
-      search?: string,
-    ) => {
+    async (page = 0, pageSize = 20, type?: string, search?: string) => {
       try {
         setLoading(true);
         const response = await ticketService.getTickets(
@@ -119,9 +114,10 @@ export const useTickets = () => {
   );
 
   const addComment = useCallback(
-    async (ticketId: string, content: string) => {
+    async (ticketId: string, text: string) => {
       try {
-        const updatedTicket = await ticketService.addComment(ticketId, content);
+        // Changed parameter name from 'content' to 'text' to match backend
+        const updatedTicket = await ticketService.addComment(ticketId, text);
 
         // Update the selected ticket if it matches
         if (selectedTicket?._id === ticketId) {

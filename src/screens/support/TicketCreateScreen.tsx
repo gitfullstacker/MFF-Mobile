@@ -8,7 +8,6 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -20,7 +19,7 @@ import { Section } from '../../components/layout/Section';
 import { Input } from '../../components/forms/Input';
 import { Button } from '../../components/forms/Button';
 import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
-import { ticketService } from '../../services/ticket';
+import { useTickets } from '../../hooks/useTickets';
 import {
   colors,
   typography,
@@ -29,6 +28,8 @@ import {
   fontWeights,
 } from '../../theme';
 import { CreateTicketRequest } from '../../types/ticket';
+import { useNavigationHelpers } from '@/hooks/useNavigation';
+import { useSafeNavigation } from '@/hooks/useNavigation';
 
 // Form validation schema
 const ticketSchema = yup.object({
@@ -57,8 +58,10 @@ interface AttachedFile {
 }
 
 const TicketCreateScreen: React.FC = () => {
-  const navigation = useNavigation();
-  const [loading, setLoading] = useState(false);
+  const { safeGoBack } = useSafeNavigation();
+  const { navigateToTicketDetail } = useNavigationHelpers();
+  const { createTicket, addAttachment, loading } = useTickets();
+
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
   const {
@@ -80,16 +83,14 @@ const TicketCreateScreen: React.FC = () => {
 
   const onSubmit = async (data: TicketFormData) => {
     try {
-      setLoading(true);
-
-      // Create the ticket
-      const ticket = await ticketService.createTicket(data);
+      // Create the ticket using useTickets hook
+      const ticket = await createTicket(data);
 
       // Upload attachments if any
       if (attachedFiles.length > 0) {
         for (const file of attachedFiles) {
           try {
-            await ticketService.addAttachment(ticket._id, file);
+            await addAttachment(ticket._id, file);
           } catch (error) {
             console.error('Error uploading attachment:', error);
             // Continue with other files even if one fails
@@ -102,160 +103,109 @@ const TicketCreateScreen: React.FC = () => {
         "Your support ticket has been created successfully. We'll get back to you soon!",
         [
           {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
+            text: 'View Ticket',
+            onPress: () => navigateToTicketDetail(ticket._id),
+          },
+          {
+            text: 'Back to List',
+            onPress: () => safeGoBack(),
+            style: 'cancel',
           },
         ],
       );
     } catch (error) {
       console.error('Error creating ticket:', error);
-      Alert.alert('Error', 'Failed to create ticket. Please try again.');
-    } finally {
-      setLoading(false);
+      // Toast notification is handled by useTickets hook
     }
   };
 
-  const handleAttachFile = async () => {
+  const handleAttachment = async () => {
     try {
-      const results = await DocumentPicker.pick({
+      const result = await DocumentPicker.pick({
         type: [DocumentPicker.types.allFiles],
-        allowMultiSelection: true,
+        allowMultiSelection: false,
       });
 
-      const newFiles = results.map(result => ({
-        uri: result.uri,
-        name: result.name || 'Unknown',
-        type: result.type || 'application/octet-stream',
-        size: result.size || 0,
-      }));
+      const file = result[0];
+      if (file && file.name && file.type && file.size) {
+        // Check file size (10MB limit)
+        const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+        if (file.size > maxSize) {
+          Alert.alert(
+            'File Too Large',
+            'Please select a file smaller than 10MB.',
+          );
+          return;
+        }
 
-      setAttachedFiles(prev => [...prev, ...newFiles]);
-    } catch (error) {
-      if (!DocumentPicker.isCancel(error)) {
-        Alert.alert('Error', 'Failed to attach file. Please try again.');
+        // Create AttachedFile object with proper typing
+        const attachedFile: AttachedFile = {
+          uri: file.uri,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        };
+
+        setAttachedFiles(prev => [...prev, attachedFile]);
+      }
+    } catch (error: any) {
+      // Check if user cancelled the picker
+      if (error?.code !== 'DOCUMENT_PICKER_CANCELED') {
+        Alert.alert('Error', 'Failed to select file. Please try again.');
       }
     }
   };
 
-  const handleRemoveFile = (index: number) => {
+  const removeAttachment = (index: number) => {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  const formatFileSize = (size: number) => {
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const renderTypeSelector = () => (
-    <View style={styles.typeSelectorContainer}>
-      <Text style={styles.typeSelectorLabel}>
-        What type of request is this?
-      </Text>
-
-      <TouchableOpacity
-        style={[
-          styles.typeOption,
-          selectedType === 'bug' && styles.typeOptionSelected,
-        ]}
-        onPress={() => setValue('type', 'bug')}>
-        <View style={styles.typeIconContainer}>
-          <Icon
-            name="alert-circle"
-            size={24}
-            color={
-              selectedType === 'bug' ? colors.white : colors.semantic.error
-            }
-          />
-        </View>
-        <View style={styles.typeContent}>
-          <Text
-            style={[
-              styles.typeTitle,
-              selectedType === 'bug' && styles.typeTitleSelected,
-            ]}>
-            Bug Report
-          </Text>
-          <Text
-            style={[
-              styles.typeDescription,
-              selectedType === 'bug' && styles.typeDescriptionSelected,
-            ]}>
-            Report a problem or issue with the app
-          </Text>
-        </View>
-        {selectedType === 'bug' && (
-          <Icon name="check" size={20} color={colors.white} />
-        )}
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[
-          styles.typeOption,
-          selectedType === 'feature' && styles.typeOptionSelected,
-        ]}
-        onPress={() => setValue('type', 'feature')}>
-        <View style={styles.typeIconContainer}>
-          <Icon
-            name="star"
-            size={24}
-            color={
-              selectedType === 'feature' ? colors.white : colors.semantic.info
-            }
-          />
-        </View>
-        <View style={styles.typeContent}>
-          <Text
-            style={[
-              styles.typeTitle,
-              selectedType === 'feature' && styles.typeTitleSelected,
-            ]}>
-            Feature Request
-          </Text>
-          <Text
-            style={[
-              styles.typeDescription,
-              selectedType === 'feature' && styles.typeDescriptionSelected,
-            ]}>
-            Suggest a new feature or improvement
-          </Text>
-        </View>
-        {selectedType === 'feature' && (
-          <Icon name="check" size={20} color={colors.white} />
-        )}
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderAttachments = () => {
-    if (attachedFiles.length === 0) return null;
+  const renderTypeOption = (type: 'bug' | 'feature') => {
+    const isSelected = selectedType === type;
+    const iconName = type === 'bug' ? 'alert-circle' : 'star';
+    const title = type === 'bug' ? 'Bug Report' : 'Feature Request';
+    const description =
+      type === 'bug'
+        ? 'Report a problem or issue with the app'
+        : 'Suggest a new feature or improvement';
 
     return (
-      <View style={styles.attachmentsContainer}>
-        <Text style={styles.attachmentsTitle}>Attached Files</Text>
-        {attachedFiles.map((file, index) => (
-          <View key={index} style={styles.attachmentItem}>
-            <View style={styles.attachmentInfo}>
-              <Icon name="paperclip" size={16} color={colors.text.secondary} />
-              <View style={styles.attachmentDetails}>
-                <Text style={styles.attachmentName} numberOfLines={1}>
-                  {file.name}
-                </Text>
-                <Text style={styles.attachmentSize}>
-                  {formatFileSize(file.size)}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              onPress={() => handleRemoveFile(index)}
-              style={styles.removeButton}>
-              <Icon name="x" size={16} color={colors.semantic.error} />
-            </TouchableOpacity>
-          </View>
-        ))}
-      </View>
+      <TouchableOpacity
+        key={type}
+        style={[styles.typeOption, isSelected && styles.typeOptionSelected]}
+        onPress={() => setValue('type', type)}
+        activeOpacity={0.7}>
+        <View
+          style={[
+            styles.typeIconContainer,
+            isSelected && { backgroundColor: 'rgba(255,255,255,0.2)' },
+          ]}>
+          <Icon
+            name={iconName}
+            size={24}
+            color={isSelected ? colors.white : colors.primary}
+          />
+        </View>
+        <View style={styles.typeContent}>
+          <Text
+            style={[styles.typeTitle, isSelected && styles.typeTitleSelected]}>
+            {title}
+          </Text>
+          <Text
+            style={[
+              styles.typeDescription,
+              isSelected && styles.typeDescriptionSelected,
+            ]}>
+            {description}
+          </Text>
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -264,26 +214,22 @@ const TicketCreateScreen: React.FC = () => {
       <Header title="Create Support Ticket" showBack={true} />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Type Selection */}
-        <Section title="Request Type">
-          {renderTypeSelector()}
-          {errors.type && (
-            <Text style={styles.errorText}>{errors.type.message}</Text>
-          )}
+        {/* Ticket Type Selection */}
+        <Section title="Ticket Type" style={styles.section}>
+          <View style={styles.typeContainer}>
+            {renderTypeOption('bug')}
+            {renderTypeOption('feature')}
+          </View>
         </Section>
 
-        {/* Title */}
-        <Section title="Title">
+        {/* Title Input */}
+        <Section title="Title" style={styles.section}>
           <Controller
             control={control}
             name="title"
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
-                placeholder={
-                  selectedType === 'bug'
-                    ? 'Brief description of the bug...'
-                    : 'Brief description of the feature...'
-                }
+                placeholder="Brief description of your issue or request"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -294,18 +240,14 @@ const TicketCreateScreen: React.FC = () => {
           />
         </Section>
 
-        {/* Description */}
-        <Section title="Description">
+        {/* Description Input */}
+        <Section title="Description" style={styles.section}>
           <Controller
             control={control}
             name="description"
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
-                placeholder={
-                  selectedType === 'bug'
-                    ? 'Please describe the bug in detail. Include steps to reproduce, expected behavior, and actual behavior...'
-                    : "Please describe the feature you'd like to see. Include details about how it should work and why it would be useful..."
-                }
+                placeholder="Please provide detailed information about your issue or feature request..."
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -313,97 +255,102 @@ const TicketCreateScreen: React.FC = () => {
                 multiline
                 numberOfLines={6}
                 style={styles.descriptionInput}
+                maxLength={1000}
               />
             )}
           />
         </Section>
 
         {/* Attachments */}
-        <Section title="Attachments (Optional)">
+        <Section title="Attachments (Optional)" style={styles.section}>
           <TouchableOpacity
             style={styles.attachButton}
-            onPress={handleAttachFile}>
+            onPress={handleAttachment}
+            activeOpacity={0.7}>
             <Icon name="paperclip" size={20} color={colors.primary} />
-            <Text style={styles.attachButtonText}>Attach Files</Text>
+            <Text style={styles.attachButtonText}>Add File</Text>
           </TouchableOpacity>
           <Text style={styles.attachHint}>
-            You can attach screenshots, logs, or other relevant files
+            Supported formats: Images, Documents, PDFs (Max 10MB)
           </Text>
-          {renderAttachments()}
+
+          {/* Attached Files List */}
+          {attachedFiles.length > 0 && (
+            <View style={styles.attachmentsContainer}>
+              <Text style={styles.attachmentsTitle}>Attached Files:</Text>
+              {attachedFiles.map((file, index) => (
+                <View key={index} style={styles.attachmentItem}>
+                  <View style={styles.attachmentInfo}>
+                    <Icon name="file" size={20} color={colors.text.secondary} />
+                    <View style={styles.attachmentDetails}>
+                      <Text style={styles.attachmentName} numberOfLines={1}>
+                        {file.name}
+                      </Text>
+                      <Text style={styles.attachmentSize}>
+                        {formatFileSize(file.size)}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.removeButton}
+                    onPress={() => removeAttachment(index)}
+                    activeOpacity={0.7}>
+                    <Icon name="x" size={20} color={colors.semantic.error} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
         </Section>
 
         {/* Tips */}
-        <Section title="Tips for Better Support">
+        <Section title="Tips for Better Support" style={styles.section}>
           <View style={styles.tipsContainer}>
-            {selectedType === 'bug' ? (
-              <>
-                <View style={styles.tipItem}>
-                  <Icon
-                    name="smartphone"
-                    size={16}
-                    color={colors.semantic.info}
-                  />
-                  <Text style={styles.tipText}>
-                    Include your device model and app version
-                  </Text>
-                </View>
-                <View style={styles.tipItem}>
-                  <Icon name="list" size={16} color={colors.semantic.info} />
-                  <Text style={styles.tipText}>
-                    Provide step-by-step reproduction instructions
-                  </Text>
-                </View>
-                <View style={styles.tipItem}>
-                  <Icon name="image" size={16} color={colors.semantic.info} />
-                  <Text style={styles.tipText}>
-                    Attach screenshots or screen recordings if possible
-                  </Text>
-                </View>
-              </>
-            ) : (
-              <>
-                <View style={styles.tipItem}>
-                  <Icon name="target" size={16} color={colors.semantic.info} />
-                  <Text style={styles.tipText}>
-                    Explain the problem this feature would solve
-                  </Text>
-                </View>
-                <View style={styles.tipItem}>
-                  <Icon name="users" size={16} color={colors.semantic.info} />
-                  <Text style={styles.tipText}>
-                    Describe how other users might benefit
-                  </Text>
-                </View>
-                <View style={styles.tipItem}>
-                  <Icon
-                    name="lightbulb"
-                    size={16}
-                    color={colors.semantic.info}
-                  />
-                  <Text style={styles.tipText}>
-                    Suggest how the feature might work
-                  </Text>
-                </View>
-              </>
-            )}
+            <View style={styles.tipItem}>
+              <Icon
+                name="check-circle"
+                size={16}
+                color={colors.semantic.success}
+              />
+              <Text style={styles.tipText}>
+                Be specific about the steps that led to the issue
+              </Text>
+            </View>
+            <View style={styles.tipItem}>
+              <Icon
+                name="check-circle"
+                size={16}
+                color={colors.semantic.success}
+              />
+              <Text style={styles.tipText}>
+                Include screenshots or files if they help explain the problem
+              </Text>
+            </View>
+            <View style={styles.tipItem}>
+              <Icon
+                name="check-circle"
+                size={16}
+                color={colors.semantic.success}
+              />
+              <Text style={styles.tipText}>
+                Mention your device type and app version if relevant
+              </Text>
+            </View>
           </View>
         </Section>
-
-        {/* Submit Button */}
-        <View style={styles.submitContainer}>
-          <Button
-            title="Submit Ticket"
-            onPress={handleSubmit(onSubmit)}
-            variant="primary"
-            fullWidth
-            loading={loading}
-            disabled={loading}
-            icon={<Icon name="send" size={18} color={colors.white} />}
-          />
-        </View>
       </ScrollView>
 
-      {loading && <LoadingOverlay message="Creating ticket..." />}
+      {/* Submit Button */}
+      <View style={styles.submitContainer}>
+        <Button
+          title="Create Ticket"
+          onPress={handleSubmit(onSubmit)}
+          loading={loading}
+          disabled={loading}
+        />
+      </View>
+
+      {loading && <LoadingOverlay message="Creating your support ticket..." />}
     </PageContainer>
   );
 };
@@ -411,24 +358,22 @@ const TicketCreateScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background.light,
+  },
+  section: {
+    marginBottom: spacing.md,
   },
 
-  // Type Selector
-  typeSelectorContainer: {
-    marginBottom: spacing.md,
-  },
-  typeSelectorLabel: {
-    ...typography.bodyRegular,
-    color: colors.text.primary,
-    fontWeight: fontWeights.medium,
-    marginBottom: spacing.md,
+  // Type Selection
+  typeContainer: {
+    gap: spacing.sm,
   },
   typeOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
     padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.white,
     marginBottom: spacing.sm,
     borderWidth: 2,
     borderColor: colors.border.default,

@@ -32,7 +32,6 @@ const TicketListScreen: React.FC = () => {
 
   const { tickets, loading, fetchTickets, refreshTickets } = useTickets();
 
-  const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<
@@ -44,10 +43,6 @@ const TicketListScreen: React.FC = () => {
   useEffect(() => {
     loadTickets(true);
   }, [selectedFilter]);
-
-  useEffect(() => {
-    filterTickets();
-  }, [tickets, searchQuery]);
 
   const loadTickets = async (reset = false) => {
     if (loading && !reset) return;
@@ -74,32 +69,47 @@ const TicketListScreen: React.FC = () => {
     }
   };
 
-  const filterTickets = () => {
-    let filtered = tickets;
-
-    if (searchQuery.trim()) {
-      filtered = tickets.filter(
-        ticket =>
-          ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          ticket.description.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
-    }
-
-    setFilteredTickets(filtered);
-  };
-
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     refreshTickets(); // Clear current tickets
     await loadTickets(true);
     setRefreshing(false);
-  }, [selectedFilter]);
+  }, [selectedFilter, searchQuery]);
 
   const handleLoadMore = useCallback(() => {
     if (!loading && hasMore) {
       loadTickets();
     }
   }, [loading, hasMore, page]);
+
+  const handleSearch = useCallback(() => {
+    // Reset page and search with current query
+    setPage(0);
+    refreshTickets(); // Clear current tickets
+    loadTickets(true);
+  }, [searchQuery, selectedFilter]);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    setPage(0);
+    refreshTickets();
+    // Load tickets without search query
+    const loadWithoutSearch = async () => {
+      try {
+        const response = await fetchTickets(
+          0,
+          20,
+          selectedFilter === 'all' ? undefined : selectedFilter,
+          undefined, // No search query
+        );
+        setPage(1);
+        setHasMore(response.hasMore);
+      } catch (error) {
+        console.error('Error loading tickets:', error);
+      }
+    };
+    loadWithoutSearch();
+  }, [selectedFilter, fetchTickets, refreshTickets]);
 
   const getStatusColor = (commentsCount: number) => {
     // Simple status logic based on comments
@@ -112,11 +122,11 @@ const TicketListScreen: React.FC = () => {
     return 'Active';
   };
 
-  const getTypeIcon = (type: 'bug' | 'feature') => {
+  const getTypeIcon = (type: string) => {
     return type === 'bug' ? 'alert-circle' : 'star';
   };
 
-  const getTypeColor = (type: 'bug' | 'feature') => {
+  const getTypeColor = (type: string) => {
     return type === 'bug' ? colors.semantic.error : colors.semantic.info;
   };
 
@@ -206,7 +216,7 @@ const TicketListScreen: React.FC = () => {
           description={`No tickets match "${searchQuery}"`}
           action={{
             label: 'Clear Search',
-            onPress: () => setSearchQuery(''),
+            onPress: handleClearSearch,
           }}
         />
       );
@@ -253,7 +263,9 @@ const TicketListScreen: React.FC = () => {
             onChangeText={setSearchQuery}
             leftIcon="search"
             rightIcon={searchQuery ? 'x' : undefined}
-            onRightIconPress={() => setSearchQuery('')}
+            onRightIconPress={handleClearSearch}
+            onSubmitEditing={handleSearch}
+            returnKeyType="search"
           />
         </View>
 
@@ -284,7 +296,7 @@ const TicketListScreen: React.FC = () => {
 
         {/* Tickets List */}
         <FlatList
-          data={filteredTickets}
+          data={tickets}
           renderItem={renderTicketItem}
           keyExtractor={item => item._id}
           contentContainerStyle={styles.listContainer}
