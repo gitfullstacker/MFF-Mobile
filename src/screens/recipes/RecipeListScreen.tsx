@@ -30,20 +30,12 @@ import { useNavigationHelpers } from '@/hooks/useNavigation';
 const RecipeListScreen: React.FC = () => {
   const { navigateToRecipeDetail } = useNavigationHelpers();
   const { toggleFavorite } = useFavorites();
-  const {
-    recipes,
-    loading,
-    hasMore,
-    filters,
-    fetchRecipes,
-    searchRecipes,
-    applyFilters,
-  } = useRecipes();
+  const { recipes, loading, hasMore, filters, fetchRecipes, applyFilters } =
+    useRecipes();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showRecipeFilterModal, setShowRecipeFilterModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     // Initial load
@@ -53,26 +45,24 @@ const RecipeListScreen: React.FC = () => {
   }, []);
 
   const handleSearch = useCallback(() => {
-    if (searchQuery.trim()) {
-      setIsSearching(true);
-      searchRecipes(searchQuery.trim());
-    } else {
-      setIsSearching(false);
-      fetchRecipes({}, true);
-    }
-  }, [searchQuery, searchRecipes, fetchRecipes]);
+    const newFilters: RecipeFilters = {
+      ...filters,
+      search: searchQuery.trim() || undefined,
+    };
+    applyFilters(newFilters);
+  }, [searchQuery, filters, applyFilters]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchRecipes({}, true);
+    await fetchRecipes(filters, true);
     setRefreshing(false);
-  }, [fetchRecipes]);
+  }, [fetchRecipes, filters]);
 
   const handleLoadMore = useCallback(() => {
-    if (!loading && hasMore && !isSearching) {
+    if (!loading && hasMore) {
       fetchRecipes();
     }
-  }, [loading, hasMore, isSearching, fetchRecipes]);
+  }, [loading, hasMore, fetchRecipes]);
 
   const handleApplyFilters = useCallback(
     (newFilters: RecipeFilters) => {
@@ -85,7 +75,12 @@ const RecipeListScreen: React.FC = () => {
   const getFilterCount = () => {
     let count = 0;
     Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
+      if (
+        key !== 'search' &&
+        value !== undefined &&
+        value !== null &&
+        value !== ''
+      ) {
         count++;
       }
     });
@@ -116,17 +111,18 @@ const RecipeListScreen: React.FC = () => {
   const renderEmptyState = () => {
     if (loading) return null;
 
-    if (isSearching) {
+    if (filters.search) {
       return (
         <EmptyState
           title="No recipes found"
-          description={`We couldn't find any recipes matching "${searchQuery}"`}
+          description={`We couldn't find any recipes matching "${filters.search}"`}
           action={{
             label: 'Clear Search',
             onPress: () => {
               setSearchQuery('');
-              setIsSearching(false);
-              fetchRecipes({}, true);
+              const newFilters = { ...filters };
+              delete newFilters.search;
+              applyFilters(newFilters);
             },
           }}
         />
@@ -163,8 +159,9 @@ const RecipeListScreen: React.FC = () => {
           rightIcon={searchQuery ? 'x' : undefined}
           onRightIconPress={() => {
             setSearchQuery('');
-            setIsSearching(false);
-            fetchRecipes({}, true);
+            const newFilters = { ...filters };
+            delete newFilters.search;
+            applyFilters(newFilters);
           }}
           onSubmitEditing={handleSearch}
           returnKeyType="search"
@@ -185,7 +182,7 @@ const RecipeListScreen: React.FC = () => {
         data={recipes}
         renderItem={renderRecipe}
         keyExtractor={item => item._id}
-        numColumns={1} // Changed from 2 to 1 for horizontal cards
+        numColumns={1}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={

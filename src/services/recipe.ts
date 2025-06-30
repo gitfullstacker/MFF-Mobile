@@ -51,8 +51,4 @@ export const recipeService = {
   ): Promise<RecipeComment> {
     return apiClient.post(`/recipes/${id}/comments`, data);
   },
-
-  async searchRecipes(query: string): Promise<PaginatedResponse<Recipe>> {
-    return apiClient.get(`/recipes?search=${encodeURIComponent(query)}`);
-  },
 };

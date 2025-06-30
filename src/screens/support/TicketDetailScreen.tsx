@@ -28,7 +28,7 @@ import {
   fontWeights,
   shadows,
 } from '../../theme';
-import { Ticket, TicketComment, Attachment } from '../../types/ticket';
+import { TicketComment, Attachment } from '../../types/ticket';
 import { AccountRouteProp } from '@/types';
 
 const TicketDetailScreen: React.FC = () => {
