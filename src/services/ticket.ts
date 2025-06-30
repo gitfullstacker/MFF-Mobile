@@ -7,14 +7,24 @@ export const ticketService = {
     page = 0,
     pageSize = 20,
     type?: 'bug' | 'feature' | 'all',
+    search?: string,
   ): Promise<PaginatedResponse<Ticket>> {
     const params = new URLSearchParams({
       page: page.toString(),
       pageSize: pageSize.toString(),
     });
 
-    if (type) {
+    // Add type filter if specified and not 'all'
+    if (type && type !== 'all') {
       params.append('type', type);
+    } else {
+      // Send 'all' explicitly to match backend DTO default
+      params.append('type', 'all');
+    }
+
+    // Add search parameter if provided
+    if (search && search.trim()) {
+      params.append('search', search.trim());
     }
 
     return apiClient.get(`/tickets?${params.toString()}`);

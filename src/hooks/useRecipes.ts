@@ -5,6 +5,7 @@ import {
   selectedRecipeAtom,
   favoriteRecipeIdsAtom,
   addToastAtom,
+  recipeFiltersAtom,
 } from '../store';
 import { recipeService } from '../services/recipe';
 import { RecipeFilters } from '../types/recipe';
@@ -12,10 +13,10 @@ import { RecipeFilters } from '../types/recipe';
 export const useRecipes = () => {
   const [recipes, setRecipes] = useAtom(recipesAtom);
   const [selectedRecipe, setSelectedRecipe] = useAtom(selectedRecipeAtom);
+  const [filters, setFilters] = useAtom(recipeFiltersAtom);
   const [favoriteIds] = useAtom(favoriteRecipeIdsAtom);
   const [, addToast] = useAtom(addToastAtom);
 
-  const [filters, setFilters] = useState<RecipeFilters>({});
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);

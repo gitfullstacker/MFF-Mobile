@@ -50,6 +50,7 @@ const MealPlanDetailScreen: React.FC = () => {
 
   const [selectedDay, setSelectedDay] = useState<string>('su');
   const [loading, setLoading] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
   const [dailyMacros, setDailyMacros] = useState({
     protein: 0,
     carbs: 0,
@@ -67,10 +68,12 @@ const MealPlanDetailScreen: React.FC = () => {
   const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
 
   useEffect(() => {
+    if (isDeleted) return;
+
     if (planId && (!selectedPlan || selectedPlan._id !== planId)) {
       fetchPlan(planId);
     }
-  }, [planId, selectedPlan, fetchPlan]);
+  }, [planId, selectedPlan, fetchPlan, isDeleted]);
 
   // Calculate macros and extract recipes when meal plan changes
   useEffect(() => {
@@ -271,6 +274,7 @@ const MealPlanDetailScreen: React.FC = () => {
           onPress: async () => {
             try {
               setLoading(true);
+              setIsDeleted(true);
               await deletePlan(planId);
               safeGoBack();
             } catch (error) {

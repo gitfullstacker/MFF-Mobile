@@ -128,8 +128,8 @@ const TicketListScreen: React.FC = () => {
     <View style={styles.filterTabs}>
       {[
         { key: 'all', label: 'All' },
-        { key: 'bug', label: 'Bug Reports' },
-        { key: 'feature', label: 'Feature Requests' },
+        { key: 'bug', label: 'Bug' },
+        { key: 'feature', label: 'Feature' },
       ].map(filter => (
         <TouchableOpacity
           key={filter.key}

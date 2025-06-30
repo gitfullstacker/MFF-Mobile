@@ -27,11 +27,10 @@ import {
   fontWeights,
   shadows,
 } from '../../theme';
-import { Recipe } from '../../types/recipe';
+import { Recipe, RecipeFilters } from '../../types/recipe';
 import { Plan, PlanSchedule } from '../../types/plan';
 import { RECIPE_CATEGORIES, SCREEN_NAMES } from '@/constants';
 import { useActivePlan } from '../../hooks/useActivePlan';
-import { SetActivePlanModal } from '../../components/modals/SetActivePlanModal';
 import { SwipeIndicator } from '@/components/ui/SwipeIndicator';
 import { MacroDisplayWithGoals } from '@/components/dashboard/MacroDisplayWithGoals';
 import { useAtom } from 'jotai';
@@ -40,6 +39,7 @@ import { SuggestedMealPlanSection } from '@/components/dashboard/SuggestedMealPl
 import { useRecentRecipes } from '@/hooks/useRecentRecipes';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
+import { useRecipes } from '@/hooks/useRecipes';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -52,11 +52,11 @@ const DashboardScreen: React.FC = () => {
     navigateToMealPlanDetail,
     navigateToDownloads,
   } = useNavigationHelpers();
+  const { applyFilters } = useRecipes();
   const { toggleFavorite } = useFavorites();
   const { recentRecipes, loading: recentRecipesLoading } = useRecentRecipes();
   const { activePlan, loading: activePlanLoading } = useActivePlan();
   const [userPreferences] = useAtom(userPreferencesAtom);
-  const [showSetActivePlanModal, setShowSetActivePlanModal] = useState(false);
   const [isTodayPlanExpanded, setIsTodayPlanExpanded] = useState(false);
   const [todaysMeals, setTodaysMeals] = useState<Recipe[]>([]);
   const [dailyMacros, setDailyMacros] = useState({
@@ -186,7 +186,7 @@ const DashboardScreen: React.FC = () => {
       <TouchableOpacity
         key={item.id}
         style={styles.categoryButton}
-        onPress={() => navigateToCategory(item.name)}>
+        onPress={() => navigateToCategory(item.slug)}>
         <View style={styles.categoryIcon}>
           <Icon name={item.icon} size={18} color={colors.primary} />
         </View>
@@ -194,14 +194,6 @@ const DashboardScreen: React.FC = () => {
       </TouchableOpacity>
     </View>
   );
-
-  const handleActivePlanSuccess = (plan: Plan) => {
-    calculateTodaysMeals();
-  };
-
-  const handleSetActivePlan = () => {
-    setShowSetActivePlanModal(true);
-  };
 
   const handleSaveSuggestedPlan = async (plan: Plan) => {
     try {
@@ -227,9 +219,14 @@ const DashboardScreen: React.FC = () => {
     }
   };
 
-  const navigateToCategory = (category: string) => {
-    // Navigation code to category
-    console.log('Navigate to category', category);
+  const navigateToCategory = (categorySlug: string) => {
+    const categoryFilters: RecipeFilters = {
+      types: categorySlug, // Set the selected category as the filter
+    };
+    applyFilters(categoryFilters);
+
+    // Navigate to the recipes tab
+    navigateToMainTab(SCREEN_NAMES.MAIN_TAB.RECIPES);
   };
 
   // Calculate item dimensions for indicators
@@ -301,7 +298,9 @@ const DashboardScreen: React.FC = () => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.setPlanButton}
-                  onPress={handleSetActivePlan}>
+                  onPress={() =>
+                    navigateToMainTab(SCREEN_NAMES.MAIN_TAB.MEAL_PLANS)
+                  }>
                   <Text style={styles.setPlanButtonText}>Set Active Plan</Text>
                 </TouchableOpacity>
               </View>
@@ -511,12 +510,6 @@ const DashboardScreen: React.FC = () => {
           message="Loading dashboard..."
         />
       )}
-
-      <SetActivePlanModal
-        visible={showSetActivePlanModal}
-        onClose={() => setShowSetActivePlanModal(false)}
-        onSuccess={handleActivePlanSuccess}
-      />
     </PageContainer>
   );
 };

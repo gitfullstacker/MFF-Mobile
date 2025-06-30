@@ -11,10 +11,20 @@ export const useTickets = () => {
   const [loading, setLoading] = useState(false);
 
   const fetchTickets = useCallback(
-    async (page = 0, pageSize = 20, type?: 'bug' | 'feature') => {
+    async (
+      page = 0,
+      pageSize = 20,
+      type?: 'bug' | 'feature',
+      search?: string,
+    ) => {
       try {
         setLoading(true);
-        const response = await ticketService.getTickets(page, pageSize, type);
+        const response = await ticketService.getTickets(
+          page,
+          pageSize,
+          type,
+          search,
+        );
 
         if (page === 0) {
           setTickets(response.data);
@@ -118,6 +128,13 @@ export const useTickets = () => {
           setSelectedTicket(updatedTicket);
         }
 
+        // Update the ticket in the tickets list as well
+        setTickets(prev =>
+          prev.map(ticket =>
+            ticket._id === ticketId ? updatedTicket : ticket,
+          ),
+        );
+
         addToast({
           message: 'Comment added successfully',
           type: 'success',
@@ -137,6 +154,10 @@ export const useTickets = () => {
     [selectedTicket, addToast],
   );
 
+  const refreshTickets = useCallback(() => {
+    setTickets([]);
+  }, []);
+
   return {
     tickets,
     selectedTicket,
@@ -146,5 +167,6 @@ export const useTickets = () => {
     createTicket,
     addAttachment,
     addComment,
+    refreshTickets,
   };
 };
