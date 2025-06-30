@@ -6,7 +6,6 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { format, parseISO } from 'date-fns';
@@ -15,7 +14,7 @@ import { Header } from '../../components/navigation/Header';
 import { Input } from '../../components/forms/Input';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
-import { ticketService } from '../../services/ticket';
+import { useTickets } from '../../hooks/useTickets';
 import {
   colors,
   typography,
@@ -31,9 +30,9 @@ const TicketListScreen: React.FC = () => {
   const { navigateToCreateTicket, navigateToTicketDetail } =
     useNavigationHelpers();
 
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const { tickets, loading, fetchTickets, refreshTickets } = useTickets();
+
   const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<
@@ -54,28 +53,24 @@ const TicketListScreen: React.FC = () => {
     if (loading && !reset) return;
 
     try {
-      setLoading(true);
       const currentPage = reset ? 0 : page;
-      const response = await ticketService.getTickets(
+      const response = await fetchTickets(
         currentPage,
         20,
         selectedFilter === 'all' ? undefined : selectedFilter,
+        searchQuery.trim() || undefined,
       );
 
       if (reset) {
-        setTickets(response.data);
         setPage(1);
       } else {
-        setTickets(prev => [...prev, ...response.data]);
         setPage(currentPage + 1);
       }
 
       setHasMore(response.hasMore);
     } catch (error) {
       console.error('Error loading tickets:', error);
-      Alert.alert('Error', 'Failed to load tickets. Please try again.');
-    } finally {
-      setLoading(false);
+      // Toast notification is handled by useTickets hook
     }
   };
 
@@ -95,6 +90,7 @@ const TicketListScreen: React.FC = () => {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
+    refreshTickets(); // Clear current tickets
     await loadTickets(true);
     setRefreshing(false);
   }, [selectedFilter]);
@@ -124,70 +120,41 @@ const TicketListScreen: React.FC = () => {
     return type === 'bug' ? colors.semantic.error : colors.semantic.info;
   };
 
-  const renderFilterTabs = () => (
-    <View style={styles.filterTabs}>
-      {[
-        { key: 'all', label: 'All' },
-        { key: 'bug', label: 'Bug' },
-        { key: 'feature', label: 'Feature' },
-      ].map(filter => (
-        <TouchableOpacity
-          key={filter.key}
-          style={[
-            styles.filterTab,
-            selectedFilter === filter.key && styles.filterTabActive,
-          ]}
-          onPress={() => setSelectedFilter(filter.key as any)}>
-          <Text
-            style={[
-              styles.filterTabText,
-              selectedFilter === filter.key && styles.filterTabTextActive,
-            ]}>
-            {filter.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-
-  const renderTicketCard = ({ item }: { item: Ticket }) => {
-    const hasUnread = item.comments.length > 0; // Simplified - you'd track this properly
+  const renderTicketItem = ({ item }: { item: Ticket }) => {
     const statusColor = getStatusColor(item.comments.length);
-    const statusText = getStatusText(item.comments.length);
+    const typeColor = getTypeColor(item.type);
 
     return (
       <TouchableOpacity
-        style={styles.ticketCard}
-        onPress={() => navigateToTicketDetail(item._id, item)}
+        style={styles.ticketItem}
+        onPress={() => navigateToTicketDetail(item._id)}
         activeOpacity={0.7}>
-        {/* Header */}
+        {/* Ticket Header */}
         <View style={styles.ticketHeader}>
           <View style={styles.ticketType}>
             <Icon
               name={getTypeIcon(item.type)}
               size={16}
-              color={getTypeColor(item.type)}
+              color={typeColor}
+              style={styles.typeIcon}
             />
-            <Text style={[styles.typeText, { color: getTypeColor(item.type) }]}>
-              {item.type === 'bug' ? 'Bug' : 'Feature'}
+            <Text style={[styles.typeText, { color: typeColor }]}>
+              {item.type.toUpperCase()}
             </Text>
           </View>
 
           <View style={styles.ticketStatus}>
             <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: statusColor + '20' },
-              ]}>
-              <Text style={[styles.statusText, { color: statusColor }]}>
-                {statusText}
+              style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+              <Text style={[styles.statusText, { color: colors.white }]}>
+                {getStatusText(item.comments.length)}
               </Text>
             </View>
-            {hasUnread && <View style={styles.unreadBadge} />}
+            {item.comments.length === 0 && <View style={styles.unreadBadge} />}
           </View>
         </View>
 
-        {/* Content */}
+        {/* Ticket Content */}
         <View style={styles.ticketContent}>
           <Text style={styles.ticketTitle} numberOfLines={2}>
             {item.title}
@@ -197,7 +164,7 @@ const TicketListScreen: React.FC = () => {
           </Text>
         </View>
 
-        {/* Footer */}
+        {/* Ticket Footer */}
         <View style={styles.ticketFooter}>
           <View style={styles.ticketMeta}>
             <Icon name="calendar" size={14} color={colors.text.secondary} />
@@ -287,19 +254,40 @@ const TicketListScreen: React.FC = () => {
             leftIcon="search"
             rightIcon={searchQuery ? 'x' : undefined}
             onRightIconPress={() => setSearchQuery('')}
-            containerStyle={styles.searchInput}
           />
         </View>
 
         {/* Filter Tabs */}
-        {renderFilterTabs()}
+        <View style={styles.filterContainer}>
+          {(['all', 'bug', 'feature'] as const).map(filter => (
+            <TouchableOpacity
+              key={filter}
+              style={[
+                styles.filterTab,
+                selectedFilter === filter && styles.activeFilterTab,
+              ]}
+              onPress={() => setSelectedFilter(filter)}>
+              <Text
+                style={[
+                  styles.filterText,
+                  selectedFilter === filter && styles.activeFilterText,
+                ]}>
+                {filter === 'all'
+                  ? 'All'
+                  : filter === 'bug'
+                  ? 'Bugs'
+                  : 'Features'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         {/* Tickets List */}
         <FlatList
           data={filteredTickets}
-          renderItem={renderTicketCard}
+          renderItem={renderTicketItem}
           keyExtractor={item => item._id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -310,16 +298,15 @@ const TicketListScreen: React.FC = () => {
             />
           }
           onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.3}
+          onEndReachedThreshold={0.5}
           ListEmptyComponent={renderEmptyState}
           ListFooterComponent={renderFooter}
         />
       </View>
 
-      <LoadingOverlay
-        visible={loading && !refreshing}
-        message="Loading tickets..."
-      />
+      {loading && !refreshing && (
+        <LoadingOverlay message="Loading tickets..." />
+      )}
     </PageContainer>
   );
 };
@@ -327,60 +314,56 @@ const TicketListScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background.light,
   },
 
   // Search
   searchContainer: {
     paddingHorizontal: spacing.sm,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  searchInput: {
-    marginBottom: 0,
+    paddingTop: spacing.sm,
   },
 
   // Filter Tabs
-  filterTabs: {
+  filterContainer: {
     flexDirection: 'row',
     paddingHorizontal: spacing.sm,
-    marginBottom: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
   },
   filterTab: {
-    flex: 1,
-    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.gray[100],
+    paddingVertical: spacing.sm,
+    marginRight: spacing.sm,
     borderRadius: borderRadius.md,
-    marginHorizontal: spacing.xs,
-    alignItems: 'center',
+    backgroundColor: colors.background.light,
   },
-  filterTabActive: {
+  activeFilterTab: {
     backgroundColor: colors.primary,
   },
-  filterTabText: {
+  filterText: {
     ...typography.bodySmall,
     color: colors.text.secondary,
     fontWeight: fontWeights.medium,
   },
-  filterTabTextActive: {
+  activeFilterText: {
     color: colors.white,
-    fontWeight: fontWeights.semibold,
   },
 
   // List
-  listContent: {
-    padding: spacing.sm,
+  listContainer: {
     flexGrow: 1,
+    paddingHorizontal: spacing.sm,
   },
 
-  // Ticket Cards
-  ticketCard: {
+  // Ticket Item
+  ticketItem: {
     backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
+    marginVertical: spacing.xs,
     padding: spacing.md,
-    marginBottom: spacing.sm,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: colors.border.dark,
     ...shadows.sm,
   },
 
@@ -395,10 +378,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  typeIcon: {
+    marginRight: spacing.xs,
+  },
   typeText: {
     ...typography.bodySmall,
-    fontWeight: fontWeights.medium,
-    marginLeft: spacing.xs,
+    fontWeight: fontWeights.bold,
+    letterSpacing: 0.5,
   },
   ticketStatus: {
     flexDirection: 'row',

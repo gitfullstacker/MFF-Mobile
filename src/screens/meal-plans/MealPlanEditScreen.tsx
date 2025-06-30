@@ -312,7 +312,7 @@ const MealPlanEditScreen: React.FC = () => {
         selectedRecipes={getCurrentDayRecipes()}
       />
 
-      <LoadingOverlay visible={loading} message="Saving meal plan..." />
+      {loading && <LoadingOverlay message="Saving meal plan..." />}
     </PageContainer>
   );
 };

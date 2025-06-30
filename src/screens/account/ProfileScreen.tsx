@@ -360,7 +360,7 @@ const ProfileScreen: React.FC = () => {
         )}
       </ScrollView>
 
-      <LoadingOverlay visible={loading} message="Updating profile..." />
+      {loading && <LoadingOverlay message="Updating profile..." />}
     </PageContainer>
   );
 };

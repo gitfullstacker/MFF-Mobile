@@ -211,7 +211,8 @@ const ForgotPasswordScreen: React.FC = () => {
           </View>
         </ScrollContainer>
       </KeyboardAvoidingView>
-      <LoadingOverlay visible={loading} message="Sending email..." />
+
+      {loading && <LoadingOverlay message="Sending email..." />}
     </PageContainer>
   );
 };

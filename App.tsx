@@ -148,7 +148,7 @@ const AppContent: React.FC = () => {
   }, [addToast]);
 
   if (loading) {
-    return <LoadingOverlay visible={true} message="Loading..." />;
+    return <LoadingOverlay message="Loading..." />;
   }
 
   return (

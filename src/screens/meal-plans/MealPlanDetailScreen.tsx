@@ -308,7 +308,7 @@ const MealPlanDetailScreen: React.FC = () => {
 
   // Show loading if no meal plan is available
   if (planLoading || !selectedPlan) {
-    return <LoadingOverlay visible={true} message="Loading meal plan..." />;
+    return <LoadingOverlay message="Loading meal plan..." />;
   }
 
   return (
@@ -426,7 +426,7 @@ const MealPlanDetailScreen: React.FC = () => {
         recipes={allRecipes}
       />
 
-      <LoadingOverlay visible={loading} message="Loading..." />
+      {loading && <LoadingOverlay message="Loading..." />}
     </PageContainer>
   );
 };

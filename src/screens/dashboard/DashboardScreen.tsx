@@ -505,10 +505,7 @@ const DashboardScreen: React.FC = () => {
 
       {/* Loading overlay */}
       {(activePlanLoading || recentRecipesLoading) && (
-        <LoadingOverlay
-          visible={activePlanLoading || recentRecipesLoading}
-          message="Loading dashboard..."
-        />
+        <LoadingOverlay message="Loading dashboard..." />
       )}
     </PageContainer>
   );

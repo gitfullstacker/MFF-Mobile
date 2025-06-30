@@ -304,7 +304,8 @@ const ResetPasswordScreen: React.FC = () => {
           </View>
         </ScrollContainer>
       </KeyboardAvoidingView>
-      <LoadingOverlay visible={loading} message="Resetting password..." />
+
+      {loading && <LoadingOverlay message="Resetting password..." />}
     </PageContainer>
   );
 };

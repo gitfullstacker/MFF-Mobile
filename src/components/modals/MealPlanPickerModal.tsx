@@ -577,10 +577,11 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
         {renderCurrentView()}
       </BottomSheet>
 
-      <LoadingOverlay
-        visible={loading || isUpdating}
-        message={isUpdating ? 'Adding recipe...' : 'Loading plans...'}
-      />
+      {(loading || isUpdating) && (
+        <LoadingOverlay
+          message={isUpdating ? 'Adding recipe...' : 'Loading plans...'}
+        />
+      )}
     </>
   );
 };

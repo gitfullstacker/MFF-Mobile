@@ -376,7 +376,7 @@ const RecipeDetailScreen: React.FC = () => {
 
   // Show loading only if we don't have a recipe and are still loading
   if (!selectedRecipe || recipeLoading) {
-    return <LoadingOverlay visible={true} message="Loading recipe..." />;
+    return <LoadingOverlay message="Loading recipe..." />;
   }
 
   // Show error if no recipe is available

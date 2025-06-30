@@ -403,7 +403,7 @@ const TicketCreateScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      <LoadingOverlay visible={loading} message="Creating ticket..." />
+      {loading && <LoadingOverlay message="Creating ticket..." />}
     </PageContainer>
   );
 };

@@ -218,7 +218,8 @@ const LoginScreen: React.FC = () => {
           </View>
         </ScrollContainer>
       </KeyboardAvoidingView>
-      <LoadingOverlay visible={loading} message="Signing in..." />
+
+      {loading && <LoadingOverlay message="Signing in..." />}
     </PageContainer>
   );
 };

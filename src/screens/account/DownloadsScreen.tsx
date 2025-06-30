@@ -217,10 +217,9 @@ const DownloadsScreen: React.FC = () => {
         />
       </View>
 
-      <LoadingOverlay
-        visible={loading && !refreshing}
-        message="Loading downloads..."
-      />
+      {loading && !refreshing && (
+        <LoadingOverlay message="Loading downloads..." />
+      )}
     </PageContainer>
   );
 };
