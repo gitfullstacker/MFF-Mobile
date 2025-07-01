@@ -4,6 +4,12 @@ import { API_BASE_URL } from '@env';
 import { isTokenExpired } from '../utils/tokenUtils';
 import { eventBus } from '@/utils/eventBus';
 
+console.log('🌍 Environment Debug:', {
+  API_BASE_URL_from_env: API_BASE_URL,
+  NODE_ENV: process.env.NODE_ENV,
+  typeof_API_BASE_URL: typeof API_BASE_URL,
+});
+
 const BASE_URL = API_BASE_URL || 'http://localhost:5000/v1';
 
 class ApiClient {
