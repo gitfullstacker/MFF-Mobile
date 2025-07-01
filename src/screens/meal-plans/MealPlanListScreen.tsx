@@ -23,7 +23,7 @@ import {
   shadows,
   fontWeights,
 } from '../../theme';
-import { Plan } from '../../types/plan';
+import { Plan, PlanFilters } from '../../types/plan';
 import { PlanWeekdayIndicator } from '@/components/meal-plan/PlanWeekdayIndicator';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { useActivePlan } from '../../hooks/useActivePlan';
@@ -35,8 +35,16 @@ const MealPlanListScreen: React.FC = () => {
     navigateToCreateMealPlan,
     navigateToEditMealPlan,
   } = useNavigationHelpers();
-  const { plans, loading, hasMore, fetchPlans, deletePlan, duplicatePlan } =
-    usePlans();
+  const {
+    plans,
+    loading,
+    hasMore,
+    filters,
+    fetchPlans,
+    deletePlan,
+    duplicatePlan,
+    applyFilters,
+  } = usePlans();
   const {
     activePlan,
     setActivePlanById,
@@ -45,7 +53,6 @@ const MealPlanListScreen: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [filteredPlans, setFilteredPlans] = useState<Plan[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
@@ -60,23 +67,19 @@ const MealPlanListScreen: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      setFilteredPlans(
-        plans.filter(plan =>
-          plan.name.toLowerCase().includes(searchQuery.toLowerCase()),
-        ),
-      );
-    } else {
-      setFilteredPlans(plans);
-    }
-  }, [searchQuery, plans]);
+  const handleSearch = useCallback(() => {
+    const newFilters: PlanFilters = {
+      ...filters,
+      search: searchQuery.trim() || undefined,
+    };
+    applyFilters(newFilters);
+  }, [searchQuery, filters, applyFilters]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchPlans({}, true);
+    await fetchPlans(filters, true);
     setRefreshing(false);
-  }, [fetchPlans]);
+  }, [fetchPlans, filters]);
 
   const handleLoadMore = useCallback(() => {
     if (!loading && hasMore) {
@@ -226,16 +229,21 @@ const MealPlanListScreen: React.FC = () => {
   };
 
   const renderEmptyState = () => {
-    if (loading && !refreshing) return null;
+    if (loading) return null;
 
-    if (searchQuery) {
+    if (filters.search) {
       return (
         <EmptyState
           title="No meal plans found"
-          description={`We couldn't find any meal plans matching "${searchQuery}"`}
+          description={`We couldn't find any meal plans matching "${filters.search}"`}
           action={{
             label: 'Clear Search',
-            onPress: () => setSearchQuery(''),
+            onPress: () => {
+              setSearchQuery('');
+              const newFilters = { ...filters };
+              delete newFilters.search;
+              applyFilters(newFilters);
+            },
           }}
         />
       );
@@ -244,21 +252,20 @@ const MealPlanListScreen: React.FC = () => {
     return (
       <EmptyState
         title="No meal plans yet"
-        description="Create your first meal plan to track your nutrition goals"
+        description="Create your first meal plan to get started"
         action={{
           label: 'Create Meal Plan',
-          onPress: () => navigateToCreateMealPlan(),
+          onPress: navigateToCreateMealPlan,
         }}
       />
     );
   };
 
   const renderFooter = () => {
-    if (!loading || refreshing) return null;
+    if (!loading || !hasMore) return null;
     return (
       <View style={styles.footerLoader}>
-        <ActivityIndicator color={colors.primary} />
-        <Text style={styles.loadingText}>Loading plans...</Text>
+        <ActivityIndicator size="small" color={colors.primary} />
       </View>
     );
   };
@@ -281,13 +288,20 @@ const MealPlanListScreen: React.FC = () => {
           onChangeText={setSearchQuery}
           leftIcon="search"
           rightIcon={searchQuery ? 'x' : undefined}
-          onRightIconPress={() => setSearchQuery('')}
+          onRightIconPress={() => {
+            setSearchQuery('');
+            const newFilters = { ...filters };
+            delete newFilters.search;
+            applyFilters(newFilters);
+          }}
+          onSubmitEditing={handleSearch}
+          returnKeyType="search"
           containerStyle={styles.searchInput}
         />
       </View>
 
       <FlatList
-        data={filteredPlans}
+        data={plans}
         renderItem={renderPlanCard}
         keyExtractor={item => item._id}
         contentContainerStyle={styles.listContent}
@@ -462,11 +476,6 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: spacing.lg,
     alignItems: 'center',
-  },
-  loadingText: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    marginTop: spacing.xs,
   },
   // Modal Styles
   modalOverlay: {

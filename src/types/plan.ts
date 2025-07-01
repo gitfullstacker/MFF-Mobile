@@ -52,3 +52,7 @@ export interface CreatePlanRequest {
   schedule: PlanSchedule;
   removed_ingredient_ids: string[];
 }
+
+export interface PlanFilters {
+  search?: string;
+}

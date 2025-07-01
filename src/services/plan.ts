@@ -2,9 +2,29 @@ import { apiClient } from './api';
 import { Plan, CreatePlanRequest } from '../types/plan';
 import { PaginatedResponse } from '../types/common';
 
+interface GetPlansParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+}
+
 export const planService = {
-  async getPlans(page = 0, pageSize = 20): Promise<PaginatedResponse<Plan>> {
-    return apiClient.get(`/plans?page=${page}&pageSize=${pageSize}`);
+  async getPlans(
+    params: GetPlansParams = {},
+  ): Promise<PaginatedResponse<Plan>> {
+    const { page = 0, pageSize = 20, search } = params;
+
+    // Build query string
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+
+    if (search && search.trim()) {
+      queryParams.append('search', search.trim());
+    }
+
+    return apiClient.get(`/plans?${queryParams.toString()}`);
   },
 
   async getPlan(id: string): Promise<Plan> {

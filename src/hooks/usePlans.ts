@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { useAtom } from 'jotai';
 import { plansAtom, selectedPlanAtom, addToastAtom } from '../store';
 import { planService } from '../services/plan';
-import { Plan, CreatePlanRequest } from '../types/plan';
+import { Plan, CreatePlanRequest, PlanFilters } from '../types/plan';
 
 export const usePlans = () => {
   const [plans, setPlans] = useAtom(plansAtom);
@@ -12,9 +12,10 @@ export const usePlans = () => {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
+  const [filters, setFilters] = useState<PlanFilters>({});
 
   const fetchPlans = useCallback(
-    async (filters = {}, reset = false) => {
+    async (appliedFilters?: PlanFilters, reset = false) => {
       try {
         if (loading && !reset) return;
 
@@ -22,9 +23,15 @@ export const usePlans = () => {
 
         const page = reset ? 0 : currentPage + 1;
         const pageSize = 20;
+        const filtersToUse = appliedFilters || filters;
 
-        const response = await planService.getPlans(page, pageSize);
-        const { data, hasMore, total, totalPages } = response;
+        const response = await planService.getPlans({
+          page,
+          pageSize,
+          search: filtersToUse.search,
+        });
+
+        const { data, hasMore: responseHasMore } = response;
 
         if (reset) {
           setPlans(data);
@@ -38,7 +45,7 @@ export const usePlans = () => {
         }
 
         // Update hasMore from backend response
-        setHasMore(hasMore);
+        setHasMore(responseHasMore);
 
         return response;
       } catch (error: any) {
@@ -54,7 +61,15 @@ export const usePlans = () => {
         setLoading(false);
       }
     },
-    [setPlans, addToast, loading, plans, currentPage],
+    [setPlans, addToast, loading, plans, currentPage, filters],
+  );
+
+  const applyFilters = useCallback(
+    (newFilters: PlanFilters) => {
+      setFilters(newFilters);
+      fetchPlans(newFilters, true);
+    },
+    [setFilters, fetchPlans],
   );
 
   const fetchPlan = useCallback(
@@ -202,24 +217,18 @@ export const usePlans = () => {
     [setPlans, addToast],
   );
 
-  // Reset pagination state (useful for refresh)
-  const resetPagination = useCallback(() => {
-    setCurrentPage(0);
-    setHasMore(true);
-  }, []);
-
   return {
     plans,
     selectedPlan,
+    filters,
     loading,
     hasMore,
-    currentPage,
     fetchPlans,
     fetchPlan,
     createPlan,
     updatePlan,
     deletePlan,
     duplicatePlan,
-    resetPagination,
+    applyFilters,
   };
 };
