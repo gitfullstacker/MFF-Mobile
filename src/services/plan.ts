@@ -1,16 +1,10 @@
 import { apiClient } from './api';
-import { Plan, CreatePlanRequest } from '../types/plan';
+import { Plan, CreatePlanRequest, GetPlansRequest } from '../types/plan';
 import { PaginatedResponse } from '../types/common';
-
-interface GetPlansParams {
-  page?: number;
-  pageSize?: number;
-  search?: string;
-}
 
 export const planService = {
   async getPlans(
-    params: GetPlansParams = {},
+    params: GetPlansRequest = {},
   ): Promise<PaginatedResponse<Plan>> {
     const { page = 0, pageSize = 20, search } = params;
 

@@ -18,6 +18,7 @@ import { useAtom } from 'jotai';
 import { favoriteRecipesAtom } from '@/store';
 import { SCREEN_NAMES } from '@/constants';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
+import { FavoriteFilters } from '@/types/favorite';
 
 const FavoritesScreen: React.FC = () => {
   const { navigateToMainTab, navigateToRecipeDetail } = useNavigationHelpers();
@@ -26,55 +27,40 @@ const FavoritesScreen: React.FC = () => {
     loading,
     refreshing,
     hasMore,
+    filters,
     toggleFavorite,
     fetchFavorites,
     loadMoreFavorites,
     refreshFavorites,
+    applyFilters,
   } = useFavorites();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredFavorites, setFilteredFavorites] = useState<Recipe[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
 
-  // Initial load
   useEffect(() => {
+    // Initial load
     if (favoriteRecipes.length === 0) {
-      fetchFavorites(0, true);
+      fetchFavorites({}, true);
     }
-  }, [favoriteRecipes.length, fetchFavorites]);
-
-  // Filter favorites based on search query
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      setIsSearching(true);
-      setFilteredFavorites(
-        favoriteRecipes.filter(recipe =>
-          recipe.name.toLowerCase().includes(searchQuery.toLowerCase()),
-        ),
-      );
-    } else {
-      setIsSearching(false);
-      setFilteredFavorites(favoriteRecipes);
-    }
-  }, [searchQuery, favoriteRecipes]);
+  }, []);
 
   const handleRefresh = useCallback(async () => {
-    await refreshFavorites();
-  }, [refreshFavorites]);
+    await refreshFavorites(filters);
+  }, [refreshFavorites, filters]);
 
   const handleLoadMore = useCallback(() => {
-    if (!loading && hasMore && !isSearching) {
+    if (!loading && hasMore) {
       loadMoreFavorites();
     }
-  }, [loading, hasMore, isSearching, loadMoreFavorites]);
+  }, [loading, hasMore, loadMoreFavorites]);
 
   const handleSearch = useCallback(() => {
-    if (searchQuery.trim()) {
-      setIsSearching(true);
-    } else {
-      setIsSearching(false);
-    }
-  }, [searchQuery]);
+    const newFilters: FavoriteFilters = {
+      ...filters,
+      search: searchQuery.trim() || undefined,
+    };
+    applyFilters(newFilters);
+  }, [searchQuery, filters, applyFilters]);
 
   const renderRecipe = ({ item }: { item: Recipe }) => {
     return (
@@ -91,7 +77,7 @@ const FavoritesScreen: React.FC = () => {
   };
 
   const renderFooter = () => {
-    if (!loading || !hasMore || isSearching) return null;
+    if (!loading || !hasMore) return null;
     return (
       <View style={styles.footerLoader}>
         <ActivityIndicator size="small" color={colors.primary} />
@@ -102,16 +88,18 @@ const FavoritesScreen: React.FC = () => {
   const renderEmptyState = () => {
     if (loading && !refreshing) return null;
 
-    if (searchQuery) {
+    if (filters.search) {
       return (
         <EmptyState
           title="No recipes found"
-          description={`We couldn't find any favorites matching "${searchQuery}"`}
+          description={`We couldn't find any favorites matching "${filters.search}"`}
           action={{
             label: 'Clear Search',
             onPress: () => {
               setSearchQuery('');
-              setIsSearching(false);
+              const newFilters = { ...filters };
+              delete newFilters.search;
+              applyFilters(newFilters);
             },
           }}
         />
@@ -143,7 +131,9 @@ const FavoritesScreen: React.FC = () => {
           rightIcon={searchQuery ? 'x' : undefined}
           onRightIconPress={() => {
             setSearchQuery('');
-            setIsSearching(false);
+            const newFilters = { ...filters };
+            delete newFilters.search;
+            applyFilters(newFilters);
           }}
           onSubmitEditing={handleSearch}
           returnKeyType="search"
@@ -152,7 +142,7 @@ const FavoritesScreen: React.FC = () => {
       </View>
 
       <FlatList
-        data={filteredFavorites}
+        data={favoriteRecipes}
         renderItem={renderRecipe}
         keyExtractor={item => item._id}
         numColumns={1}

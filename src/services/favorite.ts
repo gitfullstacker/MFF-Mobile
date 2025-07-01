@@ -1,13 +1,25 @@
 import { apiClient } from './api';
 import { Recipe } from '../types/recipe';
 import { PaginatedResponse } from '../types/common';
+import { GetFavoritesRequest } from '@/types/favorite';
 
 export const favoriteService = {
   async getFavorites(
-    page = 0,
-    pageSize = 20,
+    params: GetFavoritesRequest = {},
   ): Promise<PaginatedResponse<Recipe>> {
-    return apiClient.get(`/favorites?page=${page}&pageSize=${pageSize}`);
+    const { page = 0, pageSize = 10, search } = params;
+
+    // Build query string
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+
+    if (search && search.trim()) {
+      queryParams.append('search', search.trim());
+    }
+
+    return apiClient.get(`/favorites?${queryParams.toString()}`);
   },
 
   async getFavoriteIds(): Promise<{ ids: string[] }> {
