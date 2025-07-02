@@ -158,7 +158,10 @@ const DashboardScreen: React.FC = () => {
     <TouchableOpacity
       style={styles.mealCard}
       onPress={() => navigateToRecipeDetail(item.slug)}>
-      <RecipeCard recipe={item} onPress={() => {}} />
+      <RecipeCard
+        recipe={item}
+        onPress={() => navigateToRecipeDetail(item.slug)}
+      />
     </TouchableOpacity>
   );
 

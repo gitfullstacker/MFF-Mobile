@@ -6,10 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  TextInput,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { BottomSheet } from './BottomSheet';
-import { Button } from '../forms/Button';
 import { LoadingOverlay } from '../feedback/LoadingOverlay';
 import { usePlans } from '../../hooks/usePlans';
 import { colors, typography, spacing, borderRadius } from '../../theme';
@@ -29,7 +29,7 @@ interface MealPlanPickerModalProps {
   onSuccess?: () => void;
 }
 
-type ViewMode = 'plans' | 'days' | 'options';
+type ViewMode = 'plans' | 'days' | 'options' | 'createPlan';
 
 export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
   visible,
@@ -43,16 +43,17 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
   const [selectedDay, setSelectedDay] = useState<DayOfWeek | null>(null);
   const [existingDays, setExistingDays] = useState<DayOfWeek[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [newPlanName, setNewPlanName] = useState('');
 
   useEffect(() => {
     if (visible) {
-      fetchPlans();
+      fetchPlans({}, true);
       setViewMode('plans');
       setSelectedPlan(null);
       setSelectedDay(null);
       setExistingDays([]);
     }
-  }, [visible, fetchPlans]);
+  }, [visible]);
 
   // Check if recipe exists in the selected plan and on which days
   const checkRecipeInPlan = (plan: Plan): DayOfWeek[] => {
@@ -284,42 +285,44 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
 
   // Create new meal plan
   const handleCreateNewPlan = () => {
-    Alert.alert('Create New Plan', 'Enter a name for your new meal plan:', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Create',
-        onPress: async () => {
-          try {
-            setIsUpdating(true);
+    setNewPlanName(''); // Reset the name
+    setViewMode('createPlan');
+  };
 
-            // Create clean schedule without any _id fields
-            const cleanSchedule: PlanSchedule = {
-              su: [],
-              mo: [],
-              tu: [],
-              we: [],
-              th: [],
-              fr: [],
-              sa: [],
-            };
+  const handleConfirmNewPlan = async () => {
+    if (!newPlanName || newPlanName.trim() === '') {
+      Alert.alert('Error', 'Please enter a valid plan name.');
+      return;
+    }
 
-            const newPlan = await createPlan({
-              name: `New Plan - ${new Date().toLocaleDateString()}`,
-              schedule: cleanSchedule,
-              removed_ingredient_ids: [],
-            });
+    try {
+      setIsUpdating(true);
 
-            setSelectedPlan(newPlan);
-            setExistingDays([]);
-            setViewMode('days');
-          } catch (error) {
-            Alert.alert('Error', 'Failed to create new meal plan.');
-          } finally {
-            setIsUpdating(false);
-          }
-        },
-      },
-    ]);
+      // Create clean schedule
+      const cleanSchedule: PlanSchedule = {
+        su: [],
+        mo: [],
+        tu: [],
+        we: [],
+        th: [],
+        fr: [],
+        sa: [],
+      };
+
+      const newPlan = await createPlan({
+        name: newPlanName,
+        schedule: cleanSchedule,
+        removed_ingredient_ids: [],
+      });
+
+      setSelectedPlan(newPlan);
+      setExistingDays([]);
+      setViewMode('days');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to create new meal plan.');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   // Get total recipe count for a plan
@@ -557,6 +560,42 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
     </>
   );
 
+  const renderCreatePlanView = () => (
+    <>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => setViewMode('plans')}
+          style={styles.backButton}>
+          <Icon name="arrow-left" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={styles.title}>Create New Plan</Text>
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Icon name="x" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.content}>
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Plan Name</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Enter plan name"
+            value={newPlanName}
+            onChangeText={setNewPlanName}
+            autoFocus={true}
+          />
+        </View>
+
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={handleConfirmNewPlan}
+          disabled={!newPlanName.trim()}>
+          <Text style={styles.createButtonText}>Create Plan</Text>
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+
   // Render current view based on mode
   const renderCurrentView = () => {
     switch (viewMode) {
@@ -566,6 +605,8 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
         return renderDaySelection();
       case 'options':
         return renderOptionsView();
+      case 'createPlan':
+        return renderCreatePlanView();
       default:
         return renderPlanSelection();
     }
@@ -863,6 +904,33 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.white,
     marginTop: spacing.xs,
+    fontWeight: typography.fontWeights.semibold,
+  },
+  inputContainer: {
+    marginBottom: spacing.lg,
+  },
+  inputLabel: {
+    ...typography.bodyRegular,
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    ...typography.bodyRegular,
+  },
+  createButton: {
+    backgroundColor: colors.primary,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  createButtonText: {
+    ...typography.bodyLarge,
+    color: colors.white,
     fontWeight: typography.fontWeights.semibold,
   },
 });
