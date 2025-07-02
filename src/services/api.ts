@@ -10,14 +10,12 @@ console.log('🌍 Environment Debug:', {
   typeof_API_BASE_URL: typeof API_BASE_URL,
 });
 
-const BASE_URL = API_BASE_URL || 'http://localhost:5000/v1';
-
 class ApiClient {
   private instance: AxiosInstance;
 
   constructor() {
     this.instance = axios.create({
-      baseURL: BASE_URL,
+      baseURL: API_BASE_URL,
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',

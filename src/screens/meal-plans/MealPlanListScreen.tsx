@@ -398,7 +398,6 @@ const styles = StyleSheet.create({
   },
   activePlanCard: {
     borderColor: colors.semantic.success,
-    backgroundColor: colors.semantic.success + '08',
   },
   planName: {
     ...typography.h6,
