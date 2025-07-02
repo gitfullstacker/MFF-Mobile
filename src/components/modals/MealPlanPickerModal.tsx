@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
+  FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { BottomSheet } from './BottomSheet';
@@ -37,7 +39,9 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
   recipe,
   onSuccess,
 }) => {
-  const { plans, loading, fetchPlans, updatePlan, createPlan } = usePlans();
+  const { plans, loading, hasMore, fetchPlans, updatePlan, createPlan } =
+    usePlans();
+  const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('plans');
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [selectedDay, setSelectedDay] = useState<DayOfWeek | null>(null);
@@ -94,6 +98,18 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
       return recipeId === recipe._id;
     });
   };
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchPlans({}, true);
+    setRefreshing(false);
+  }, [fetchPlans]);
+
+  const handleLoadMore = useCallback(() => {
+    if (!loading && hasMore) {
+      fetchPlans();
+    }
+  }, [loading, hasMore, fetchPlans]);
 
   // Handle plan selection
   const handlePlanSelect = (plan: Plan) => {
@@ -346,31 +362,14 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
-        {/* Create New Plan Option */}
-        <TouchableOpacity
-          style={styles.createPlanCard}
-          onPress={handleCreateNewPlan}>
-          <View style={styles.createPlanIcon}>
-            <Icon name="plus" size={24} color={colors.primary} />
-          </View>
-          <View style={styles.planInfo}>
-            <Text style={styles.planName}>Create New Meal Plan</Text>
-            <Text style={styles.planSubtitle}>
-              Start a new plan with this recipe
-            </Text>
-          </View>
-          <Icon name="chevron-right" size={20} color={colors.text.secondary} />
-        </TouchableOpacity>
-
-        {/* Existing Plans */}
-        {plans.map(plan => {
+      <FlatList
+        data={plans}
+        renderItem={({ item: plan }) => {
           const recipeCount = getTotalRecipeCount(plan);
           const existingRecipeDays = checkRecipeInPlan(plan);
 
           return (
             <TouchableOpacity
-              key={plan._id}
               style={styles.planCard}
               onPress={() => handlePlanSelect(plan)}>
               <View style={styles.planInfo}>
@@ -392,16 +391,48 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
               />
             </TouchableOpacity>
           );
-        })}
-
-        {plans.length === 0 && !loading && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>
-              No meal plans found. Create your first plan to get started.
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+        }}
+        keyExtractor={plan => plan._id}
+        ListHeaderComponent={
+          <TouchableOpacity
+            style={styles.createPlanCard}
+            onPress={handleCreateNewPlan}>
+            <View style={styles.createPlanIcon}>
+              <Icon name="plus" size={24} color={colors.primary} />
+            </View>
+            <View style={styles.planInfo}>
+              <Text style={styles.planName}>Create New Meal Plan</Text>
+              <Text style={styles.planSubtitle}>
+                Start a new plan with this recipe
+              </Text>
+            </View>
+            <Icon
+              name="chevron-right"
+              size={20}
+              color={colors.text.secondary}
+            />
+          </TouchableOpacity>
+        }
+        ListEmptyComponent={
+          !loading ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>
+                No meal plans found. Create your first plan to get started.
+              </Text>
+            </View>
+          ) : null
+        }
+        ListFooterComponent={
+          loading && !refreshing ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : null
+        }
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.3}
+        contentContainerStyle={styles.listContent}
+      />
     </>
   );
 
@@ -708,6 +739,10 @@ const styles = StyleSheet.create({
     ...typography.bodyRegular,
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  listContent: {
+    flexGrow: 1,
+    paddingBottom: spacing.md,
   },
 
   // Day selection styles
