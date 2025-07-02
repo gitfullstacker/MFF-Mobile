@@ -96,7 +96,7 @@ export const useThriveDesk = (
       department: 'account',
       subject: 'Account Issue',
       prefilledMessage: `I need help with my account.\n\nUser ID: ${
-        user?.id || 'Not available'
+        user?._id || 'Not available'
       }\nEmail: ${user?.email || 'Not available'}`,
     });
   }, [showModal, user]);

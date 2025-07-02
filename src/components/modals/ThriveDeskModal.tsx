@@ -70,8 +70,8 @@ export const ThriveDeskModal: React.FC<ThriveDeskModalProps> = ({
       if (user.email) {
         params.append('email', user.email);
       }
-      if (user.id) {
-        params.append('user_id', user.id.toString());
+      if (user._id) {
+        params.append('user_id', user._id.toString());
       }
     }
 

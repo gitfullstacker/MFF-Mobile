@@ -1,7 +1,7 @@
 import { atom } from 'jotai';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { atomWithStorage, createJSONStorage } from 'jotai/utils';
-import { User } from '../../types/auth';
+import { User } from '@/types';
 
 // Create a custom storage for React Native
 const storage = createJSONStorage<any>(() => ({
@@ -23,9 +23,22 @@ const storage = createJSONStorage<any>(() => ({
   },
   setItem: async (key: string, value: any) => {
     try {
+      // Handle null/undefined values by removing the item instead
+      if (value === null || value === undefined) {
+        await AsyncStorage.removeItem(key);
+        return;
+      }
+
       // For authToken, store as plain string
       if (key === 'authToken') {
-        await AsyncStorage.setItem(key, JSON.parse(value));
+        // Value is already JSON.stringify'd by atomWithStorage, so we need to parse it first
+        const actualValue =
+          typeof value === 'string' ? JSON.parse(value) : value;
+        if (actualValue === null || actualValue === undefined) {
+          await AsyncStorage.removeItem(key);
+        } else {
+          await AsyncStorage.setItem(key, actualValue);
+        }
       } else {
         await AsyncStorage.setItem(key, JSON.stringify(value));
       }
