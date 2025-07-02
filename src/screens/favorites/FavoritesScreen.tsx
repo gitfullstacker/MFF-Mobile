@@ -67,7 +67,7 @@ const FavoritesScreen: React.FC = () => {
       <View style={styles.recipeCardContainer}>
         <RecipeCard
           recipe={item}
-          onPress={() => navigateToRecipeDetail(item.slug, item)}
+          onPress={() => navigateToRecipeDetail(item.slug)}
           onFavoriteToggle={recipeId => {
             toggleFavorite(recipeId);
           }}

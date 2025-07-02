@@ -24,7 +24,6 @@ export type RecipeStackParamList = {
   RecipeList: undefined;
   RecipeDetail: {
     recipeId: string;
-    recipe?: Recipe;
   };
 };
 
@@ -33,11 +32,9 @@ export type MealPlanStackParamList = {
   CreateMealPlan: undefined;
   EditMealPlan: {
     planId: string;
-    plan?: Plan;
   };
   MealPlanDetail: {
     planId: string;
-    plan?: Plan;
   };
 };
 
@@ -51,7 +48,6 @@ export type AccountStackParamList = {
   CreateTicket: undefined;
   TicketDetail: {
     ticketId: string;
-    ticket?: Ticket;
   };
   About: undefined;
   Privacy: undefined;

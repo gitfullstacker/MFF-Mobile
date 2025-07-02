@@ -166,20 +166,20 @@ export const useNavigationHelpers = () => {
   }, [navigation]);
 
   const navigateToRecipeDetail = useCallback(
-    (recipeId: string, recipe?: any) => {
+    (recipeId: string) => {
       navigation.navigate(SCREEN_NAMES.ROOT.RECIPE_STACK, {
         screen: SCREEN_NAMES.RECIPE.DETAIL,
-        params: { recipeId, recipe },
+        params: { recipeId },
       });
     },
     [navigation],
   );
 
   const navigateToMealPlanDetail = useCallback(
-    (planId: string, plan?: any) => {
+    (planId: string) => {
       navigation.navigate(SCREEN_NAMES.ROOT.MEAL_PLAN_STACK, {
         screen: SCREEN_NAMES.MEAL_PLAN.DETAIL,
-        params: { planId, plan },
+        params: { planId },
       });
     },
     [navigation],
@@ -192,10 +192,10 @@ export const useNavigationHelpers = () => {
   }, [navigation]);
 
   const navigateToEditMealPlan = useCallback(
-    (planId: string, plan?: any) => {
+    (planId: string) => {
       navigation.navigate(SCREEN_NAMES.ROOT.MEAL_PLAN_STACK, {
         screen: SCREEN_NAMES.MEAL_PLAN.EDIT,
-        params: { planId, plan },
+        params: { planId },
       });
     },
     [navigation],
@@ -238,10 +238,10 @@ export const useNavigationHelpers = () => {
   }, [navigation]);
 
   const navigateToTicketDetail = useCallback(
-    (ticketId: string, ticket?: any) => {
+    (ticketId: string) => {
       navigation.navigate(SCREEN_NAMES.ROOT.ACCOUNT_STACK, {
         screen: SCREEN_NAMES.ACCOUNT.TICKET_DETAIL,
-        params: { ticketId, ticket },
+        params: { ticketId },
       });
     },
     [navigation],

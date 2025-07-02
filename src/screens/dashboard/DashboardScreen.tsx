@@ -157,7 +157,7 @@ const DashboardScreen: React.FC = () => {
   const renderTodaysMeal = ({ item }: { item: Recipe }) => (
     <TouchableOpacity
       style={styles.mealCard}
-      onPress={() => navigateToRecipeDetail(item.slug, item)}>
+      onPress={() => navigateToRecipeDetail(item.slug)}>
       <RecipeCard recipe={item} onPress={() => {}} />
     </TouchableOpacity>
   );
@@ -166,7 +166,7 @@ const DashboardScreen: React.FC = () => {
     <View style={styles.recentRecipeCard}>
       <RecipeCard
         recipe={item}
-        onPress={() => navigateToRecipeDetail(item.slug, item)}
+        onPress={() => navigateToRecipeDetail(item.slug)}
         onFavoriteToggle={recipeId => toggleFavorite(recipeId)}
       />
     </View>
@@ -259,9 +259,7 @@ const DashboardScreen: React.FC = () => {
           {activePlan ? (
             <TouchableOpacity
               style={styles.planCard}
-              onPress={() =>
-                navigateToMealPlanDetail(activePlan._id, activePlan)
-              }
+              onPress={() => navigateToMealPlanDetail(activePlan._id)}
               activeOpacity={0.9}>
               <Image
                 source={require('../../../assets/images/plan-placeholder.jpg')}

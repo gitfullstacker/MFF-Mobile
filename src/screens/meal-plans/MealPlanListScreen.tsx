@@ -164,7 +164,7 @@ const MealPlanListScreen: React.FC = () => {
     return (
       <TouchableOpacity
         style={[styles.planCard, isActive && styles.activePlanCard]}
-        onPress={() => navigateToMealPlanDetail(item._id, item)}>
+        onPress={() => navigateToMealPlanDetail(item._id)}>
         <View style={styles.planCardContent}>
           {/* Header */}
           <View style={styles.planCardHeader}>
@@ -193,7 +193,7 @@ const MealPlanListScreen: React.FC = () => {
               )}
               <TouchableOpacity
                 style={styles.iconButton}
-                onPress={() => navigateToEditMealPlan(item._id, item)}>
+                onPress={() => navigateToEditMealPlan(item._id)}>
                 <Icon name="edit" size={20} color={colors.text.secondary} />
               </TouchableOpacity>
               <TouchableOpacity
