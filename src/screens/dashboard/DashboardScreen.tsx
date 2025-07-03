@@ -65,8 +65,6 @@ const DashboardScreen: React.FC = () => {
     fat: 0,
     calories: 0,
   });
-  const [isSuggestedPlanExpanded, setIsSuggestedPlanExpanded] = useState(false);
-  const [suggestedPlan, setSuggestedPlan] = useState(null);
 
   // Refs for scroll indicators
   const mealsScrollRef = useRef<FlatList>(null);
@@ -394,12 +392,7 @@ const DashboardScreen: React.FC = () => {
         )}
 
         {/* Suggested Meal Plan Section */}
-        <SuggestedMealPlanSection
-          suggestedPlan={suggestedPlan ?? undefined} // This will come from your backend API
-          onSavePlan={handleSaveSuggestedPlan}
-          onToggleExpanded={setIsSuggestedPlanExpanded}
-          userPreferences={userPreferences}
-        />
+        <SuggestedMealPlanSection onSavePlan={handleSaveSuggestedPlan} />
 
         {/* Quick Actions */}
         <Section title="Quick Actions">

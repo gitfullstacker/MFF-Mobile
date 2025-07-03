@@ -56,4 +56,8 @@ export const planService = {
   async setActivePlan(planId: string): Promise<Plan> {
     return apiClient.post(`/plans/active/${planId}`);
   },
+
+  async getSuggestedMealPlan(): Promise<Plan> {
+    return apiClient.get('/plans/suggested');
+  },
 };

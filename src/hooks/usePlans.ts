@@ -217,6 +217,26 @@ export const usePlans = () => {
     [setPlans, addToast],
   );
 
+  const fetchSuggestedMealPlan = useCallback(async () => {
+    try {
+      setLoading(true);
+      const suggestedPlan = await planService.getSuggestedMealPlan();
+      return suggestedPlan;
+    } catch (error: any) {
+      console.error('Error fetching suggested meal plan:', error);
+      addToast({
+        message:
+          error.response?.data?.message ||
+          'Failed to fetch suggested meal plan',
+        type: 'error',
+        duration: 5000,
+      });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [addToast]);
+
   return {
     plans,
     selectedPlan,
@@ -230,5 +250,6 @@ export const usePlans = () => {
     deletePlan,
     duplicatePlan,
     applyFilters,
+    fetchSuggestedMealPlan,
   };
 };
