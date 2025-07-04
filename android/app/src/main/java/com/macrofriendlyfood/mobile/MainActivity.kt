@@ -1,4 +1,4 @@
-package com.mffmobile
+package com.macrofriendlyfood.mobile
 
 import android.os.Bundle
 import com.facebook.react.ReactActivity

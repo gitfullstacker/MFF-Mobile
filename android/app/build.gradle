@@ -78,9 +78,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.mffmobile"
+    namespace "com.macrofriendlyfood.mobile"
     defaultConfig {
-        applicationId "com.mffmobile"
+        applicationId "com.macrofriendlyfood.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

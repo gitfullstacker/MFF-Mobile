@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>MFFMobile</string>
+	<string>Macro Friendly Food</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -20,15 +20,8 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	
-	<!-- Deep Link Support -->
 	<key>CFBundleURLTypes</key>
 	<array>
-		<!-- Custom URL Scheme for the app -->
 		<dict>
 			<key>CFBundleURLName</key>
 			<string>mealapp</string>
@@ -37,7 +30,6 @@
 				<string>mealapp</string>
 			</array>
 		</dict>
-		<!-- Support for web links (Universal Links) -->
 		<dict>
 			<key>CFBundleURLName</key>
 			<string>com.mealapp.web</string>
@@ -47,18 +39,12 @@
 			</array>
 		</dict>
 	</array>
-	
-	<!-- Associated Domains for Universal Links -->
-	<key>com.apple.developer.associated-domains</key>
-	<array>
-		<string>applinks:macrofriendlyfood.com</string>
-		<!-- Add your custom domain if you have one -->
-		<!-- <string>applinks:yourdomain.com</string> -->
-	</array>
-	
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
-	  <!-- Do not change NSAllowsArbitraryLoads to true, or you will risk app rejection! -->
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 		<key>NSAllowsLocalNetworking</key>
@@ -80,5 +66,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:macrofriendlyfood.com</string>
+	</array>
 </dict>
 </plist>

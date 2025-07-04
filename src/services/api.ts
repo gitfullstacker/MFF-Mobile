@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '@env';
 import { isTokenExpired } from '../utils/tokenUtils';
@@ -10,16 +10,35 @@ console.log('🌍 Environment Debug:', {
   typeof_API_BASE_URL: typeof API_BASE_URL,
 });
 
+const getBaseURL = () => {
+  console.log('🔍 API_BASE_URL from env:', API_BASE_URL);
+
+  if (!API_BASE_URL) {
+    console.warn('⚠️ API_BASE_URL is undefined, using fallback');
+  }
+
+  return API_BASE_URL;
+};
+
 class ApiClient {
   private instance: AxiosInstance;
 
   constructor() {
+    const baseURL = getBaseURL();
+    console.log('🏗️ Creating axios instance with baseURL:', baseURL);
+
     this.instance = axios.create({
-      baseURL: API_BASE_URL,
+      baseURL,
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
       },
+    });
+
+    // Debug the instance after creation
+    console.log('✅ Axios instance created:', {
+      baseURL: this.instance.defaults.baseURL,
+      timeout: this.instance.defaults.timeout,
     });
 
     // Request interceptor to add auth token
@@ -33,8 +52,7 @@ class ApiClient {
             if (isTokenExpired(authToken)) {
               // Clear auth data
               await AsyncStorage.multiRemove(['authToken', 'user']);
-              // Let the request proceed without token - it will fail with 401
-              // which will redirect to login
+              console.log('🔄 Token expired, cleared auth data');
             } else {
               // Token is valid
               config.headers.Authorization = `Bearer ${authToken}`;
@@ -47,11 +65,13 @@ class ApiClient {
           console.error('❌ Error getting auth token:', error);
         }
 
-        // Debug log for requests
+        // Enhanced debug log for requests
         if (__DEV__) {
           console.log('📡 API Request:', {
             method: config.method?.toUpperCase(),
             url: config.url,
+            baseURL: config.baseURL,
+            fullURL: `${config.baseURL}${config.url}`,
             hasAuth: !!config.headers.Authorization,
           });
         }
@@ -69,17 +89,44 @@ class ApiClient {
       response => {
         // Debug log for responses
         if (__DEV__) {
-          console.log('API Response:', response.status, response.config.url);
+          console.log('✅ API Response:', {
+            status: response.status,
+            url: response.config.url,
+            fullURL: `${response.config.baseURL}${response.config.url}`,
+          });
         }
         return response;
       },
-      async error => {
+      async (error: AxiosError) => {
+        // Enhanced error logging
         if (__DEV__) {
-          console.error(
-            'API Error:',
-            error.response?.status,
-            error.config?.url,
-          );
+          console.error('❌ API Error Details:', {
+            status: error.response?.status || 'No Response',
+            statusText: error.response?.statusText,
+            url: error.config?.url,
+            baseURL: error.config?.baseURL,
+            fullURL: error.config
+              ? `${error.config.baseURL}${error.config.url}`
+              : 'Unknown URL',
+            message: error.message,
+            code: error.code,
+            hasResponse: !!error.response,
+            hasRequest: !!error.request,
+          });
+
+          // Log response data if available
+          if (error.response?.data) {
+            console.error('❌ Error Response Data:', error.response.data);
+          }
+
+          // Log request details if no response
+          if (!error.response && error.request) {
+            console.error('❌ Request made but no response:', {
+              url: error.config?.url,
+              method: error.config?.method,
+              timeout: error.config?.timeout,
+            });
+          }
         }
 
         if (error.response?.status === 401) {
@@ -98,39 +145,92 @@ class ApiClient {
             console.error('Error clearing auth data:', storageError);
           }
         }
+
         return Promise.reject(error);
       },
     );
   }
 
   async get<T>(url: string, config?: AxiosRequestConfig) {
-    const response = await this.instance.get<T>(url, config);
-    return response.data;
+    try {
+      const response = await this.instance.get<T>(url, config);
+      return response.data;
+    } catch (error) {
+      console.error('❌ GET request failed:', {
+        url,
+        error: (error as Error).message,
+      });
+      throw error;
+    }
   }
 
   async post<T>(url: string, data?: any, config?: AxiosRequestConfig) {
-    const response = await this.instance.post<T>(url, data, config);
-    return response.data;
+    try {
+      const response = await this.instance.post<T>(url, data, config);
+      return response.data;
+    } catch (error) {
+      console.error('❌ POST request failed:', {
+        url,
+        error: (error as Error).message,
+      });
+      throw error;
+    }
   }
 
   async put<T>(url: string, data?: any, config?: AxiosRequestConfig) {
-    const response = await this.instance.put<T>(url, data, config);
-    return response.data;
+    try {
+      const response = await this.instance.put<T>(url, data, config);
+      return response.data;
+    } catch (error) {
+      console.error('❌ PUT request failed:', {
+        url,
+        error: (error as Error).message,
+      });
+      throw error;
+    }
   }
 
   async delete<T>(url: string, config?: AxiosRequestConfig) {
-    const response = await this.instance.delete<T>(url, config);
-    return response.data;
+    try {
+      const response = await this.instance.delete<T>(url, config);
+      return response.data;
+    } catch (error) {
+      console.error('❌ DELETE request failed:', {
+        url,
+        error: (error as Error).message,
+      });
+      throw error;
+    }
   }
 
   async upload<T>(url: string, formData: FormData) {
-    const response = await this.instance.post<T>(url, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+    try {
+      const response = await this.instance.post<T>(url, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('❌ UPLOAD request failed:', {
+        url,
+        error: (error as Error).message,
+      });
+      throw error;
+    }
+  }
+
+  // Debug method to check instance configuration
+  debugInstance() {
+    console.log('🔍 Current Axios Instance Config:', {
+      baseURL: this.instance.defaults.baseURL,
+      timeout: this.instance.defaults.timeout,
+      headers: this.instance.defaults.headers,
     });
-    return response.data;
   }
 }
 
 export const apiClient = new ApiClient();
+
+// Export debug method for testing
+export const debugApi = () => apiClient.debugInstance();
