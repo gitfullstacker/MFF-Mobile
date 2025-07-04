@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
   // Cook Mode Button
   cookModeButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 200 : 160,
+    top: 200,
     right: spacing.md,
     zIndex: 101,
     backgroundColor: colors.white,
@@ -838,10 +838,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 50,
-    paddingBottom: 10,
+    paddingTop: Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 0) + 20,
     paddingHorizontal: spacing.md,
-    height: Platform.OS === 'ios' ? 100 : 56 + (StatusBar.currentHeight || 0),
+    height: Platform.OS === 'ios' ? 100 : 70 + (StatusBar.currentHeight || 0),
   },
   headerTitle: {
     ...typography.h5,
@@ -881,7 +880,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingTop:
-      Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + spacing.md,
+      Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 30,
   },
   backButtonOverlay: {
     width: 40,

@@ -5,6 +5,7 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
+  Dimensions,
 } from 'react-native';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Header } from '../../components/navigation/Header';
@@ -19,6 +20,8 @@ import { favoriteRecipesAtom } from '@/store';
 import { SCREEN_NAMES } from '@/constants';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
 import { FavoriteFilters } from '@/types/favorite';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 const FavoritesScreen: React.FC = () => {
   const { navigateToMainTab, navigateToRecipeDetail } = useNavigationHelpers();
@@ -36,6 +39,34 @@ const FavoritesScreen: React.FC = () => {
   } = useFavorites();
 
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Determine number of columns based on screen width and orientation
+  // Show 1 column on phones, 2 columns on tablets portrait, 3 columns on tablets landscape
+  const getNumColumns = () => {
+    if (screenWidth < 600) {
+      return 1; // Phone
+    } else if (screenWidth < 900) {
+      return 2; // Tablet portrait
+    } else {
+      return 3; // Tablet landscape
+    }
+  };
+
+  const [numColumns, setNumColumns] = useState(getNumColumns());
+
+  useEffect(() => {
+    // Update columns when screen orientation changes
+    const updateColumns = () => {
+      const { width } = Dimensions.get('window');
+      const newColumns = width < 600 ? 1 : width < 900 ? 2 : 3;
+      if (newColumns !== numColumns) {
+        setNumColumns(newColumns);
+      }
+    };
+
+    const subscription = Dimensions.addEventListener('change', updateColumns);
+    return () => subscription?.remove();
+  }, [numColumns]);
 
   useEffect(() => {
     // Initial load
@@ -63,8 +94,13 @@ const FavoritesScreen: React.FC = () => {
   }, [searchQuery, filters, applyFilters]);
 
   const renderRecipe = ({ item }: { item: Recipe }) => {
+    const isMultiColumn = numColumns > 1;
+    const cardStyle = isMultiColumn
+      ? [styles.recipeCardContainer, styles.recipeCardMultiColumn]
+      : styles.recipeCardContainer;
+
     return (
-      <View style={styles.recipeCardContainer}>
+      <View style={cardStyle}>
         <RecipeCard
           recipe={item}
           onPress={() => navigateToRecipeDetail(item.slug)}
@@ -145,7 +181,8 @@ const FavoritesScreen: React.FC = () => {
         data={favoriteRecipes}
         renderItem={renderRecipe}
         keyExtractor={item => item._id}
-        numColumns={1}
+        numColumns={numColumns}
+        key={numColumns} // Force re-render when columns change
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -168,7 +205,6 @@ const FavoritesScreen: React.FC = () => {
 const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: spacing.sm,
-    paddingTop: spacing.md,
     paddingBottom: spacing.sm,
   },
   searchInput: {
@@ -181,6 +217,10 @@ const styles = StyleSheet.create({
   },
   recipeCardContainer: {
     marginBottom: spacing.md,
+  },
+  recipeCardMultiColumn: {
+    flex: 1,
+    marginHorizontal: spacing.xs,
   },
   footerLoader: {
     paddingVertical: spacing.lg,

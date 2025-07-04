@@ -95,7 +95,7 @@ export const useFavorites = () => {
 
         const response = await favoriteService.getFavorites({
           page: currentPage,
-          pageSize: 10, // Match backend default
+          pageSize: 18, // Match backend default
           search: filtersToUse.search,
         });
 

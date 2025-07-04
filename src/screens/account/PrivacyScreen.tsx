@@ -223,8 +223,6 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
   },
   title: {
     ...typography.h2,

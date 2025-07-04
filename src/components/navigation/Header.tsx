@@ -95,9 +95,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white,
-    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 50, // More padding for iOS
+    paddingTop: Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 0) + 10,
     paddingHorizontal: spacing.md,
-    height: Platform.OS === 'ios' ? 100 : 56 + (StatusBar.currentHeight || 0),
+    height: Platform.OS === 'ios' ? 100 : 60 + (StatusBar.currentHeight || 0),
   },
   transparent: {
     backgroundColor: 'transparent',

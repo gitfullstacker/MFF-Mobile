@@ -364,7 +364,6 @@ const MealPlanListScreen: React.FC = () => {
 const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: spacing.sm,
-    paddingTop: spacing.md,
     paddingBottom: spacing.sm,
   },
   searchInput: {

@@ -33,7 +33,7 @@ export const useRecipes = () => {
         const response = await recipeService.getRecipes({
           ...filtersToUse,
           page: currentPage,
-          pageSize: 20,
+          pageSize: 18,
         });
 
         // Sync favorite status with global state

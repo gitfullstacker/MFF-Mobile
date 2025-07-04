@@ -270,8 +270,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
   },
   appLogo: {
     width: 80,

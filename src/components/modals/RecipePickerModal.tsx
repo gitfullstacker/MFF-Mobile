@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -30,14 +30,8 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const {
-    recipes,
-    filters,
-    loading,
-    searchRecipes,
-    fetchRecipes,
-    applyFilters,
-  } = useRecipes();
+  const { recipes, filters, loading, fetchRecipes, applyFilters } =
+    useRecipes();
 
   useEffect(() => {
     if (visible) {
@@ -47,19 +41,23 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
 
   const loadRecipes = () => {
     if (searchQuery.trim()) {
-      searchRecipes(searchQuery);
+      const newFilters: RecipeFilters = {
+        ...filters,
+        search: searchQuery.trim(),
+      };
+      applyFilters(newFilters);
     } else {
       fetchRecipes(filters, true);
     }
   };
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      searchRecipes(searchQuery);
-    } else {
-      fetchRecipes(filters, true);
-    }
-  };
+  const handleSearch = useCallback(() => {
+    const newFilters: RecipeFilters = {
+      ...filters,
+      search: searchQuery.trim() || undefined,
+    };
+    applyFilters(newFilters);
+  }, [searchQuery, filters, applyFilters]);
 
   const handleApplyFilters = (newFilters: RecipeFilters) => {
     applyFilters(newFilters);
@@ -73,7 +71,12 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
   const getFilterCount = () => {
     let count = 0;
     Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
+      if (
+        key !== 'search' &&
+        value !== undefined &&
+        value !== null &&
+        value !== ''
+      ) {
         count++;
       }
     });
@@ -118,6 +121,13 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
             value={searchQuery}
             onChangeText={setSearchQuery}
             leftIcon="search"
+            rightIcon={searchQuery ? 'x' : undefined}
+            onRightIconPress={() => {
+              setSearchQuery('');
+              const newFilters = { ...filters };
+              delete newFilters.search;
+              applyFilters(newFilters);
+            }}
             onSubmitEditing={handleSearch}
             returnKeyType="search"
             containerStyle={styles.searchInput}
