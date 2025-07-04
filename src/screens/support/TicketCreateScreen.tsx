@@ -11,7 +11,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import DocumentPicker from '@react-native-documents/picker';
+import { pick, types } from '@react-native-documents/picker';
 import Icon from 'react-native-vector-icons/Feather';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Header } from '../../components/navigation/Header';
@@ -121,8 +121,8 @@ const TicketCreateScreen: React.FC = () => {
 
   const handleAttachment = async () => {
     try {
-      const result = await DocumentPicker.pick({
-        type: [DocumentPicker.types.allFiles],
+      const result = await pick({
+        type: [types.allFiles],
         allowMultiSelection: false,
       });
 
@@ -149,10 +149,28 @@ const TicketCreateScreen: React.FC = () => {
         setAttachedFiles(prev => [...prev, attachedFile]);
       }
     } catch (error: any) {
-      // Check if user cancelled the picker
-      if (error?.code !== 'DOCUMENT_PICKER_CANCELED') {
-        Alert.alert('Error', 'Failed to select file. Please try again.');
+      // Comprehensive check for cancel conditions
+      const isCancelError =
+        error?.code === 'DOCUMENT_PICKER_CANCELED' || // Android
+        error?.code === 'documentPicker_cancelled' || // Android alternative
+        error?.code === 'cancelled' || // General cancel
+        error?.code === 3072 || // iOS NSCocoaErrorDomain Code=3072
+        error?.message?.toLowerCase().includes('cancel') || // Message contains cancel
+        error?.message?.toLowerCase().includes('cancelled') || // Message contains cancelled
+        error?.message?.includes('user canceled') || // User canceled message
+        error?.message?.includes('The operation was cancelled') || // iOS cancel message
+        error?.userCancel === true || // userCancel flag
+        error?.cancelled === true; // cancelled flag
+
+      if (isCancelError) {
+        // Handle cancel silently (no error message shown)
+        console.log('DocumentPicker was cancelled by user');
+        return;
       }
+
+      // Handle actual errors only
+      console.error('DocumentPicker error:', error);
+      Alert.alert('Error', 'Failed to select file. Please try again.');
     }
   };
 

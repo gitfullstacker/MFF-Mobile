@@ -368,7 +368,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     padding: spacing.lg,
     borderRadius: borderRadius.lg,
-    ...shadows.sm,
   },
   ticketMeta: {
     flexDirection: 'row',
@@ -433,7 +432,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     padding: spacing.lg,
     borderRadius: borderRadius.lg,
-    ...shadows.sm,
   },
   descriptionText: {
     ...typography.bodyRegular,
