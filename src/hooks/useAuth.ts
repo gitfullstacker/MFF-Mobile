@@ -15,6 +15,7 @@ import { authService } from '../services/auth';
 import { userService } from '../services/user';
 import { subscriptionService } from '../services/subscription';
 import { favoriteService } from '../services/favorite';
+import { planService } from '../services/plan';
 import {
   ChangePasswordRequest,
   ForgotPasswordRequest,
@@ -22,7 +23,6 @@ import {
   ResetPasswordRequest,
 } from '../types/auth';
 import { isTokenExpired } from '../utils/tokenUtils';
-import { planService } from '@/services/plan';
 
 export const useAuth = () => {
   const [authToken, setAuthToken] = useAtom(authTokenAtom);
@@ -216,26 +216,31 @@ export const useAuth = () => {
 
         return updatedProfile;
       } catch (error: any) {
+        console.error('❌ Update profile failed:', error);
+
+        const errorMessage =
+          error.response?.data?.message ||
+          'Failed to update profile. Please try again.';
+
         addToast({
-          message: error.response?.data?.message || 'Failed to update profile',
+          message: errorMessage,
           type: 'error',
           duration: 5000,
         });
+
         throw error;
       }
     },
     [user, setUser, addToast],
   );
 
-  // Password reset functions
   const forgotPassword = useCallback(
     async (data: ForgotPasswordRequest) => {
       try {
         const response = await authService.forgotPassword(data);
 
         addToast({
-          message:
-            "If an account with that email exists, we've sent a password reset link.",
+          message: 'Password reset email sent successfully!',
           type: 'success',
           duration: 5000,
         });
@@ -246,7 +251,7 @@ export const useAuth = () => {
 
         const errorMessage =
           error.response?.data?.message ||
-          'Failed to send reset email. Please try again.';
+          'Failed to send password reset email. Please try again.';
 
         addToast({
           message: errorMessage,
@@ -266,10 +271,9 @@ export const useAuth = () => {
         const response = await authService.resetPassword(data);
 
         addToast({
-          message:
-            'Password has been reset successfully! You can now login with your new password.',
+          message: 'Password reset successfully!',
           type: 'success',
-          duration: 5000,
+          duration: 3000,
         });
 
         return response;
@@ -278,7 +282,7 @@ export const useAuth = () => {
 
         const errorMessage =
           error.response?.data?.message ||
-          'Failed to reset password. Please try again or request a new reset link.';
+          'Failed to reset password. Please try again.';
 
         addToast({
           message: errorMessage,

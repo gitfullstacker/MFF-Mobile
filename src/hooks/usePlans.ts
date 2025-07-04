@@ -1,12 +1,25 @@
 import { useCallback, useState } from 'react';
 import { useAtom } from 'jotai';
-import { plansAtom, selectedPlanAtom, addToastAtom } from '../store';
+import {
+  plansAtom,
+  selectedPlanAtom,
+  suggestedPlanAtom,
+  addToastAtom,
+  favoriteRecipeIdsAtom,
+} from '../store';
 import { planService } from '../services/plan';
-import { Plan, CreatePlanRequest, PlanFilters } from '../types/plan';
+import {
+  Plan,
+  CreatePlanRequest,
+  PlanFilters,
+  PlanSchedule,
+} from '../types/plan';
 
 export const usePlans = () => {
   const [plans, setPlans] = useAtom(plansAtom);
   const [selectedPlan, setSelectedPlan] = useAtom(selectedPlanAtom);
+  const [suggestedPlan, setSuggestedPlan] = useAtom(suggestedPlanAtom);
+  const [favoriteIds] = useAtom(favoriteRecipeIdsAtom);
   const [, addToast] = useAtom(addToastAtom);
 
   const [loading, setLoading] = useState(false);
@@ -22,32 +35,28 @@ export const usePlans = () => {
         setLoading(true);
 
         const page = reset ? 0 : currentPage + 1;
-        const pageSize = 20;
         const filtersToUse = appliedFilters || filters;
 
         const response = await planService.getPlans({
           page,
-          pageSize,
-          search: filtersToUse.search,
+          pageSize: 10,
+          ...filtersToUse,
         });
 
-        const { data, hasMore: responseHasMore } = response;
-
         if (reset) {
-          setPlans(data);
+          setPlans(response.data);
           setCurrentPage(0);
         } else {
           // Prevent duplicates when adding new data
           const existingIds = new Set(plans.map(p => p._id));
-          const newPlans = data.filter(plan => !existingIds.has(plan._id));
+          const newPlans = response.data.filter(
+            (plan: Plan) => !existingIds.has(plan._id),
+          );
           setPlans(prev => [...prev, ...newPlans]);
           setCurrentPage(page);
         }
 
-        // Update hasMore from backend response
-        setHasMore(responseHasMore);
-
-        return response;
+        setHasMore(response.hasMore);
       } catch (error: any) {
         addToast({
           message:
@@ -55,21 +64,11 @@ export const usePlans = () => {
           type: 'error',
           duration: 5000,
         });
-        setHasMore(false);
-        throw error;
       } finally {
         setLoading(false);
       }
     },
-    [setPlans, addToast, loading, plans, currentPage, filters],
-  );
-
-  const applyFilters = useCallback(
-    (newFilters: PlanFilters) => {
-      setFilters(newFilters);
-      fetchPlans(newFilters, true);
-    },
-    [setFilters, fetchPlans],
+    [loading, currentPage, plans, setPlans, addToast, filters],
   );
 
   const fetchPlan = useCallback(
@@ -94,10 +93,10 @@ export const usePlans = () => {
   );
 
   const createPlan = useCallback(
-    async (data: CreatePlanRequest) => {
+    async (planData: CreatePlanRequest) => {
       try {
         setLoading(true);
-        const newPlan = await planService.createPlan(data);
+        const newPlan = await planService.createPlan(planData);
         setPlans(prev => [newPlan, ...prev]);
 
         addToast({
@@ -123,10 +122,10 @@ export const usePlans = () => {
   );
 
   const updatePlan = useCallback(
-    async (id: string, data: Partial<Plan>) => {
+    async (id: string, planData: Partial<Plan>) => {
       try {
         setLoading(true);
-        const updatedPlan = await planService.updatePlan(id, data);
+        const updatedPlan = await planService.updatePlan(id, planData);
 
         setPlans(prev =>
           prev.map(plan => (plan._id === id ? updatedPlan : plan)),
@@ -220,8 +219,39 @@ export const usePlans = () => {
   const fetchSuggestedMealPlan = useCallback(async () => {
     try {
       setLoading(true);
-      const suggestedPlan = await planService.getSuggestedMealPlan();
-      return suggestedPlan;
+      const plan = await planService.getSuggestedMealPlan();
+
+      // Update favorite status for recipes in the suggested plan
+      if (plan && plan.schedule) {
+        const updatedSchedule = { ...plan.schedule };
+
+        Object.keys(updatedSchedule).forEach(dayKey => {
+          const daySchedule = updatedSchedule[dayKey as keyof PlanSchedule];
+          if (Array.isArray(daySchedule)) {
+            daySchedule.forEach(scheduledRecipe => {
+              if (
+                typeof scheduledRecipe.recipe === 'object' &&
+                scheduledRecipe.recipe
+              ) {
+                scheduledRecipe.recipe.is_favorite = favoriteIds.includes(
+                  scheduledRecipe.recipe._id,
+                );
+              }
+            });
+          }
+        });
+
+        const updatedPlan = {
+          ...plan,
+          schedule: updatedSchedule,
+        };
+
+        setSuggestedPlan(updatedPlan);
+        return updatedPlan;
+      }
+
+      setSuggestedPlan(plan);
+      return plan;
     } catch (error: any) {
       console.error('Error fetching suggested meal plan:', error);
       addToast({
@@ -235,11 +265,20 @@ export const usePlans = () => {
     } finally {
       setLoading(false);
     }
-  }, [addToast]);
+  }, [setSuggestedPlan, addToast, favoriteIds]);
+
+  const applyFilters = useCallback(
+    (newFilters: PlanFilters) => {
+      setFilters(newFilters);
+      fetchPlans(newFilters, true);
+    },
+    [fetchPlans],
+  );
 
   return {
     plans,
     selectedPlan,
+    suggestedPlan,
     filters,
     loading,
     hasMore,

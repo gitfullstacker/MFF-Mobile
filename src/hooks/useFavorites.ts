@@ -7,10 +7,12 @@ import {
   addToastAtom,
   recipesAtom,
   selectedRecipeAtom,
+  suggestedPlanAtom,
 } from '../store';
 import { favoriteService } from '../services/favorite';
 import { Recipe } from '../types/recipe';
 import { FavoriteFilters } from '@/types/favorite';
+import { PlanSchedule } from '@/types/plan';
 
 const RECENT_RECIPES_KEY = 'recentRecipes';
 
@@ -19,6 +21,7 @@ export const useFavorites = () => {
   const [favoriteRecipes, setFavoriteRecipes] = useAtom(favoriteRecipesAtom);
   const [recipes, setRecipes] = useAtom(recipesAtom);
   const [selectedRecipe, setSelectedRecipe] = useAtom(selectedRecipeAtom);
+  const [suggestedPlan, setSuggestedPlan] = useAtom(suggestedPlanAtom);
   const [, addToast] = useAtom(addToastAtom);
 
   // Local state for pagination and filters
@@ -50,6 +53,35 @@ export const useFavorites = () => {
       }
     },
     [],
+  );
+
+  // Helper function to update suggested plan recipes
+  const updateSuggestedPlanRecipes = useCallback(
+    (recipeId: string, isFavorite: boolean) => {
+      if (!suggestedPlan) return;
+
+      const updatedSchedule = { ...suggestedPlan.schedule };
+
+      Object.keys(updatedSchedule).forEach(dayKey => {
+        const daySchedule = updatedSchedule[dayKey as keyof PlanSchedule];
+        if (Array.isArray(daySchedule)) {
+          daySchedule.forEach(scheduledRecipe => {
+            if (
+              typeof scheduledRecipe.recipe === 'object' &&
+              scheduledRecipe.recipe?._id === recipeId
+            ) {
+              scheduledRecipe.recipe.is_favorite = isFavorite;
+            }
+          });
+        }
+      });
+
+      setSuggestedPlan({
+        ...suggestedPlan,
+        schedule: updatedSchedule,
+      });
+    },
+    [suggestedPlan, setSuggestedPlan],
   );
 
   const fetchFavorites = useCallback(
@@ -150,12 +182,32 @@ export const useFavorites = () => {
           setSelectedRecipe({ ...selectedRecipe, is_favorite: isFavorite });
         }
 
-        // Update favorite recipes list (remove if unfavorited)
-        if (!isFavorite) {
+        // Update favorite recipes list
+        if (isFavorite) {
+          // Recipe was added to favorites - we might need to fetch it if not in the list
+          const existingFavorite = favoriteRecipes.find(
+            r => r._id === recipeId,
+          );
+          if (!existingFavorite) {
+            // If the recipe isn't in our favorites list, we'll need to refresh to get it
+            // For now, just update the existing one if it exists
+            setFavoriteRecipes(prev =>
+              prev.map(recipe =>
+                recipe._id === recipeId
+                  ? { ...recipe, is_favorite: true }
+                  : recipe,
+              ),
+            );
+          }
+        } else {
+          // Recipe was removed from favorites
           setFavoriteRecipes(prev =>
             prev.filter(recipe => recipe._id !== recipeId),
           );
         }
+
+        // Update suggested plan recipes
+        updateSuggestedPlanRecipes(recipeId, isFavorite);
 
         // Update recent recipes in AsyncStorage
         await updateRecentRecipesStorage(recipeId, isFavorite);
@@ -167,7 +219,8 @@ export const useFavorites = () => {
         });
       } catch (error: any) {
         addToast({
-          message: error.response?.data?.message || 'Failed to toggle favorite',
+          message:
+            error.response?.data?.message || 'Failed to update favorite status',
           type: 'error',
           duration: 5000,
         });
@@ -178,12 +231,14 @@ export const useFavorites = () => {
       favoriteIds,
       recipes,
       selectedRecipe,
+      favoriteRecipes,
       setFavoriteIds,
       setRecipes,
       setSelectedRecipe,
       setFavoriteRecipes,
       addToast,
       updateRecentRecipesStorage,
+      updateSuggestedPlanRecipes,
     ],
   );
 
@@ -206,6 +261,9 @@ export const useFavorites = () => {
         if (selectedRecipe?._id === recipeId) {
           setSelectedRecipe({ ...selectedRecipe, is_favorite: true });
         }
+
+        // Update suggested plan recipes
+        updateSuggestedPlanRecipes(recipeId, true);
 
         // Update recent recipes in AsyncStorage
         await updateRecentRecipesStorage(recipeId, true);
@@ -234,6 +292,7 @@ export const useFavorites = () => {
       setSelectedRecipe,
       addToast,
       updateRecentRecipesStorage,
+      updateSuggestedPlanRecipes,
     ],
   );
 
@@ -264,6 +323,9 @@ export const useFavorites = () => {
           prev.filter(recipe => recipe._id !== recipeId),
         );
 
+        // Update suggested plan recipes
+        updateSuggestedPlanRecipes(recipeId, false);
+
         // Update recent recipes in AsyncStorage
         await updateRecentRecipesStorage(recipeId, false);
 
@@ -292,6 +354,7 @@ export const useFavorites = () => {
       setFavoriteRecipes,
       addToast,
       updateRecentRecipesStorage,
+      updateSuggestedPlanRecipes,
     ],
   );
 

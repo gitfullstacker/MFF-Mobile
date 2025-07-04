@@ -14,6 +14,7 @@ import { RecipeCard } from '../recipe/RecipeCard';
 import { SwipeIndicator } from '../ui/SwipeIndicator';
 import { Button } from '../forms/Button';
 import { DaySelector } from '../meal-plan/DaySelector';
+import { useFavorites } from '../../hooks/useFavorites';
 import { usePlans } from '../../hooks/usePlans';
 import {
   colors,
@@ -38,36 +39,39 @@ export const SuggestedMealPlanSection: React.FC<
   SuggestedMealPlanSectionProps
 > = ({ onSavePlan }) => {
   const { navigateToRecipeDetail } = useNavigationHelpers();
-  const { fetchSuggestedMealPlan, loading } = usePlans();
+  const { toggleFavorite } = useFavorites();
+  const { suggestedPlan, fetchSuggestedMealPlan } = usePlans();
 
+  // Local state
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string>('su');
   const [isSaving, setIsSaving] = useState(false);
-  const [suggestedPlan, setSuggestedPlan] = useState<Plan | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Refs for scroll tracking
   const recipesScrollRef = useRef<FlatList>(null);
   const recipesScrollX = useRef(new Animated.Value(0)).current;
 
-  // Fetch suggested meal plan on component mount
-  useEffect(() => {
-    loadSuggestedMealPlan();
-  }, []);
-
   const loadSuggestedMealPlan = async () => {
     try {
-      const plan = await fetchSuggestedMealPlan();
-      setSuggestedPlan(plan);
+      setLoading(true);
+      await fetchSuggestedMealPlan();
     } catch (error) {
       console.error('Failed to load suggested meal plan:', error);
-      // Use mock data as fallback
-      setSuggestedPlan(null);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const toggleExpanded = () => {
+  // Fetch suggested meal plan when user expands the section
+  const toggleExpanded = async () => {
     const newExpanded = !isExpanded;
     setIsExpanded(newExpanded);
+
+    // Only fetch when expanding and if we don't have suggested plan yet
+    if (newExpanded && !suggestedPlan) {
+      await loadSuggestedMealPlan();
+    }
   };
 
   const handleSavePlan = async () => {
@@ -110,30 +114,67 @@ export const SuggestedMealPlanSection: React.FC<
       <RecipeCard
         recipe={item}
         onPress={() => navigateToRecipeDetail(item.slug)}
+        onFavoriteToggle={toggleFavorite}
       />
     </View>
   );
 
-  // Show loading state
-  if (loading && !suggestedPlan) {
+  // Show loading state (only show if expanding and no plan exists)
+  if (loading && !suggestedPlan && isExpanded) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.header}
+          onPress={toggleExpanded}
+          activeOpacity={0.8}>
           <Text style={styles.headerTitle}>Suggested Meal Plan</Text>
-          <ActivityIndicator size="small" color={colors.primary} />
+          <View style={styles.headerRight}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Icon name="chevron-up" size={20} color={colors.text.primary} />
+          </View>
+        </TouchableOpacity>
+        <View
+          style={[
+            styles.content,
+            { alignItems: 'center', padding: spacing.xl },
+          ]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.guideText, { marginTop: spacing.md }]}>
+            Loading suggested meal plan...
+          </Text>
         </View>
       </View>
     );
   }
 
-  // Show empty state if no suggested plan
-  if (!suggestedPlan) {
+  // Show empty state if failed to load when expanded
+  if (isExpanded && !loading && !suggestedPlan) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.header}
+          onPress={toggleExpanded}
+          activeOpacity={0.8}>
           <Text style={styles.headerTitle}>Suggested Meal Plan</Text>
-          <TouchableOpacity onPress={loadSuggestedMealPlan}>
-            <Text style={styles.retryText}>Retry</Text>
+          <View style={styles.headerRight}>
+            <TouchableOpacity onPress={loadSuggestedMealPlan}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+            <Icon name="chevron-up" size={20} color={colors.text.primary} />
+          </View>
+        </TouchableOpacity>
+        <View
+          style={[
+            styles.content,
+            { alignItems: 'center', padding: spacing.xl },
+          ]}>
+          <Text style={styles.noRecipesText}>
+            Failed to load suggested meal plan
+          </Text>
+          <TouchableOpacity
+            onPress={loadSuggestedMealPlan}
+            style={{ marginTop: spacing.md }}>
+            <Text style={[styles.retryText, { fontSize: 16 }]}>Try Again</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -160,8 +201,8 @@ export const SuggestedMealPlanSection: React.FC<
         </View>
       </TouchableOpacity>
 
-      {/* Content */}
-      {isExpanded && (
+      {/* Content - only show if we have data or if loading */}
+      {isExpanded && suggestedPlan && (
         <View style={styles.content}>
           {/* Plan Info and Save Button */}
           <View style={styles.planInfoSection}>
