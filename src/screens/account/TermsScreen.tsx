@@ -21,7 +21,7 @@ import {
 
 const TermsScreen: React.FC = () => {
   const handleContactSupport = () => {
-    Linking.openURL('mailto:legal@macrofriendlyfood.com');
+    Linking.openURL('mailto:contact@macrofriendlyfood.com');
   };
 
   const renderSectionContent = (content: string[]) => (

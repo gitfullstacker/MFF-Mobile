@@ -21,7 +21,7 @@ import {
 
 const PrivacyScreen: React.FC = () => {
   const handleContactSupport = () => {
-    Linking.openURL('mailto:privacy@macrofriendlyfood.com');
+    Linking.openURL('mailto:contact@macrofriendlyfood.com');
   };
 
   const renderSectionContent = (content: string[]) => (
