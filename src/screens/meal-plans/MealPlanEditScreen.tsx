@@ -19,8 +19,6 @@ import {
   ScheduledRecipe,
   DAYS_OF_WEEK,
 } from '../../types/plan';
-import { useAtom } from 'jotai';
-import { selectedPlanAtom } from '@/store';
 import { MealPlanStackParamList } from '@/types';
 
 type EditMealPlanNavigationProp = StackNavigationProp<
@@ -45,9 +43,9 @@ const MealPlanEditScreen: React.FC = () => {
   const navigation = useNavigation<EditMealPlanNavigationProp>();
   const route = useRoute<EditMealPlanRouteProp>();
   const { planId } = route.params;
-  const { updatePlan } = usePlans();
+  const { updatePlan, fetchPlan } = usePlans();
 
-  const [selectedPlan] = useAtom(selectedPlanAtom);
+  // Local state
   const [planName, setPlanName] = useState('');
   const [selectedDay, setSelectedDay] = useState<string>('su');
   const [schedule, setSchedule] = useState<PlanSchedule>({
@@ -61,15 +59,36 @@ const MealPlanEditScreen: React.FC = () => {
   });
   const [showRecipePicker, setShowRecipePicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [planLoading, setPlanLoading] = useState(false);
   const [recipeMap, setRecipeMap] = useState<Record<string, Recipe>>({});
+  const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
 
-  // Use plan from route params
+  // Fetch plan data when component mounts or planId changes
   useEffect(() => {
-    if (selectedPlan) {
-      const mealPlan = selectedPlan;
+    const loadPlan = async () => {
+      if (!planId) return;
 
+      try {
+        setPlanLoading(true);
+        const plan = await fetchPlan(planId);
+        setCurrentPlan(plan);
+      } catch (error) {
+        console.error('Error fetching plan:', error);
+        Alert.alert('Error', 'Failed to load meal plan. Please try again.');
+        navigation.goBack();
+      } finally {
+        setPlanLoading(false);
+      }
+    };
+
+    loadPlan();
+  }, [planId, fetchPlan, navigation]);
+
+  // Initialize form data when plan is loaded
+  useEffect(() => {
+    if (currentPlan) {
       // Set initial state from plan
-      setPlanName(mealPlan.name);
+      setPlanName(currentPlan.name);
 
       // Restructure schedule to clean format
       const cleanSchedule: PlanSchedule = {
@@ -86,7 +105,7 @@ const MealPlanEditScreen: React.FC = () => {
       const recipes: Record<string, Recipe> = {};
 
       DAYS_OF_WEEK.forEach(dayInfo => {
-        const daySchedule = mealPlan.schedule[dayInfo.value];
+        const daySchedule = currentPlan.schedule[dayInfo.value];
         if (Array.isArray(daySchedule)) {
           daySchedule.forEach((item: ScheduledRecipe) => {
             if (item.recipe && typeof item.recipe === 'object') {
@@ -112,13 +131,8 @@ const MealPlanEditScreen: React.FC = () => {
 
       setSchedule(cleanSchedule);
       setRecipeMap(recipes);
-    } else {
-      // Fallback: This shouldn't happen in normal flow
-      console.warn(
-        'No plan provided in params. This should not happen in normal flow.',
-      );
     }
-  }, [selectedPlan]);
+  }, [currentPlan]);
 
   // Function to open recipe picker
   const handleAddRecipe = () => {
@@ -170,54 +184,30 @@ const MealPlanEditScreen: React.FC = () => {
       return;
     }
 
-    // Check if any days have recipes scheduled
-    const hasRecipes = Object.values(schedule).some(day => day.length > 0);
-
-    if (!hasRecipes) {
-      Alert.alert(
-        'Empty Plan',
-        'Please add at least one recipe to your meal plan.',
-      );
-      return;
-    }
-
     try {
       setLoading(true);
 
-      // Restructure schedule to clean format (remove any _id fields)
-      const cleanSchedule: PlanSchedule = {
-        su: [],
-        mo: [],
-        tu: [],
-        we: [],
-        th: [],
-        fr: [],
-        sa: [],
-      };
-
-      // Copy schedule data in clean format
-      DAYS_OF_WEEK.forEach(dayInfo => {
-        const daySchedule = schedule[dayInfo.value];
-        if (Array.isArray(daySchedule)) {
-          cleanSchedule[dayInfo.value] = daySchedule.map(item => ({
-            recipe:
-              typeof item.recipe === 'object'
-                ? (item.recipe as Recipe)._id
-                : item.recipe,
-            only_recipe: item.only_recipe,
-          }));
-        }
+      // Convert schedule to the format expected by the API
+      const cleanSchedule: any = {};
+      Object.keys(schedule).forEach(day => {
+        cleanSchedule[day] = schedule[day as keyof PlanSchedule].map(item => ({
+          recipe:
+            typeof item.recipe === 'object'
+              ? (item.recipe as Recipe)._id
+              : item.recipe,
+          only_recipe: item.only_recipe,
+        }));
       });
 
-      const updatedPlanData: Partial<Plan> = {
+      const planData = {
         name: planName,
         schedule: cleanSchedule,
+        removed_ingredient_ids: [],
       };
 
-      // Update the plan - this will automatically update plansAtom and selectedPlanAtom via usePlans hook
-      await updatePlan(planId, updatedPlanData);
+      await updatePlan(planId, planData);
 
-      // Navigate back instead of going to detail screen
+      // Navigate back to meal plan details
       navigation.goBack();
     } catch (error) {
       console.error('Error updating meal plan:', error);
@@ -257,6 +247,11 @@ const MealPlanEditScreen: React.FC = () => {
     return DAYS.find(day => day.key === selectedDay)?.label || 'Selected Day';
   };
 
+  // Show loading if plan is being fetched
+  if (planLoading || !currentPlan) {
+    return <LoadingOverlay message="Loading meal plan..." />;
+  }
+
   return (
     <PageContainer safeArea={false}>
       <Header
@@ -268,7 +263,10 @@ const MealPlanEditScreen: React.FC = () => {
         }}
       />
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}>
         {/* Plan Name Input */}
         <Section>
           <Input

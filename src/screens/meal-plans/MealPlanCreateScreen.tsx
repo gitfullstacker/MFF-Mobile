@@ -197,7 +197,10 @@ const MealPlanCreateScreen: React.FC = () => {
         }}
       />
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}>
         {/* Plan Name Input */}
         <Section>
           <Input
