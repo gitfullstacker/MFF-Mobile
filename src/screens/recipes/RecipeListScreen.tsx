@@ -129,7 +129,7 @@ const RecipeListScreen: React.FC = () => {
         <RecipeCard
           recipe={item}
           onPress={() => navigateToRecipeDetail(item.slug)}
-          onFavoriteToggle={recipeId => toggleFavorite(recipeId)}
+          onFavoriteToggle={toggleFavorite}
         />
       </View>
     );

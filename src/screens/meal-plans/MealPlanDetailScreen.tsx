@@ -21,6 +21,7 @@ import {
   useNavigationHelpers,
   useSafeNavigation,
 } from '@/hooks/useNavigation';
+import { useFavorites } from '@/hooks/useFavorites';
 
 // Days of the week for DaySelector
 const DAYS = [
@@ -37,6 +38,7 @@ const MealPlanDetailScreen: React.FC = () => {
   const { params } = useCurrentRoute();
   const { safeGoBack } = useSafeNavigation();
   const { navigateToEditMealPlan } = useNavigationHelpers();
+  const { toggleFavorite } = useFavorites();
   const {
     loading: planLoading,
     selectedPlan,
@@ -414,7 +416,8 @@ const MealPlanDetailScreen: React.FC = () => {
           <RecipeListDisplay
             recipes={dayRecipes}
             selectedDayLabel={getSelectedDayLabel()}
-            onRecipeSelect={() => {}} // Read-only view, no recipe selection
+            onRecipeSelect={() => {}}
+            onRecipeFavorite={toggleFavorite}
             emptyStateText={`No recipes scheduled for ${getSelectedDayLabel()}.`}
             scrollEnabled={false}
           />

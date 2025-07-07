@@ -159,6 +159,7 @@ const DashboardScreen: React.FC = () => {
       <RecipeCard
         recipe={item}
         onPress={() => navigateToRecipeDetail(item.slug)}
+        onFavoriteToggle={toggleFavorite}
       />
     </TouchableOpacity>
   );
@@ -168,7 +169,7 @@ const DashboardScreen: React.FC = () => {
       <RecipeCard
         recipe={item}
         onPress={() => navigateToRecipeDetail(item.slug)}
-        onFavoriteToggle={recipeId => toggleFavorite(recipeId)}
+        onFavoriteToggle={toggleFavorite}
       />
     </View>
   );

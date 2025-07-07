@@ -21,6 +21,7 @@ import {
   DAYS_OF_WEEK,
 } from '../../types/plan';
 import { MealPlanStackParamList } from '@/types';
+import { useFavorites } from '@/hooks/useFavorites';
 
 type CreateMealPlanNavigationProp = StackNavigationProp<
   MealPlanStackParamList,
@@ -40,6 +41,7 @@ const DAYS: DayOption[] = [
 
 const MealPlanCreateScreen: React.FC = () => {
   const navigation = useNavigation<CreateMealPlanNavigationProp>();
+  const { toggleFavorite } = useFavorites();
   const { createPlan } = usePlans();
 
   const [planName, setPlanName] = useState('');
@@ -233,6 +235,7 @@ const MealPlanCreateScreen: React.FC = () => {
             showSelectionIcon
             selectedDayLabel={getSelectedDayLabel()}
             onRecipeSelect={handleRecipeSelect}
+            onRecipeFavorite={toggleFavorite}
             scrollEnabled={false}
           />
         </Section>

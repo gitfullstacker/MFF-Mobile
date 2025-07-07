@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  Dimensions,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, FlatList, StyleSheet, Dimensions } from 'react-native';
 import { RecipeCard } from '../recipe/RecipeCard';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { Recipe } from '../../types/recipe';
@@ -18,6 +11,7 @@ interface RecipeListDisplayProps {
   showSelectionIcon?: boolean;
   selectedDayLabel: string;
   onRecipeSelect: (recipe: Recipe) => void;
+  onRecipeFavorite: (recipe: Recipe) => void;
   emptyStateText?: string;
   scrollEnabled?: boolean; // Add this prop to control scroll behavior
 }
@@ -27,6 +21,7 @@ export const RecipeListDisplay: React.FC<RecipeListDisplayProps> = ({
   showSelectionIcon = false,
   selectedDayLabel,
   onRecipeSelect,
+  onRecipeFavorite,
   emptyStateText,
   scrollEnabled = true, // Default to true for backward compatibility
 }) => {
@@ -85,6 +80,7 @@ export const RecipeListDisplay: React.FC<RecipeListDisplayProps> = ({
           isAdded
           onRemoveClick={onRecipeSelect}
           onPress={() => {}}
+          onFavoriteToggle={onRecipeFavorite}
         />
       </View>
     );

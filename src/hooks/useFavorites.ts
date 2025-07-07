@@ -8,6 +8,8 @@ import {
   recipesAtom,
   selectedRecipeAtom,
   suggestedPlanAtom,
+  activePlanAtom,
+  selectedPlanAtom,
 } from '../store';
 import { favoriteService } from '../services/favorite';
 import { Recipe } from '../types/recipe';
@@ -22,6 +24,8 @@ export const useFavorites = () => {
   const [recipes, setRecipes] = useAtom(recipesAtom);
   const [selectedRecipe, setSelectedRecipe] = useAtom(selectedRecipeAtom);
   const [suggestedPlan, setSuggestedPlan] = useAtom(suggestedPlanAtom);
+  const [activePlan, setActivePlan] = useAtom(activePlanAtom);
+  const [selectedPlan, setSelectedPlan] = useAtom(selectedPlanAtom);
   const [, addToast] = useAtom(addToastAtom);
 
   // Local state for pagination and filters
@@ -53,6 +57,64 @@ export const useFavorites = () => {
       }
     },
     [],
+  );
+
+  // Helper function to update active plan recipes
+  const updateActivePlanRecipes = useCallback(
+    (recipeId: string, isFavorite: boolean) => {
+      if (!activePlan) return;
+
+      const updatedSchedule = { ...activePlan.schedule };
+
+      Object.keys(updatedSchedule).forEach(dayKey => {
+        const daySchedule = updatedSchedule[dayKey as keyof PlanSchedule];
+        if (Array.isArray(daySchedule)) {
+          daySchedule.forEach(scheduledRecipe => {
+            if (
+              typeof scheduledRecipe.recipe === 'object' &&
+              scheduledRecipe.recipe?._id === recipeId
+            ) {
+              scheduledRecipe.recipe.is_favorite = isFavorite;
+            }
+          });
+        }
+      });
+
+      setActivePlan({
+        ...activePlan,
+        schedule: updatedSchedule,
+      });
+    },
+    [activePlan, setActivePlan],
+  );
+
+  // Helper function to update selected plan recipes
+  const updateSelectedPlanRecipes = useCallback(
+    (recipeId: string, isFavorite: boolean) => {
+      if (!selectedPlan) return;
+
+      const updatedSchedule = { ...selectedPlan.schedule };
+
+      Object.keys(updatedSchedule).forEach(dayKey => {
+        const daySchedule = updatedSchedule[dayKey as keyof PlanSchedule];
+        if (Array.isArray(daySchedule)) {
+          daySchedule.forEach(scheduledRecipe => {
+            if (
+              typeof scheduledRecipe.recipe === 'object' &&
+              scheduledRecipe.recipe?._id === recipeId
+            ) {
+              scheduledRecipe.recipe.is_favorite = isFavorite;
+            }
+          });
+        }
+      });
+
+      setSelectedPlan({
+        ...selectedPlan,
+        schedule: updatedSchedule,
+      });
+    },
+    [selectedPlan, setSelectedPlan],
   );
 
   // Helper function to update suggested plan recipes
@@ -99,11 +161,11 @@ export const useFavorites = () => {
           search: filtersToUse.search,
         });
 
-        // Sync favorite status with global state
+        // Since these are favorites from the API, they should all be favorites
         const recipesWithFavoriteStatus = response.data.map(
           (recipe: Recipe) => ({
             ...recipe,
-            is_favorite: favoriteIds.includes(recipe._id),
+            is_favorite: true, // All favorites should be marked as favorite
           }),
         );
 
@@ -139,7 +201,6 @@ export const useFavorites = () => {
       loading,
       refreshing,
       favoriteRecipes,
-      favoriteIds,
       setFavoriteRecipes,
       addToast,
       page,
@@ -156,61 +217,52 @@ export const useFavorites = () => {
   );
 
   const toggleFavorite = useCallback(
-    async (recipeId: string) => {
+    async (recipe: Recipe) => {
       try {
-        const response = await favoriteService.toggleFavorite(recipeId);
+        const response = await favoriteService.toggleFavorite(recipe._id);
         const isFavorite = response.isFavorite;
 
         // Update favorite IDs
         if (isFavorite) {
-          setFavoriteIds(prev => [...prev, recipeId]);
+          setFavoriteIds(prev => [recipe._id, ...prev]);
         } else {
-          setFavoriteIds(prev => prev.filter(id => id !== recipeId));
+          setFavoriteIds(prev => prev.filter(id => id !== recipe._id));
         }
 
-        // Update recipes list
+        // Update recipes list - FIXED: Use correct variable names
         setRecipes(prev =>
-          prev.map(recipe =>
-            recipe._id === recipeId
-              ? { ...recipe, is_favorite: isFavorite }
-              : recipe,
+          prev.map(r =>
+            r._id === recipe._id ? { ...r, is_favorite: isFavorite } : r,
           ),
         );
 
         // Update selected recipe
-        if (selectedRecipe?._id === recipeId) {
+        if (selectedRecipe?._id === recipe._id) {
           setSelectedRecipe({ ...selectedRecipe, is_favorite: isFavorite });
         }
 
         // Update favorite recipes list
         if (isFavorite) {
-          // Recipe was added to favorites - we might need to fetch it if not in the list
-          const existingFavorite = favoriteRecipes.find(
-            r => r._id === recipeId,
-          );
-          if (!existingFavorite) {
-            // If the recipe isn't in our favorites list, we'll need to refresh to get it
-            // For now, just update the existing one if it exists
-            setFavoriteRecipes(prev =>
-              prev.map(recipe =>
-                recipe._id === recipeId
-                  ? { ...recipe, is_favorite: true }
-                  : recipe,
-              ),
-            );
-          }
+          setFavoriteRecipes(prev => [
+            { ...recipe, is_favorite: true },
+            ...prev,
+          ]);
         } else {
           // Recipe was removed from favorites
-          setFavoriteRecipes(prev =>
-            prev.filter(recipe => recipe._id !== recipeId),
-          );
+          setFavoriteRecipes(prev => prev.filter(r => r._id !== recipe._id));
         }
 
+        // Update active plan recipes
+        updateActivePlanRecipes(recipe._id, isFavorite);
+
         // Update suggested plan recipes
-        updateSuggestedPlanRecipes(recipeId, isFavorite);
+        updateSuggestedPlanRecipes(recipe._id, isFavorite);
+
+        // Update selected plan recipes
+        updateSelectedPlanRecipes(recipe._id, isFavorite);
 
         // Update recent recipes in AsyncStorage
-        await updateRecentRecipesStorage(recipeId, isFavorite);
+        await updateRecentRecipesStorage(recipe._id, isFavorite);
 
         addToast({
           message: isFavorite ? 'Added to favorites' : 'Removed from favorites',
@@ -238,123 +290,9 @@ export const useFavorites = () => {
       setFavoriteRecipes,
       addToast,
       updateRecentRecipesStorage,
+      updateActivePlanRecipes,
       updateSuggestedPlanRecipes,
-    ],
-  );
-
-  const addFavorite = useCallback(
-    async (recipeId: string) => {
-      try {
-        await favoriteService.addFavorite(recipeId);
-
-        // Update favorite IDs
-        setFavoriteIds(prev => [...prev, recipeId]);
-
-        // Update recipes list
-        setRecipes(prev =>
-          prev.map(recipe =>
-            recipe._id === recipeId ? { ...recipe, is_favorite: true } : recipe,
-          ),
-        );
-
-        // Update selected recipe
-        if (selectedRecipe?._id === recipeId) {
-          setSelectedRecipe({ ...selectedRecipe, is_favorite: true });
-        }
-
-        // Update suggested plan recipes
-        updateSuggestedPlanRecipes(recipeId, true);
-
-        // Update recent recipes in AsyncStorage
-        await updateRecentRecipesStorage(recipeId, true);
-
-        addToast({
-          message: 'Added to favorites',
-          type: 'success',
-          duration: 3000,
-        });
-      } catch (error: any) {
-        addToast({
-          message:
-            error.response?.data?.message || 'Failed to add to favorites',
-          type: 'error',
-          duration: 5000,
-        });
-        throw error;
-      }
-    },
-    [
-      favoriteIds,
-      recipes,
-      selectedRecipe,
-      setFavoriteIds,
-      setRecipes,
-      setSelectedRecipe,
-      addToast,
-      updateRecentRecipesStorage,
-      updateSuggestedPlanRecipes,
-    ],
-  );
-
-  const removeFavorite = useCallback(
-    async (recipeId: string) => {
-      try {
-        await favoriteService.removeFavorite(recipeId);
-
-        // Update favorite IDs
-        setFavoriteIds(prev => prev.filter(id => id !== recipeId));
-
-        // Update recipes list
-        setRecipes(prev =>
-          prev.map(recipe =>
-            recipe._id === recipeId
-              ? { ...recipe, is_favorite: false }
-              : recipe,
-          ),
-        );
-
-        // Update selected recipe
-        if (selectedRecipe?._id === recipeId) {
-          setSelectedRecipe({ ...selectedRecipe, is_favorite: false });
-        }
-
-        // Remove from favorite recipes list
-        setFavoriteRecipes(prev =>
-          prev.filter(recipe => recipe._id !== recipeId),
-        );
-
-        // Update suggested plan recipes
-        updateSuggestedPlanRecipes(recipeId, false);
-
-        // Update recent recipes in AsyncStorage
-        await updateRecentRecipesStorage(recipeId, false);
-
-        addToast({
-          message: 'Removed from favorites',
-          type: 'success',
-          duration: 3000,
-        });
-      } catch (error: any) {
-        addToast({
-          message:
-            error.response?.data?.message || 'Failed to remove from favorites',
-          type: 'error',
-          duration: 5000,
-        });
-        throw error;
-      }
-    },
-    [
-      favoriteIds,
-      recipes,
-      selectedRecipe,
-      setFavoriteIds,
-      setRecipes,
-      setSelectedRecipe,
-      setFavoriteRecipes,
-      addToast,
-      updateRecentRecipesStorage,
-      updateSuggestedPlanRecipes,
+      updateSelectedPlanRecipes,
     ],
   );
 
@@ -382,8 +320,6 @@ export const useFavorites = () => {
     hasMore,
     page,
     toggleFavorite,
-    addFavorite,
-    removeFavorite,
     fetchFavorites,
     loadMoreFavorites,
     refreshFavorites,

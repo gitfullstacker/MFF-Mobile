@@ -20,6 +20,7 @@ import {
   DAYS_OF_WEEK,
 } from '../../types/plan';
 import { MealPlanStackParamList } from '@/types';
+import { useFavorites } from '@/hooks/useFavorites';
 
 type EditMealPlanNavigationProp = StackNavigationProp<
   MealPlanStackParamList,
@@ -43,6 +44,7 @@ const MealPlanEditScreen: React.FC = () => {
   const navigation = useNavigation<EditMealPlanNavigationProp>();
   const route = useRoute<EditMealPlanRouteProp>();
   const { planId } = route.params;
+  const { toggleFavorite } = useFavorites();
   const { updatePlan, fetchPlan } = usePlans();
 
   // Local state
@@ -299,6 +301,7 @@ const MealPlanEditScreen: React.FC = () => {
             showSelectionIcon
             selectedDayLabel={getSelectedDayLabel()}
             onRecipeSelect={handleRecipeSelect}
+            onRecipeFavorite={toggleFavorite}
             scrollEnabled={false}
           />
         </Section>

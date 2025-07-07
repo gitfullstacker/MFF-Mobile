@@ -15,8 +15,6 @@ import { EmptyState } from '../../components/feedback/EmptyState';
 import { colors, spacing } from '../../theme';
 import { Recipe } from '../../types/recipe';
 import { useFavorites } from '@/hooks/useFavorites';
-import { useAtom } from 'jotai';
-import { favoriteRecipesAtom } from '@/store';
 import { SCREEN_NAMES } from '@/constants';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
 import { FavoriteFilters } from '@/types/favorite';
@@ -25,9 +23,9 @@ const { width: screenWidth } = Dimensions.get('window');
 
 const FavoritesScreen: React.FC = () => {
   const { navigateToMainTab, navigateToRecipeDetail } = useNavigationHelpers();
-  const [favoriteRecipes] = useAtom(favoriteRecipesAtom);
   const {
     loading,
+    favoriteRecipes,
     refreshing,
     hasMore,
     filters,
@@ -104,9 +102,7 @@ const FavoritesScreen: React.FC = () => {
         <RecipeCard
           recipe={item}
           onPress={() => navigateToRecipeDetail(item.slug)}
-          onFavoriteToggle={recipeId => {
-            toggleFavorite(recipeId);
-          }}
+          onFavoriteToggle={toggleFavorite}
         />
       </View>
     );

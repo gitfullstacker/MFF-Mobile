@@ -30,7 +30,7 @@ interface RecipeCardProps {
   showSelectionIcon?: boolean;
   onAddClick?: (recipe: Recipe) => void;
   onRemoveClick?: (recipe: Recipe) => void;
-  onFavoriteToggle?: (recipeId: string) => void;
+  onFavoriteToggle?: (recipe: Recipe) => void;
 }
 
 export const RecipeCard: React.FC<RecipeCardProps> = ({
@@ -94,7 +94,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
     try {
       // Notify parent component if needed
       if (onFavoriteToggle) {
-        onFavoriteToggle(_id);
+        onFavoriteToggle(recipe);
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);

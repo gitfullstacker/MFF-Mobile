@@ -213,7 +213,7 @@ const RecipeDetailScreen: React.FC = () => {
     setIsTogglingFavorite(true);
 
     try {
-      await toggleFavorite(selectedRecipe._id);
+      await toggleFavorite(selectedRecipe);
     } catch (error) {
       console.error('Error toggling favorite:', error);
     } finally {
@@ -838,7 +838,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 0) + 20,
+    paddingTop:
+      Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 0) + 20,
     paddingHorizontal: spacing.md,
     height: Platform.OS === 'ios' ? 100 : 70 + (StatusBar.currentHeight || 0),
   },
