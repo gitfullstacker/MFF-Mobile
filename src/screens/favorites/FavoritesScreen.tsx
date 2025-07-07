@@ -68,9 +68,7 @@ const FavoritesScreen: React.FC = () => {
 
   useEffect(() => {
     // Initial load
-    if (favoriteRecipes.length === 0) {
-      fetchFavorites({}, true);
-    }
+    fetchFavorites({}, true);
   }, []);
 
   const handleRefresh = useCallback(async () => {

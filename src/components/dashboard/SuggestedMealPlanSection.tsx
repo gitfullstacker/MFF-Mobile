@@ -8,6 +8,7 @@ import {
   Animated,
   ActivityIndicator,
   Dimensions,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { RecipeCard } from '../recipe/RecipeCard';
@@ -24,7 +25,12 @@ import {
   shadows,
 } from '../../theme';
 import { Recipe } from '../../types/recipe';
-import { Plan, PlanSchedule, DAYS_OF_WEEK } from '../../types/plan';
+import {
+  Plan,
+  PlanSchedule,
+  DAYS_OF_WEEK,
+  CreatePlanRequest,
+} from '../../types/plan';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -40,7 +46,7 @@ export const SuggestedMealPlanSection: React.FC<
 > = ({ onSavePlan }) => {
   const { navigateToRecipeDetail } = useNavigationHelpers();
   const { toggleFavorite } = useFavorites();
-  const { suggestedPlan, fetchSuggestedMealPlan } = usePlans();
+  const { suggestedPlan, fetchSuggestedMealPlan, createPlan } = usePlans();
 
   // Local state
   const [isExpanded, setIsExpanded] = useState(false);
@@ -79,9 +85,51 @@ export const SuggestedMealPlanSection: React.FC<
 
     setIsSaving(true);
     try {
+      // Convert schedule to the format expected by the API
+      // Extract recipe IDs from recipe objects, similar to MealPlanEditScreen
+      const cleanSchedule: any = {};
+      Object.keys(suggestedPlan.schedule).forEach(day => {
+        cleanSchedule[day] = suggestedPlan.schedule[
+          day as keyof PlanSchedule
+        ].map(item => ({
+          recipe:
+            typeof item.recipe === 'object'
+              ? (item.recipe as Recipe)._id
+              : item.recipe,
+          only_recipe: item.only_recipe,
+        }));
+      });
+
+      const planData: CreatePlanRequest = {
+        name: suggestedPlan.name,
+        schedule: cleanSchedule,
+        removed_ingredient_ids: [],
+      };
+
+      // Call the createPlan API to actually save the plan
+      await createPlan(planData);
+
+      // Show success message
+      Alert.alert(
+        'Plan Saved',
+        `"${suggestedPlan.name}" has been saved to your meal plans.`,
+        [
+          {
+            text: 'OK',
+            style: 'default',
+          },
+        ],
+      );
+
+      // Call optional callback if provided
       onSavePlan?.(suggestedPlan);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving plan:', error);
+      Alert.alert(
+        'Error',
+        error.response?.data?.message ||
+          'Failed to save meal plan. Please try again.',
+      );
     } finally {
       setIsSaving(false);
     }
@@ -110,84 +158,22 @@ export const SuggestedMealPlanSection: React.FC<
   const selectedDayRecipes = getSelectedDayRecipes();
 
   const renderRecipeCard = ({ item }: { item: Recipe }) => (
-    <View style={styles.recipeCardContainer}>
+    <TouchableOpacity
+      key={item._id}
+      style={styles.recipeCardContainer}
+      onPress={() => navigateToRecipeDetail(item.slug)}>
       <RecipeCard
         recipe={item}
         onPress={() => navigateToRecipeDetail(item.slug)}
-        onFavoriteToggle={toggleFavorite}
+        onFavoriteToggle={() => toggleFavorite(item)}
       />
-    </View>
+    </TouchableOpacity>
   );
-
-  // Show loading state (only show if expanding and no plan exists)
-  if (loading && !suggestedPlan && isExpanded) {
-    return (
-      <View style={styles.container}>
-        <TouchableOpacity
-          style={styles.header}
-          onPress={toggleExpanded}
-          activeOpacity={0.8}>
-          <Text style={styles.headerTitle}>Suggested Meal Plan</Text>
-          <View style={styles.headerRight}>
-            <ActivityIndicator size="small" color={colors.primary} />
-            <Icon name="chevron-up" size={20} color={colors.text.primary} />
-          </View>
-        </TouchableOpacity>
-        <View
-          style={[
-            styles.content,
-            { alignItems: 'center', padding: spacing.xl },
-          ]}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.guideText, { marginTop: spacing.md }]}>
-            Loading suggested meal plan...
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
-  // Show empty state if failed to load when expanded
-  if (isExpanded && !loading && !suggestedPlan) {
-    return (
-      <View style={styles.container}>
-        <TouchableOpacity
-          style={styles.header}
-          onPress={toggleExpanded}
-          activeOpacity={0.8}>
-          <Text style={styles.headerTitle}>Suggested Meal Plan</Text>
-          <View style={styles.headerRight}>
-            <TouchableOpacity onPress={loadSuggestedMealPlan}>
-              <Text style={styles.retryText}>Retry</Text>
-            </TouchableOpacity>
-            <Icon name="chevron-up" size={20} color={colors.text.primary} />
-          </View>
-        </TouchableOpacity>
-        <View
-          style={[
-            styles.content,
-            { alignItems: 'center', padding: spacing.xl },
-          ]}>
-          <Text style={styles.noRecipesText}>
-            Failed to load suggested meal plan
-          </Text>
-          <TouchableOpacity
-            onPress={loadSuggestedMealPlan}
-            style={{ marginTop: spacing.md }}>
-            <Text style={[styles.retryText, { fontSize: 16 }]}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
       {/* Header */}
-      <TouchableOpacity
-        style={styles.header}
-        onPress={toggleExpanded}
-        activeOpacity={0.8}>
+      <TouchableOpacity style={styles.header} onPress={toggleExpanded}>
         <Text style={styles.headerTitle}>Suggested Meal Plan</Text>
         <View style={styles.headerRight}>
           <Text style={styles.guideText}>
@@ -201,8 +187,16 @@ export const SuggestedMealPlanSection: React.FC<
         </View>
       </TouchableOpacity>
 
-      {/* Content - only show if we have data or if loading */}
-      {isExpanded && suggestedPlan && (
+      {/* Loading state when expanding */}
+      {isExpanded && loading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading suggested meal plan...</Text>
+        </View>
+      )}
+
+      {/* Content - only show if we have data */}
+      {isExpanded && suggestedPlan && !loading && (
         <View style={styles.content}>
           {/* Plan Info and Save Button */}
           <View style={styles.planInfoSection}>
@@ -279,6 +273,18 @@ export const SuggestedMealPlanSection: React.FC<
           </View>
         </View>
       )}
+
+      {/* Error state when expanded but no data and not loading */}
+      {isExpanded && !suggestedPlan && !loading && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>
+            Unable to load suggested meal plan
+          </Text>
+          <TouchableOpacity onPress={loadSuggestedMealPlan}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
@@ -308,6 +314,25 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginRight: spacing.xs,
     fontStyle: 'italic',
+  },
+  loadingContainer: {
+    padding: spacing.lg,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  loadingText: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  errorText: {
+    ...typography.bodyRegular,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
   },
   retryText: {
     ...typography.bodySmall,

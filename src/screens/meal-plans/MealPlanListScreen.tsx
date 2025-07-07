@@ -62,9 +62,7 @@ const MealPlanListScreen: React.FC = () => {
 
   useEffect(() => {
     // Initial load
-    if (plans.length === 0) {
-      fetchPlans({}, true);
-    }
+    fetchPlans({}, true);
   }, []);
 
   const handleSearch = useCallback(() => {

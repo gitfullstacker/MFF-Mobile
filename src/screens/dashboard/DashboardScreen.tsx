@@ -28,7 +28,7 @@ import {
   shadows,
 } from '../../theme';
 import { Recipe, RecipeFilters } from '../../types/recipe';
-import { Plan, PlanSchedule } from '../../types/plan';
+import { PlanSchedule } from '../../types/plan';
 import { RECIPE_CATEGORIES, SCREEN_NAMES } from '@/constants';
 import { useActivePlan } from '../../hooks/useActivePlan';
 import { SwipeIndicator } from '@/components/ui/SwipeIndicator';
@@ -196,30 +196,6 @@ const DashboardScreen: React.FC = () => {
       </TouchableOpacity>
     </View>
   );
-
-  const handleSaveSuggestedPlan = async (plan: Plan) => {
-    try {
-      // Here you would call your API to save the suggested plan
-      // For now, we'll just show an alert
-      Alert.alert(
-        'Plan Saved',
-        `"${plan.name}" has been saved to your meal plans.`,
-        [
-          {
-            text: 'View Plans',
-            onPress: () => navigateToMainTab(SCREEN_NAMES.MAIN_TAB.MEAL_PLANS),
-          },
-          {
-            text: 'OK',
-            style: 'default',
-          },
-        ],
-      );
-    } catch (error) {
-      console.error('Error saving suggested plan:', error);
-      Alert.alert('Error', 'Failed to save meal plan. Please try again.');
-    }
-  };
 
   const navigateToCategory = (categorySlug: string) => {
     const categoryFilters: RecipeFilters = {
@@ -393,7 +369,7 @@ const DashboardScreen: React.FC = () => {
         )}
 
         {/* Suggested Meal Plan Section */}
-        <SuggestedMealPlanSection onSavePlan={handleSaveSuggestedPlan} />
+        <SuggestedMealPlanSection />
 
         {/* Quick Actions */}
         <Section title="Quick Actions">

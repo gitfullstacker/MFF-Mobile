@@ -70,9 +70,7 @@ const RecipeListScreen: React.FC = () => {
 
   useEffect(() => {
     // Initial load
-    if (recipes.length === 0) {
-      fetchRecipes();
-    }
+    fetchRecipes();
   }, []);
 
   const handleSearch = useCallback(() => {
