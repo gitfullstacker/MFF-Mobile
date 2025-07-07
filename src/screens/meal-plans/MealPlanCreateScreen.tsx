@@ -230,6 +230,7 @@ const MealPlanCreateScreen: React.FC = () => {
             showSelectionIcon
             selectedDayLabel={getSelectedDayLabel()}
             onRecipeSelect={handleRecipeSelect}
+            scrollEnabled={false}
           />
         </Section>
       </ScrollView>

@@ -416,6 +416,7 @@ const MealPlanDetailScreen: React.FC = () => {
             selectedDayLabel={getSelectedDayLabel()}
             onRecipeSelect={() => {}} // Read-only view, no recipe selection
             emptyStateText={`No recipes scheduled for ${getSelectedDayLabel()}.`}
+            scrollEnabled={false}
           />
         </Section>
       </ScrollView>
