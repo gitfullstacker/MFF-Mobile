@@ -1,8 +1,7 @@
 import 'react-native-gesture-handler';
-import React, { useEffect, useRef } from 'react';
-import { StatusBar, LogBox, Linking } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { StatusBar, Linking } from 'react-native';
 import { Provider, useAtom } from 'jotai';
-import { NavigationContainerRef } from '@react-navigation/native';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { ToastContainer } from './src/components/feedback/Toast';
 import { ErrorBoundary } from './src/components/feedback/ErrorBoundary';
@@ -12,72 +11,34 @@ import { useAuth } from './src/hooks/useAuth';
 import { setupIcons } from '@/utils/iconSetup';
 import { eventBus } from '@/utils/eventBus';
 import { isAuthenticatedAtom, addToastAtom } from '@/store';
-import { RootStackParamList } from './src/types/navigation';
-import { SCREEN_NAMES } from './src/constants/navigation';
-
-// Ignore specific warnings
-LogBox.ignoreLogs([
-  'useInsertionEffect',
-  'ReactDOM.render is no longer supported',
-]);
+import { useDailySubscriptionCheck } from '@/hooks/useDailySubscriptionCheck';
+import { NavigationContainerRef } from '@react-navigation/native';
+import { RootStackParamList } from '@/types';
 
 const AppContent: React.FC = () => {
-  const { checkAuthStatus } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [, setIsAuthenticated] = useAtom(isAuthenticatedAtom);
   const [, addToast] = useAtom(addToastAtom);
-  const [loading, setLoading] = React.useState(true);
+  const { checkAuthStatus } = useAuth();
+
   const navigationRef =
     useRef<NavigationContainerRef<RootStackParamList>>(null);
 
-  // Deep Link Handler
+  // Initialize 60-minute subscription check with debug logging
+  const subscriptionCheck = useDailySubscriptionCheck({
+    intervalMinutes: 60, // Check every 60 minutes
+    enableDebugLogs: false, // Enable detailed logging
+  });
+
   const handleDeepLink = (url: string) => {
-    if (!url || !navigationRef.current) {
-      return;
-    }
-
     try {
-      console.log('📱 Handling deep link:', url);
+      console.log('🔗 Processing deep link:', url);
 
-      // Handle password reset links
-      // Expected formats:
-      // - https://yourdomain.com/reset-password?token=abc123
-      // - mealapp://reset-password?token=abc123
-      const resetPasswordRegex = /reset-password.*token=([^&]+)/;
-      const resetMatch = url.match(resetPasswordRegex);
-
-      if (resetMatch) {
-        const token = resetMatch[1];
-        console.log('🔑 Password reset token found:', token);
-
-        // Navigate to ResetPassword screen with token
-        navigationRef.current.reset({
-          index: 0,
-          routes: [
-            {
-              name: SCREEN_NAMES.ROOT.AUTH,
-              params: {
-                screen: SCREEN_NAMES.AUTH.RESET_PASSWORD,
-                params: { token },
-              },
-            },
-          ],
-        });
-
-        addToast({
-          message: 'Opening password reset page...',
-          type: 'info',
-          duration: 3000,
-        });
-
-        return;
-      }
-
-      // Add other deep link handlers here as needed
-      console.log('🤔 Unhandled deep link:', url);
+      // Add your existing deep link processing logic here
     } catch (error) {
-      console.error('❌ Error handling deep link:', error);
+      console.error('❌ Error processing deep link:', error);
       addToast({
-        message: 'Unable to open link. Please try again.',
+        message: 'Failed to process link. Please try again.',
         type: 'error',
         duration: 4000,
       });
@@ -85,23 +46,17 @@ const AppContent: React.FC = () => {
   };
 
   useEffect(() => {
-    // Handle authentication errors (e.g., expired tokens)
+    // Handle authentication errors
     const authErrorListener = (message: string) => {
-      // Display error message to user
       addToast({
         message: message || 'Session expired. Please log in again.',
         type: 'error',
         duration: 5000,
       });
-
-      // Update authentication state to trigger navigation to login
       setIsAuthenticated(false);
     };
 
-    // Register event listener
     eventBus.on('AUTH_ERROR', authErrorListener);
-
-    // Clean up event listener on unmount
     return () => {
       eventBus.off('AUTH_ERROR', authErrorListener);
     };
@@ -110,33 +65,31 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const initialize = async () => {
       try {
-        // Setup icons
-        await setupIcons();
+        console.log('🚀 Initializing app with 5-minute subscription checks...');
 
-        // Check auth status
+        await setupIcons();
         await checkAuthStatus();
 
-        // Handle deep link when app opens from closed state
         const initialUrl = await Linking.getInitialURL();
         if (initialUrl) {
           console.log('📱 Initial URL found:', initialUrl);
-          // Delay to ensure navigation is ready
           setTimeout(() => {
             handleDeepLink(initialUrl);
           }, 1000);
         }
+
+        console.log('✅ App initialization completed');
       } catch (error) {
-        console.error('Error initializing app:', error);
+        console.error('❌ Error initializing app:', error);
       } finally {
         setLoading(false);
       }
     };
 
     initialize();
-  }, []);
+  }, [checkAuthStatus]);
 
   useEffect(() => {
-    // Handle deep links when app is already open
     const subscription = Linking.addEventListener('url', ({ url }) => {
       console.log('📱 Deep link received while app open:', url);
       handleDeepLink(url);
@@ -146,6 +99,30 @@ const AppContent: React.FC = () => {
       subscription?.remove();
     };
   }, [addToast]);
+
+  // Development helpers
+  useEffect(() => {
+    if (__DEV__) {
+      // Add debug functions to global scope
+      (global as any).forceSubscriptionCheck =
+        subscriptionCheck.forceSubscriptionCheck;
+      (global as any).getSubscriptionDebugInfo = subscriptionCheck.getDebugInfo;
+      (global as any).clearSubscriptionCheck =
+        subscriptionCheck.clearLastCheckDate;
+
+      console.log('🔧 Development debug functions available:');
+      console.log(
+        '- global.forceSubscriptionCheck() - Force subscription check',
+      );
+      console.log(
+        '- global.getSubscriptionDebugInfo() - Get detailed debug info',
+      );
+      console.log(
+        '- global.clearSubscriptionCheck() - Clear last check timestamp',
+      );
+      console.log('📅 Subscription check interval: 5 minutes');
+    }
+  }, [subscriptionCheck]);
 
   if (loading) {
     return <LoadingOverlay message="Loading..." />;

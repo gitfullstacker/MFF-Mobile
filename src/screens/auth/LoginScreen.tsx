@@ -96,7 +96,7 @@ const LoginScreen: React.FC = () => {
   };
 
   const handleSignUpPress = async () => {
-    const url = 'https://macrofriendlyfood.com/mff-app-recipes/';
+    const url = 'https://macrofriendlyfood.com/contact/';
 
     try {
       const supported = await Linking.canOpenURL(url);

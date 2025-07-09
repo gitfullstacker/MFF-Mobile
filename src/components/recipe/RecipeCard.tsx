@@ -7,6 +7,8 @@ import {
   StyleSheet,
   Dimensions,
   ActivityIndicator,
+  Linking,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
@@ -116,6 +118,31 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
       if (onAddClick) {
         onAddClick(recipe);
       }
+    }
+  };
+
+  const handleUpgradePress = async () => {
+    const contactUrl = 'https://macrofriendlyfood.com/contact/';
+
+    try {
+      const supported = await Linking.canOpenURL(contactUrl);
+
+      if (supported) {
+        await Linking.openURL(contactUrl);
+      } else {
+        Alert.alert(
+          'Unable to open link',
+          'Cannot open the contact page. Please visit macrofriendlyfood.com/contact/ in your browser.',
+          [{ text: 'OK' }],
+        );
+      }
+    } catch (error) {
+      console.error('Error opening contact URL:', error);
+      Alert.alert(
+        'Error',
+        'Unable to open the contact page. Please try again.',
+        [{ text: 'OK' }],
+      );
     }
   };
 
@@ -230,8 +257,10 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
             <Text style={styles.lockedText}>
               <Text style={styles.lockedTextBold}>Upgrade</Text> to access
             </Text>
-            <TouchableOpacity style={styles.upgradeButton}>
-              <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
+            <TouchableOpacity
+              style={styles.upgradeButton}
+              onPress={handleUpgradePress}>
+              <Text style={styles.upgradeButtonText}>Contact Us</Text>
             </TouchableOpacity>
           </View>
         )}
