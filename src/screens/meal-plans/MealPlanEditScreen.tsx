@@ -1,6 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, ScrollView, Alert, View } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  RouteProp,
+  useFocusEffect,
+} from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Header } from '../../components/navigation/Header';
@@ -67,6 +72,19 @@ const MealPlanEditScreen: React.FC = () => {
   const [recipeMap, setRecipeMap] = useState<Record<string, Recipe>>({});
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
 
+  // Track changes for unsaved changes dialog
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [initialPlanName, setInitialPlanName] = useState('');
+  const [initialSchedule, setInitialSchedule] = useState<PlanSchedule>({
+    su: [],
+    mo: [],
+    tu: [],
+    we: [],
+    th: [],
+    fr: [],
+    sa: [],
+  });
+
   // Fetch plan data when component mounts or planId changes
   useEffect(() => {
     const loadPlan = async () => {
@@ -93,6 +111,7 @@ const MealPlanEditScreen: React.FC = () => {
     if (currentPlan) {
       // Set initial state from plan
       setPlanName(currentPlan.name);
+      setInitialPlanName(currentPlan.name);
 
       // Restructure schedule to clean format
       const cleanSchedule: PlanSchedule = {
@@ -134,9 +153,55 @@ const MealPlanEditScreen: React.FC = () => {
       });
 
       setSchedule(cleanSchedule);
+      setInitialSchedule(cleanSchedule);
       setRecipeMap(recipes);
     }
   }, [currentPlan]);
+
+  // Track changes to detect unsaved changes
+  useEffect(() => {
+    if (!currentPlan) return;
+
+    const scheduleChanged =
+      JSON.stringify(schedule) !== JSON.stringify(initialSchedule);
+    const nameChanged = planName !== initialPlanName;
+    setHasUnsavedChanges(scheduleChanged || nameChanged);
+  }, [planName, schedule, initialPlanName, initialSchedule, currentPlan]);
+
+  // Handle back button and navigation prevention
+  useFocusEffect(
+    useCallback(() => {
+      const unsubscribe = navigation.addListener('beforeRemove', e => {
+        if (!hasUnsavedChanges || loading) {
+          return;
+        }
+
+        e.preventDefault();
+
+        Alert.alert(
+          'Unsaved Changes',
+          'You have unsaved changes. Do you want to save before leaving?',
+          [
+            {
+              text: 'Discard',
+              style: 'destructive',
+              onPress: () => navigation.dispatch(e.data.action),
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: 'Save',
+              onPress: () => handleSaveAndExit(),
+            },
+          ],
+        );
+      });
+
+      return unsubscribe;
+    }, [navigation, hasUnsavedChanges, loading]),
+  );
 
   // Function to open recipe picker
   const handleAddRecipe = () => {
@@ -211,6 +276,9 @@ const MealPlanEditScreen: React.FC = () => {
 
       await updatePlan(planId, planData);
 
+      // Clear unsaved changes flag
+      setHasUnsavedChanges(false);
+
       // Navigate back to meal plan details
       navigation.goBack();
     } catch (error) {
@@ -219,6 +287,11 @@ const MealPlanEditScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Function to save and exit (for unsaved changes dialog)
+  const handleSaveAndExit = async () => {
+    await handleSavePlan();
   };
 
   // Get recipe counts by day

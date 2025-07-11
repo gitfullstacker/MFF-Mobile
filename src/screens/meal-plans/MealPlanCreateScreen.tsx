@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { format } from 'date-fns';
 import { PageContainer } from '../../components/layout/PageContainer';
@@ -61,10 +61,68 @@ const MealPlanCreateScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [recipes, setRecipes] = useState<Record<string, Recipe>>({});
 
+  // Track changes for unsaved changes dialog
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [initialPlanName, setInitialPlanName] = useState('');
+  const [initialSchedule, setInitialSchedule] = useState<PlanSchedule>({
+    su: [],
+    mo: [],
+    tu: [],
+    we: [],
+    th: [],
+    fr: [],
+    sa: [],
+  });
+
   useEffect(() => {
     // Set default plan name
-    setPlanName(`Meal Plan - ${format(new Date(), 'MMMM d')}`);
+    const defaultName = `Meal Plan - ${format(new Date(), 'MMMM d')}`;
+    setPlanName(defaultName);
+    setInitialPlanName(defaultName);
   }, []);
+
+  // Track changes to detect unsaved changes
+  useEffect(() => {
+    const scheduleChanged =
+      JSON.stringify(schedule) !== JSON.stringify(initialSchedule);
+    const nameChanged = planName !== initialPlanName;
+    setHasUnsavedChanges(scheduleChanged || nameChanged);
+  }, [planName, schedule, initialPlanName, initialSchedule]);
+
+  // Handle back button and navigation prevention
+  useFocusEffect(
+    useCallback(() => {
+      const unsubscribe = navigation.addListener('beforeRemove', e => {
+        if (!hasUnsavedChanges || loading) {
+          return;
+        }
+
+        e.preventDefault();
+
+        Alert.alert(
+          'Unsaved Changes',
+          'You have unsaved changes. Do you want to save before leaving?',
+          [
+            {
+              text: 'Discard',
+              style: 'destructive',
+              onPress: () => navigation.dispatch(e.data.action),
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: 'Save',
+              onPress: () => handleSaveAndExit(),
+            },
+          ],
+        );
+      });
+
+      return unsubscribe;
+    }, [navigation, hasUnsavedChanges, loading]),
+  );
 
   const handleAddRecipe = () => {
     setShowRecipePicker(true);
@@ -161,6 +219,9 @@ const MealPlanCreateScreen: React.FC = () => {
 
       await createPlan(planData);
 
+      // Clear unsaved changes flag
+      setHasUnsavedChanges(false);
+
       // Navigate back to meal plans list
       navigation.goBack();
     } catch (error) {
@@ -169,6 +230,11 @@ const MealPlanCreateScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Function to save and exit (for unsaved changes dialog)
+  const handleSaveAndExit = async () => {
+    await handleSavePlan();
   };
 
   // Get recipe counts by day
