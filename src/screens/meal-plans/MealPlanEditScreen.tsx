@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, Alert } from 'react-native';
+import { StyleSheet, ScrollView, Alert, View } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Header } from '../../components/navigation/Header';
 import { Section } from '../../components/layout/Section';
 import { Input } from '../../components/forms/Input';
+import { Button } from '../../components/forms/Button';
 import { RecipePickerModal } from '../../components/modals/RecipePickerModal';
 import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
 import { DaySelector, DayOption } from '../../components/meal-plan/DaySelector';
@@ -21,6 +22,7 @@ import {
 } from '../../types/plan';
 import { MealPlanStackParamList } from '@/types';
 import { useFavorites } from '@/hooks/useFavorites';
+import { spacing } from '../../theme';
 
 type EditMealPlanNavigationProp = StackNavigationProp<
   MealPlanStackParamList,
@@ -256,14 +258,7 @@ const MealPlanEditScreen: React.FC = () => {
 
   return (
     <PageContainer safeArea={false}>
-      <Header
-        title="Edit Meal Plan"
-        showBack={true}
-        rightAction={{
-          icon: 'check',
-          onPress: handleSavePlan,
-        }}
-      />
+      <Header title="Edit Meal Plan" showBack={true} />
 
       <ScrollView
         style={styles.container}
@@ -314,6 +309,16 @@ const MealPlanEditScreen: React.FC = () => {
         selectedRecipes={getCurrentDayRecipes()}
       />
 
+      {/* Save Button */}
+      <View style={styles.saveContainer}>
+        <Button
+          title="Save Changes"
+          onPress={handleSavePlan}
+          loading={loading}
+          disabled={loading}
+        />
+      </View>
+
       {loading && <LoadingOverlay message="Saving meal plan..." />}
     </PageContainer>
   );
@@ -322,6 +327,10 @@ const MealPlanEditScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  saveContainer: {
+    padding: spacing.md,
+    paddingBottom: spacing.xl,
   },
 });
 
