@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -75,7 +75,7 @@ export const SuggestedMealPlanSection: React.FC<
     setIsExpanded(newExpanded);
 
     // Only fetch when expanding and if we don't have suggested plan yet
-    if (newExpanded && !suggestedPlan) {
+    if (newExpanded) {
       await loadSuggestedMealPlan();
     }
   };
