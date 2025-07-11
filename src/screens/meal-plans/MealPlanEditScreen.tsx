@@ -13,6 +13,7 @@ import { Section } from '../../components/layout/Section';
 import { Input } from '../../components/forms/Input';
 import { Button } from '../../components/forms/Button';
 import { RecipePickerModal } from '../../components/modals/RecipePickerModal';
+import { DuplicateRecipeModal } from '../../components/modals/DuplicateRecipeModal';
 import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
 import { DaySelector, DayOption } from '../../components/meal-plan/DaySelector';
 import { RecipeListDisplay } from '../../components/meal-plan/RecipeListDisplay';
@@ -71,6 +72,13 @@ const MealPlanEditScreen: React.FC = () => {
   const [planLoading, setPlanLoading] = useState(false);
   const [recipeMap, setRecipeMap] = useState<Record<string, Recipe>>({});
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
+
+  // Duplicate recipe dialog state
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateRecipeInfo, setDuplicateRecipeInfo] = useState<{
+    recipe: Recipe;
+    existingDays: string[];
+  } | null>(null);
 
   // Track changes for unsaved changes dialog
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -210,6 +218,35 @@ const MealPlanEditScreen: React.FC = () => {
 
   // Function to handle recipe selection from the picker
   const handleRecipeSelect = (recipe: Recipe) => {
+    // Check if recipe exists in other days
+    const existingDays: string[] = [];
+
+    Object.keys(schedule).forEach(dayKey => {
+      if (dayKey !== selectedDay) {
+        const daySchedule = schedule[dayKey as keyof PlanSchedule];
+        const hasRecipe = daySchedule.some(item => item.recipe === recipe._id);
+        if (hasRecipe) {
+          const dayLabel =
+            DAYS.find(day => day.key === dayKey)?.label || dayKey;
+          existingDays.push(dayLabel);
+        }
+      }
+    });
+
+    // If recipe exists in other days, show duplicate dialog
+    if (existingDays.length > 0) {
+      setShowRecipePicker(false); // Hide recipe picker modal
+      setDuplicateRecipeInfo({ recipe, existingDays });
+      setShowDuplicateDialog(true);
+      return;
+    }
+
+    // If no duplicates, add normally
+    addRecipeToSchedule(recipe, false);
+  };
+
+  // Function to add recipe to schedule
+  const addRecipeToSchedule = (recipe: Recipe, onlyRecipe: boolean) => {
     // Store the recipe object for display purposes
     const updatedRecipeMap = {
       ...recipeMap,
@@ -219,7 +256,7 @@ const MealPlanEditScreen: React.FC = () => {
 
     const newScheduledRecipe: ScheduledRecipe = {
       recipe: recipe._id,
-      only_recipe: false,
+      only_recipe: onlyRecipe,
     };
 
     // Update the schedule
@@ -241,6 +278,23 @@ const MealPlanEditScreen: React.FC = () => {
 
     updatedSchedule[selectedDay as keyof PlanSchedule] = daySchedule;
     setSchedule(updatedSchedule);
+  };
+
+  // Handle duplicate recipe dialog actions
+  const handleDuplicateRecipeAction = (
+    action: 'cancel' | 'with-ingredients' | 'only-recipe',
+  ) => {
+    if (!duplicateRecipeInfo) return;
+
+    if (action === 'cancel') {
+      setDuplicateRecipeInfo(null);
+      setShowRecipePicker(true); // Show recipe picker again
+      return;
+    }
+
+    const onlyRecipe = action === 'only-recipe';
+    addRecipeToSchedule(duplicateRecipeInfo.recipe, onlyRecipe);
+    setDuplicateRecipeInfo(null);
   };
 
   // Function to save the updated meal plan
@@ -376,10 +430,19 @@ const MealPlanEditScreen: React.FC = () => {
       </ScrollView>
 
       <RecipePickerModal
-        visible={showRecipePicker}
+        visible={showRecipePicker && !showDuplicateDialog}
         onClose={() => setShowRecipePicker(false)}
         onSelect={handleRecipeSelect}
         selectedRecipes={getCurrentDayRecipes()}
+      />
+
+      {/* Duplicate Recipe Dialog */}
+      <DuplicateRecipeModal
+        visible={showDuplicateDialog}
+        onClose={() => setShowDuplicateDialog(false)}
+        recipe={duplicateRecipeInfo?.recipe || null}
+        existingDays={duplicateRecipeInfo?.existingDays || []}
+        onAction={handleDuplicateRecipeAction}
       />
 
       {/* Save Button */}
