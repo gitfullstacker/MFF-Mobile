@@ -419,7 +419,6 @@ const MealPlanDetailScreen: React.FC = () => {
             onRecipeSelect={() => {}}
             onRecipeFavorite={toggleFavorite}
             emptyStateText={`No recipes scheduled for ${getSelectedDayLabel()}.`}
-            scrollEnabled={false}
           />
         </Section>
       </ScrollView>

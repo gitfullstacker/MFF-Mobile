@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, Dimensions } from 'react-native';
 import { RecipeCard } from '../recipe/RecipeCard';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { Recipe } from '../../types/recipe';
+import { useNavigationHelpers } from '@/hooks/useNavigation';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -13,7 +14,6 @@ interface RecipeListDisplayProps {
   onRecipeSelect: (recipe: Recipe) => void;
   onRecipeFavorite: (recipe: Recipe) => void;
   emptyStateText?: string;
-  scrollEnabled?: boolean; // Add this prop to control scroll behavior
 }
 
 export const RecipeListDisplay: React.FC<RecipeListDisplayProps> = ({
@@ -23,7 +23,6 @@ export const RecipeListDisplay: React.FC<RecipeListDisplayProps> = ({
   onRecipeSelect,
   onRecipeFavorite,
   emptyStateText,
-  scrollEnabled = true, // Default to true for backward compatibility
 }) => {
   // Determine number of columns based on screen width and orientation
   // Show 1 column on phones, 2 columns on tablets portrait, 3 columns on tablets landscape
@@ -37,6 +36,7 @@ export const RecipeListDisplay: React.FC<RecipeListDisplayProps> = ({
     }
   };
 
+  const { navigateToRecipeDetail } = useNavigationHelpers();
   const [numColumns, setNumColumns] = useState(getNumColumns());
 
   useEffect(() => {
@@ -79,88 +79,52 @@ export const RecipeListDisplay: React.FC<RecipeListDisplayProps> = ({
           showSelectionIcon={showSelectionIcon}
           isAdded
           onRemoveClick={onRecipeSelect}
-          onPress={() => {}}
+          onPress={() => navigateToRecipeDetail(recipe.slug)}
           onFavoriteToggle={onRecipeFavorite}
         />
       </View>
     );
   };
 
-  // If scrollEnabled is false (inside ScrollView), render directly without FlatList
-  if (!scrollEnabled) {
-    const isMultiColumn = numColumns > 1;
+  const isMultiColumn = numColumns > 1;
 
-    if (isMultiColumn) {
-      // For multi-column layout, group recipes into rows
-      const rows = [];
-      for (let i = 0; i < recipes.length; i += numColumns) {
-        rows.push(recipes.slice(i, i + numColumns));
-      }
-
-      return (
-        <View style={styles.directRenderContainer}>
-          {rows.map((row, rowIndex) => (
-            <View key={rowIndex} style={styles.row}>
-              {row.map((recipe, index) => renderRecipeItem(recipe, index))}
-              {/* Fill empty columns in the last row */}
-              {row.length < numColumns &&
-                Array.from({ length: numColumns - row.length }).map(
-                  (_, emptyIndex) => (
-                    <View
-                      key={`empty-${emptyIndex}`}
-                      style={[
-                        styles.recipeCardContainer,
-                        styles.recipeCardMultiColumn,
-                      ]}
-                    />
-                  ),
-                )}
-            </View>
-          ))}
-        </View>
-      );
-    } else {
-      // For single column layout, render directly
-      return (
-        <View style={styles.directRenderContainer}>
-          {recipes.map((recipe, index) => renderRecipeItem(recipe, index))}
-        </View>
-      );
+  if (isMultiColumn) {
+    // For multi-column layout, group recipes into rows
+    const rows = [];
+    for (let i = 0; i < recipes.length; i += numColumns) {
+      rows.push(recipes.slice(i, i + numColumns));
     }
-  }
-
-  // If scrollEnabled is true (standalone), use FlatList
-  const renderRecipe = ({ item }: { item: Recipe }) => {
-    const isMultiColumn = numColumns > 1;
-    const cardStyle = isMultiColumn
-      ? [styles.recipeCardContainer, styles.recipeCardMultiColumn]
-      : styles.recipeCardContainer;
 
     return (
-      <View style={cardStyle}>
-        <RecipeCard
-          recipe={item}
-          showSelectionIcon={showSelectionIcon}
-          isAdded
-          onRemoveClick={onRecipeSelect}
-          onPress={() => {}}
-        />
+      <View style={styles.directRenderContainer}>
+        {rows.map((row, rowIndex) => (
+          <View key={rowIndex} style={styles.row}>
+            {row.map((recipe, index) => renderRecipeItem(recipe, index))}
+            {/* Fill empty columns in the last row */}
+            {row.length < numColumns &&
+              Array.from({ length: numColumns - row.length }).map(
+                (_, emptyIndex) => (
+                  <View
+                    key={`empty-${emptyIndex}`}
+                    style={[
+                      styles.recipeCardContainer,
+                      styles.recipeCardMultiColumn,
+                    ]}
+                  />
+                ),
+              )}
+          </View>
+        ))}
       </View>
     );
-  };
-
-  return (
-    <FlatList
-      data={recipes}
-      renderItem={renderRecipe}
-      keyExtractor={item => item._id}
-      numColumns={numColumns}
-      key={numColumns} // Force re-render when columns change
-      contentContainerStyle={styles.listContainer}
-      showsVerticalScrollIndicator={false}
-      nestedScrollEnabled={true}
-    />
-  );
+  } else {
+    // For single column layout, render directly
+    return (
+      <View style={styles.directRenderContainer}>
+        {recipes.map((recipe, index) => renderRecipeItem(recipe, index))}
+      </View>
+    );
+  }
 };
 
 const styles = StyleSheet.create({

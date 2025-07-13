@@ -424,7 +424,6 @@ const MealPlanEditScreen: React.FC = () => {
             selectedDayLabel={getSelectedDayLabel()}
             onRecipeSelect={handleRecipeSelect}
             onRecipeFavorite={toggleFavorite}
-            scrollEnabled={false}
           />
         </Section>
       </ScrollView>

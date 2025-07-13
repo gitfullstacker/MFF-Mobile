@@ -214,7 +214,7 @@ const AboutScreen: React.FC = () => {
         {/* Company Info */}
         <Section title="Company">
           <View style={styles.companyInfo}>
-            <Text style={styles.companyName}>Macro Friendly Food Inc.</Text>
+            <Text style={styles.companyName}>J&E Financial, LLC</Text>
             <Text style={styles.companyDescription}>
               We're passionate about making healthy eating simple and
               accessible. Our mission is to help you achieve your nutrition
@@ -252,7 +252,7 @@ const AboutScreen: React.FC = () => {
         <View style={styles.footer}>
           <Text style={styles.footerText}>Made with ❤️ for healthy living</Text>
           <Text style={styles.copyrightText}>
-            © 2025 Macro Friendly Food Inc. All rights reserved.
+            © 2025 J&E Financial, LLC. All rights reserved.
           </Text>
         </View>
       </ScrollView>
