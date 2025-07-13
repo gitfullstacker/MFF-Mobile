@@ -62,7 +62,7 @@ const PrivacyScreen: React.FC = () => {
         {/* Introduction */}
         <Section title="Introduction">
           {renderSectionContent([
-            'At Macro Friendly Food, we respect your privacy and are committed to protecting your personal data. This privacy policy explains how we collect, use, store, and protect your information when you use our mobile application.',
+            'At J&E Financial, LLC DBA Macro Friendly Food, we respect your privacy and are committed to protecting your personal data. This privacy policy explains how we collect, use, store, and protect your information when you use our mobile application.',
             'By using our app, you agree to the collection and use of information in accordance with this policy.',
           ])}
         </Section>
@@ -70,58 +70,61 @@ const PrivacyScreen: React.FC = () => {
         {/* Information We Collect */}
         <Section title="Information We Collect">
           <Text style={styles.subheading}>Personal Information</Text>
-          {renderListContent([
-            'Account information (name, email address, profile picture)',
-            'Dietary preferences and restrictions',
-            'Health and nutrition goals',
-            'User-generated content (reviews, comments, meal plans)',
-          ])}
-
-          <Text style={styles.subheading}>Usage Data</Text>
-          {renderListContent([
-            'App usage statistics and analytics',
-            'Device information (type, operating system, unique identifiers)',
-            'Log data (IP address, browser type, access times)',
-            'Crash reports and performance data',
-          ])}
-
-          <Text style={styles.subheading}>Location Data</Text>
           {renderSectionContent([
-            'We may collect location data to provide location-based features such as finding nearby grocery stores or restaurants. This data is only collected with your explicit consent and can be disabled in your device settings.',
+            'We may collect the following types of personal information when you use our app:',
+          ])}
+
+          {renderListContent([
+            'Account information (name, email address, password)',
+            'Profile information (age, gender, dietary preferences, fitness goals)',
+            'Health and nutrition data (weight, height, activity level, macro targets)',
+            'Usage data (recipes viewed, meal plans created, app interactions)',
+            'Device information (device type, operating system, unique identifiers)',
+          ])}
+
+          <Text style={styles.subheading}>Health Information</Text>
+          {renderSectionContent([
+            'We collect health-related information you voluntarily provide, including nutritional preferences, dietary restrictions, fitness goals, and macro targets. This information helps us personalize your experience and provide relevant recommendations.',
           ])}
         </Section>
 
         {/* How We Use Your Information */}
         <Section title="How We Use Your Information">
+          {renderSectionContent([
+            'We use the collected information for the following purposes:',
+          ])}
+
           {renderListContent([
             'Provide and maintain our app services',
-            'Personalize your nutrition recommendations',
+            'Personalize your nutrition tracking and meal planning experience',
+            'Generate customized meal plans and recipe recommendations',
+            'Track your progress toward health and fitness goals',
             'Send you important updates and notifications',
             'Improve our app functionality and user experience',
-            'Provide customer support and respond to inquiries',
-            'Comply with legal obligations and protect our rights',
+            'Provide customer support and respond to your inquiries',
+            'Ensure app security and prevent fraud',
           ])}
         </Section>
 
         {/* Information Sharing */}
-        <Section title="Information Sharing">
+        <Section title="Information Sharing and Disclosure">
           {renderSectionContent([
-            'We do not sell, trade, or rent your personal information to third parties. We may share your information in the following limited circumstances:',
+            'We do not sell, trade, or rent your personal information to third parties. We may share your information only in the following circumstances:',
           ])}
 
           {renderListContent([
             'With your explicit consent',
             'To comply with legal obligations or court orders',
-            'To protect our rights, property, or safety',
-            'With trusted service providers who assist in app operations (under strict confidentiality agreements)',
-            'In connection with a business transfer or acquisition',
+            'To protect our rights, property, or safety, or that of our users',
+            'With service providers who assist in app operations (under strict confidentiality agreements)',
+            'In connection with a business transfer (merger, acquisition, or sale)',
           ])}
         </Section>
 
         {/* Data Security */}
         <Section title="Data Security">
           {renderSectionContent([
-            'We implement appropriate technical and organizational security measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction.',
+            'We implement appropriate technical and organizational security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.',
             'Your data is encrypted in transit and at rest using industry-standard encryption protocols. However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.',
           ])}
         </Section>
@@ -148,7 +151,7 @@ const PrivacyScreen: React.FC = () => {
         </Section>
 
         {/* Children's Privacy */}
-        <Section title="Children's Privacy">
+        <Section title="Children\'s Privacy">
           {renderSectionContent([
             'Our app is not intended for children under 13 years of age. We do not knowingly collect personal data from children under 13. If you become aware that a child has provided us with personal data, please contact us immediately.',
           ])}
@@ -199,7 +202,7 @@ const PrivacyScreen: React.FC = () => {
           </TouchableOpacity>
 
           {renderSectionContent([
-            'Macro Friendly Food Inc.\n123 Health Street\nSan Francisco, CA 94107\nUnited States',
+            'J&E Financial, LLC DBA Macro Friendly Food\n189 N Hwy 89 Ste C PMB 1047\nNorth Salt Lake, UT 84054\nUnited States\nPhone: 801-200-3409',
           ])}
         </Section>
 

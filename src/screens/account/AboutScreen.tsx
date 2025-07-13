@@ -96,8 +96,11 @@ const AboutScreen: React.FC = () => {
     <PageContainer safeArea={false}>
       <Header title="About" showBack={true} />
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* App Info */}
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: spacing.xl }}>
+        {/* App Header */}
         <View style={styles.appHeader}>
           <Image
             source={require('../../../assets/images/logo.png')}
@@ -107,20 +110,13 @@ const AboutScreen: React.FC = () => {
           <Text style={styles.appName}>Macro Friendly Food</Text>
           <Text style={styles.appVersion}>Version 1.0.0</Text>
           <Text style={styles.appDescription}>
-            Your ultimate companion for macro-friendly nutrition tracking and
-            meal planning
+            Your comprehensive nutrition tracking and meal planning companion.
+            Achieve your health goals with smart macro tracking and delicious
+            recipes.
           </Text>
         </View>
 
-        {/* App Information */}
-        <Section title="App Information">
-          {renderInfoCard('Build Version', '1.0.0 (Build 001)', 'code')}
-          {renderInfoCard('Release Date', 'January 2025', 'calendar')}
-          {renderInfoCard('Platform', 'iOS & Android', 'smartphone')}
-          {renderInfoCard('Size', '~50 MB', 'download')}
-        </Section>
-
-        {/* Features */}
+        {/* Key Features */}
         <Section title="Key Features">
           <View style={styles.featuresContainer}>
             <View style={styles.featureItem}>
@@ -150,10 +146,6 @@ const AboutScreen: React.FC = () => {
             <View style={styles.featureItem}>
               <Icon name="heart" size={20} color={colors.semantic.success} />
               <Text style={styles.featureText}>Favorite Recipes</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Icon name="download" size={20} color={colors.semantic.success} />
-              <Text style={styles.featureText}>Offline Recipe Access</Text>
             </View>
           </View>
         </Section>
@@ -214,7 +206,9 @@ const AboutScreen: React.FC = () => {
         {/* Company Info */}
         <Section title="Company">
           <View style={styles.companyInfo}>
-            <Text style={styles.companyName}>J&E Financial, LLC</Text>
+            <Text style={styles.companyName}>
+              J&E Financial, LLC DBA Macro Friendly Food
+            </Text>
             <Text style={styles.companyDescription}>
               We're passionate about making healthy eating simple and
               accessible. Our mission is to help you achieve your nutrition
@@ -230,7 +224,13 @@ const AboutScreen: React.FC = () => {
               </View>
               <View style={styles.contactItem}>
                 <Icon name="map-pin" size={16} color={colors.text.secondary} />
-                <Text style={styles.contactText}>San Francisco, CA</Text>
+                <Text style={styles.contactText}>
+                  189 N Hwy 89 Ste C PMB 1047, North Salt Lake, UT 84054
+                </Text>
+              </View>
+              <View style={styles.contactItem}>
+                <Icon name="phone" size={16} color={colors.text.secondary} />
+                <Text style={styles.contactText}>801-200-3409</Text>
               </View>
             </View>
           </View>
@@ -252,7 +252,8 @@ const AboutScreen: React.FC = () => {
         <View style={styles.footer}>
           <Text style={styles.footerText}>Made with ❤️ for healthy living</Text>
           <Text style={styles.copyrightText}>
-            © 2025 J&E Financial, LLC. All rights reserved.
+            © 2025 J&E Financial, LLC DBA Macro Friendly Food. All rights
+            reserved.
           </Text>
         </View>
       </ScrollView>
@@ -414,6 +415,7 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.text.secondary,
     marginLeft: spacing.sm,
+    flex: 1,
   },
 
   // Credits

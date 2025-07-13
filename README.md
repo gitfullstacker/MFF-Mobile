@@ -10,7 +10,6 @@ A mobile application for the Macro Friendly Food platform, providing users with 
 - **Favorites System**: Save favorite recipes for quick access
 - **Nutrition Tracking**: Track macros (protein, carbs, fat) and calories
 - **Support System**: In-app ticket system for user support
-- **Offline Support**: Cache recipes and data for offline viewing
 
 ## 🛠️ Tech Stack
 
@@ -215,6 +214,14 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 📞 Support
 
 For support, email contact@macrofriendlyfood.com or create a ticket in the app.
+
+## 🏢 Company Information
+
+**J&E Financial, LLC DBA Macro Friendly Food**
+189 N Hwy 89 Ste C PMB 1047
+North Salt Lake, UT 84054
+United States
+Phone: 801-200-3409
 
 ---
 

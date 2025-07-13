@@ -62,7 +62,7 @@ const TermsScreen: React.FC = () => {
         {/* Introduction */}
         <Section title="Agreement to Terms">
           {renderSectionContent([
-            "These Terms of Service ('Terms') govern your use of the Macro Friendly Food mobile application ('App') operated by Macro Friendly Food Inc. ('we', 'our', or 'us').",
+            "These Terms of Service ('Terms') govern your use of the Macro Friendly Food mobile application ('App') operated by J&E Financial, LLC DBA Macro Friendly Food ('we', 'our', or 'us').",
             'By downloading, accessing, or using our App, you agree to be bound by these Terms. If you disagree with any part of these terms, then you may not access the App.',
           ])}
         </Section>
@@ -113,7 +113,7 @@ const TermsScreen: React.FC = () => {
 
           <Text style={styles.subheading}>Our Content</Text>
           {renderSectionContent([
-            'The App and its original content, features, and functionality are and will remain the exclusive property of Macro Friendly Food Inc. and its licensors. The App is protected by copyright, trademark, and other laws.',
+            'The App and its original content, features, and functionality are and will remain the exclusive property of J&E Financial, LLC DBA Macro Friendly Food and its licensors. The App is protected by copyright, trademark, and other laws.',
           ])}
         </Section>
 
@@ -148,43 +148,31 @@ const TermsScreen: React.FC = () => {
         <Section title="Subscription and Payment">
           {renderSectionContent([
             'Some features of the App are available through paid subscriptions. By purchasing a subscription, you agree to pay all charges associated with your subscription.',
-          ])}
-
-          {renderListContent([
-            'Subscriptions automatically renew unless cancelled before the renewal date',
-            "You can manage and cancel your subscription through your device's app store settings",
-            "Refunds are subject to the app store's refund policy",
-            'Prices may change with 30 days notice',
-            'We reserve the right to modify or discontinue subscriptions at any time',
-          ])}
-        </Section>
-
-        {/* Termination */}
-        <Section title="Termination">
-          {renderSectionContent([
-            'We may terminate or suspend your account immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms.',
-            'Upon termination, your right to use the App will cease immediately. If you wish to terminate your account, you may simply discontinue using the App.',
-          ])}
-        </Section>
-
-        {/* Disclaimer */}
-        <Section title="Disclaimer">
-          {renderSectionContent([
-            "The information on this App is provided on an 'as is' basis. To the fullest extent permitted by law, this Company excludes all representations, warranties, conditions and terms which, but for this legal notice, might have effect in relation to this App.",
+            'Subscription fees are charged on a recurring basis and will continue until you cancel your subscription. You may cancel your subscription at any time through your app store account settings.',
+            'We reserve the right to change our subscription fees at any time, with notice provided to existing subscribers.',
           ])}
         </Section>
 
         {/* Limitation of Liability */}
         <Section title="Limitation of Liability">
           {renderSectionContent([
-            'In no event shall Macro Friendly Food Inc., nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your use of the App.',
+            'In no event shall J&E Financial, LLC DBA Macro Friendly Food, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your use of the App.',
+            'Our total liability to you for any damages arising from or related to this agreement shall not exceed the amount you have paid us in the twelve (12) months preceding the event giving rise to liability.',
+          ])}
+        </Section>
+
+        {/* Termination */}
+        <Section title="Termination">
+          {renderSectionContent([
+            'We may terminate or suspend your account and bar access to the App immediately, without prior notice or liability, under our sole discretion, for any reason whatsoever, including but not limited to a breach of the Terms.',
+            'If you wish to terminate your account, you may simply discontinue using the App or contact us to request account deletion.',
           ])}
         </Section>
 
         {/* Governing Law */}
         <Section title="Governing Law">
           {renderSectionContent([
-            'These Terms shall be interpreted and governed by the laws of the State of California, United States. If any provision of these Terms is held to be invalid or unenforceable by a court, the remaining provisions will remain in effect.',
+            'These Terms shall be interpreted and governed by the laws of the State of Utah, United States. If any provision of these Terms is held to be invalid or unenforceable by a court, the remaining provisions will remain in effect.',
           ])}
         </Section>
 
@@ -207,18 +195,20 @@ const TermsScreen: React.FC = () => {
             onPress={handleContactSupport}
             activeOpacity={0.7}>
             <Icon name="mail" size={20} color={colors.primary} />
-            <Text style={styles.contactText}>contact@macrofriendlyfood.com</Text>
+            <Text style={styles.contactText}>
+              contact@macrofriendlyfood.com
+            </Text>
           </TouchableOpacity>
 
           {renderSectionContent([
-            'Macro Friendly Food Inc.\n123 Health Street\nSan Francisco, CA 94107\nUnited States',
+            'J&E Financial, LLC DBA Macro Friendly Food\n189 N Hwy 89 Ste C PMB 1047\nNorth Salt Lake, UT 84054\nUnited States\nPhone: 801-200-3409',
           ])}
         </Section>
 
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            These terms are effective as of January 1, 2025
+            These terms of service are effective as of January 1, 2025
           </Text>
         </View>
       </ScrollView>
