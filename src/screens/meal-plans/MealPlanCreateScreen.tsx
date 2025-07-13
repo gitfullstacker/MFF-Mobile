@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -47,6 +47,18 @@ const MealPlanCreateScreen: React.FC = () => {
   const { toggleFavorite } = useFavorites();
   const { createPlan } = usePlans();
 
+  // Refs to store the latest state values for navigation listener
+  const latestPlanNameRef = useRef('');
+  const latestScheduleRef = useRef<PlanSchedule>({
+    su: [],
+    mo: [],
+    tu: [],
+    we: [],
+    th: [],
+    fr: [],
+    sa: [],
+  });
+
   const [planName, setPlanName] = useState('');
   const [selectedDay, setSelectedDay] = useState<string>('su');
   const [schedule, setSchedule] = useState<PlanSchedule>({
@@ -82,12 +94,40 @@ const MealPlanCreateScreen: React.FC = () => {
     sa: [],
   });
 
+  // Update refs whenever state changes to ensure navigation listener has latest values
+  useEffect(() => {
+    latestPlanNameRef.current = planName;
+  }, [planName]);
+
+  useEffect(() => {
+    latestScheduleRef.current = schedule;
+  }, [schedule]);
+
   useEffect(() => {
     // Set default plan name
     const defaultName = `Meal Plan - ${format(new Date(), 'MMMM d')}`;
     setPlanName(defaultName);
     setInitialPlanName(defaultName);
+    latestPlanNameRef.current = defaultName;
   }, []);
+
+  // Enhanced plan name change handler with immediate ref update
+  const handlePlanNameChange = useCallback(
+    (text: string) => {
+      setPlanName(text);
+      latestPlanNameRef.current = text;
+
+      // Force immediate change detection
+      setTimeout(() => {
+        const scheduleChanged =
+          JSON.stringify(latestScheduleRef.current) !==
+          JSON.stringify(initialSchedule);
+        const nameChanged = text !== initialPlanName;
+        setHasUnsavedChanges(scheduleChanged || nameChanged);
+      }, 0);
+    },
+    [initialPlanName, initialSchedule],
+  );
 
   // Track changes to detect unsaved changes
   useEffect(() => {
@@ -97,11 +137,26 @@ const MealPlanCreateScreen: React.FC = () => {
     setHasUnsavedChanges(scheduleChanged || nameChanged);
   }, [planName, schedule, initialPlanName, initialSchedule]);
 
-  // Handle back button and navigation prevention
+  // Enhanced change detection function for navigation listener
+  const checkForUnsavedChanges = useCallback(() => {
+    const currentSchedule = latestScheduleRef.current;
+    const currentPlanName = latestPlanNameRef.current;
+
+    const scheduleChanged =
+      JSON.stringify(currentSchedule) !== JSON.stringify(initialSchedule);
+    const nameChanged = currentPlanName !== initialPlanName;
+
+    return scheduleChanged || nameChanged;
+  }, [initialSchedule, initialPlanName]);
+
+  // Handle back button and navigation prevention with improved change detection
   useFocusEffect(
     useCallback(() => {
       const unsubscribe = navigation.addListener('beforeRemove', e => {
-        if (!hasUnsavedChanges || loading) {
+        // Use the latest values from refs instead of state
+        const hasChanges = checkForUnsavedChanges();
+
+        if (!hasChanges || loading) {
           return;
         }
 
@@ -129,7 +184,7 @@ const MealPlanCreateScreen: React.FC = () => {
       });
 
       return unsubscribe;
-    }, [navigation, hasUnsavedChanges, loading]),
+    }, [navigation, loading, checkForUnsavedChanges]),
   );
 
   const handleAddRecipe = () => {
@@ -165,39 +220,56 @@ const MealPlanCreateScreen: React.FC = () => {
     addRecipeToSchedule(recipe, false);
   };
 
-  // Function to add recipe to schedule
-  const addRecipeToSchedule = (recipe: Recipe, onlyRecipe: boolean) => {
-    // Keep track of recipes for display
-    setRecipes({
-      ...recipes,
-      [recipe._id]: recipe,
-    });
+  // Enhanced function to add recipe to schedule with immediate ref update
+  const addRecipeToSchedule = useCallback(
+    (recipe: Recipe, onlyRecipe: boolean) => {
+      // Store the recipe object for easy retrieval later
+      const updatedRecipes = {
+        ...recipes,
+        [recipe._id]: recipe,
+      };
+      setRecipes(updatedRecipes);
 
-    const newScheduledRecipe: ScheduledRecipe = {
-      recipe: recipe._id,
-      only_recipe: onlyRecipe,
-    };
+      const newScheduledRecipe: ScheduledRecipe = {
+        recipe: recipe._id,
+        only_recipe: onlyRecipe,
+      };
 
-    // Update the schedule
-    const updatedSchedule = { ...schedule };
-    const daySchedule = [...updatedSchedule[selectedDay as keyof PlanSchedule]];
+      // Update the schedule
+      const updatedSchedule = { ...schedule };
+      const daySchedule = [
+        ...updatedSchedule[selectedDay as keyof PlanSchedule],
+      ];
 
-    // Check if we already have this recipe in this slot
-    const existingIndex = daySchedule.findIndex(
-      item => item.recipe === recipe._id,
-    );
+      // Check if we already have this recipe in this slot
+      const existingIndex = daySchedule.findIndex(
+        item => item.recipe === recipe._id,
+      );
 
-    if (existingIndex >= 0) {
-      // Recipe already exists, remove it (toggle behavior)
-      daySchedule.splice(existingIndex, 1);
-    } else {
-      // Add the new recipe
-      daySchedule.push(newScheduledRecipe);
-    }
+      if (existingIndex >= 0) {
+        // Recipe already exists, remove it (toggle behavior)
+        daySchedule.splice(existingIndex, 1);
+      } else {
+        // Add the new recipe
+        daySchedule.push(newScheduledRecipe);
+      }
 
-    updatedSchedule[selectedDay as keyof PlanSchedule] = daySchedule;
-    setSchedule(updatedSchedule);
-  };
+      updatedSchedule[selectedDay as keyof PlanSchedule] = daySchedule;
+
+      // Update both state and ref immediately
+      setSchedule(updatedSchedule);
+      latestScheduleRef.current = updatedSchedule;
+
+      // Force immediate change detection
+      setTimeout(() => {
+        const scheduleChanged =
+          JSON.stringify(updatedSchedule) !== JSON.stringify(initialSchedule);
+        const nameChanged = latestPlanNameRef.current !== initialPlanName;
+        setHasUnsavedChanges(scheduleChanged || nameChanged);
+      }, 0);
+    },
+    [recipes, schedule, selectedDay, initialSchedule, initialPlanName],
+  );
 
   // Handle duplicate recipe dialog actions
   const handleDuplicateRecipeAction = (
@@ -218,7 +290,11 @@ const MealPlanCreateScreen: React.FC = () => {
 
   // Function to save the meal plan
   const handleSavePlan = async () => {
-    if (!planName.trim()) {
+    // Use latest values from refs to ensure we have the most current data
+    const currentPlanName = latestPlanNameRef.current;
+    const currentSchedule = latestScheduleRef.current;
+
+    if (!currentPlanName.trim()) {
       Alert.alert(
         'Missing Information',
         'Please enter a name for your meal plan.',
@@ -227,7 +303,9 @@ const MealPlanCreateScreen: React.FC = () => {
     }
 
     // Check if any days have recipes scheduled
-    const hasRecipes = Object.values(schedule).some(day => day.length > 0);
+    const hasRecipes = Object.values(currentSchedule).some(
+      day => day.length > 0,
+    );
 
     if (!hasRecipes) {
       Alert.alert(
@@ -253,7 +331,7 @@ const MealPlanCreateScreen: React.FC = () => {
 
       // Copy schedule data in clean format
       DAYS_OF_WEEK.forEach(dayInfo => {
-        const daySchedule = schedule[dayInfo.value];
+        const daySchedule = currentSchedule[dayInfo.value];
         if (Array.isArray(daySchedule)) {
           cleanSchedule[dayInfo.value] = daySchedule.map(item => ({
             recipe:
@@ -266,7 +344,7 @@ const MealPlanCreateScreen: React.FC = () => {
       });
 
       const planData: CreatePlanRequest = {
-        name: planName,
+        name: currentPlanName,
         schedule: cleanSchedule,
         removed_ingredient_ids: [],
       };
@@ -323,7 +401,7 @@ const MealPlanCreateScreen: React.FC = () => {
             label="Plan Name"
             placeholder="Enter a name for your meal plan"
             value={planName}
-            onChangeText={setPlanName}
+            onChangeText={handlePlanNameChange}
           />
         </Section>
 
@@ -380,7 +458,7 @@ const MealPlanCreateScreen: React.FC = () => {
         />
       </View>
 
-      {loading && <LoadingOverlay message="Saving meal plan..." />}
+      {loading && <LoadingOverlay message="Creating meal plan..." />}
     </PageContainer>
   );
 };

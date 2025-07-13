@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StyleSheet, ScrollView, Alert, View } from 'react-native';
 import {
   useNavigation,
@@ -55,6 +55,18 @@ const MealPlanEditScreen: React.FC = () => {
   const { toggleFavorite } = useFavorites();
   const { updatePlan, fetchPlan } = usePlans();
 
+  // Refs to store the latest state values for navigation listener
+  const latestPlanNameRef = useRef('');
+  const latestScheduleRef = useRef<PlanSchedule>({
+    su: [],
+    mo: [],
+    tu: [],
+    we: [],
+    th: [],
+    fr: [],
+    sa: [],
+  });
+
   // Local state
   const [planName, setPlanName] = useState('');
   const [selectedDay, setSelectedDay] = useState<string>('su');
@@ -93,6 +105,33 @@ const MealPlanEditScreen: React.FC = () => {
     sa: [],
   });
 
+  // Update refs whenever state changes to ensure navigation listener has latest values
+  useEffect(() => {
+    latestPlanNameRef.current = planName;
+  }, [planName]);
+
+  useEffect(() => {
+    latestScheduleRef.current = schedule;
+  }, [schedule]);
+
+  // Enhanced plan name change handler with immediate ref update
+  const handlePlanNameChange = useCallback(
+    (text: string) => {
+      setPlanName(text);
+      latestPlanNameRef.current = text;
+
+      // Force immediate change detection
+      setTimeout(() => {
+        const scheduleChanged =
+          JSON.stringify(latestScheduleRef.current) !==
+          JSON.stringify(initialSchedule);
+        const nameChanged = text !== initialPlanName;
+        setHasUnsavedChanges(scheduleChanged || nameChanged);
+      }, 0);
+    },
+    [initialPlanName, initialSchedule],
+  );
+
   // Fetch plan data when component mounts or planId changes
   useEffect(() => {
     const loadPlan = async () => {
@@ -120,6 +159,7 @@ const MealPlanEditScreen: React.FC = () => {
       // Set initial state from plan
       setPlanName(currentPlan.name);
       setInitialPlanName(currentPlan.name);
+      latestPlanNameRef.current = currentPlan.name;
 
       // Restructure schedule to clean format
       const cleanSchedule: PlanSchedule = {
@@ -162,11 +202,12 @@ const MealPlanEditScreen: React.FC = () => {
 
       setSchedule(cleanSchedule);
       setInitialSchedule(cleanSchedule);
+      latestScheduleRef.current = cleanSchedule;
       setRecipeMap(recipes);
     }
   }, [currentPlan]);
 
-  // Track changes to detect unsaved changes
+  // Track changes to detect unsaved changes with refs for accuracy
   useEffect(() => {
     if (!currentPlan) return;
 
@@ -176,11 +217,26 @@ const MealPlanEditScreen: React.FC = () => {
     setHasUnsavedChanges(scheduleChanged || nameChanged);
   }, [planName, schedule, initialPlanName, initialSchedule, currentPlan]);
 
-  // Handle back button and navigation prevention
+  // Enhanced change detection function for navigation listener
+  const checkForUnsavedChanges = useCallback(() => {
+    const currentSchedule = latestScheduleRef.current;
+    const currentPlanName = latestPlanNameRef.current;
+
+    const scheduleChanged =
+      JSON.stringify(currentSchedule) !== JSON.stringify(initialSchedule);
+    const nameChanged = currentPlanName !== initialPlanName;
+
+    return scheduleChanged || nameChanged;
+  }, [initialSchedule, initialPlanName]);
+
+  // Handle back button and navigation prevention with improved change detection
   useFocusEffect(
     useCallback(() => {
       const unsubscribe = navigation.addListener('beforeRemove', e => {
-        if (!hasUnsavedChanges || loading) {
+        // Use the latest values from refs instead of state
+        const hasChanges = checkForUnsavedChanges();
+
+        if (!hasChanges || loading) {
           return;
         }
 
@@ -208,7 +264,7 @@ const MealPlanEditScreen: React.FC = () => {
       });
 
       return unsubscribe;
-    }, [navigation, hasUnsavedChanges, loading]),
+    }, [navigation, loading, checkForUnsavedChanges]),
   );
 
   // Function to open recipe picker
@@ -245,40 +301,56 @@ const MealPlanEditScreen: React.FC = () => {
     addRecipeToSchedule(recipe, false);
   };
 
-  // Function to add recipe to schedule
-  const addRecipeToSchedule = (recipe: Recipe, onlyRecipe: boolean) => {
-    // Store the recipe object for display purposes
-    const updatedRecipeMap = {
-      ...recipeMap,
-      [recipe._id]: recipe,
-    };
-    setRecipeMap(updatedRecipeMap);
+  // Enhanced function to add recipe to schedule with immediate ref update
+  const addRecipeToSchedule = useCallback(
+    (recipe: Recipe, onlyRecipe: boolean) => {
+      // Store the recipe object for display purposes
+      const updatedRecipeMap = {
+        ...recipeMap,
+        [recipe._id]: recipe,
+      };
+      setRecipeMap(updatedRecipeMap);
 
-    const newScheduledRecipe: ScheduledRecipe = {
-      recipe: recipe._id,
-      only_recipe: onlyRecipe,
-    };
+      const newScheduledRecipe: ScheduledRecipe = {
+        recipe: recipe._id,
+        only_recipe: onlyRecipe,
+      };
 
-    // Update the schedule
-    const updatedSchedule = { ...schedule };
-    const daySchedule = [...updatedSchedule[selectedDay as keyof PlanSchedule]];
+      // Update the schedule
+      const updatedSchedule = { ...schedule };
+      const daySchedule = [
+        ...updatedSchedule[selectedDay as keyof PlanSchedule],
+      ];
 
-    // Check if we already have this recipe in this slot
-    const existingIndex = daySchedule.findIndex(
-      item => item.recipe === recipe._id,
-    );
+      // Check if we already have this recipe in this slot
+      const existingIndex = daySchedule.findIndex(
+        item => item.recipe === recipe._id,
+      );
 
-    if (existingIndex >= 0) {
-      // Recipe already exists, remove it (toggle behavior)
-      daySchedule.splice(existingIndex, 1);
-    } else {
-      // Add the new recipe
-      daySchedule.push(newScheduledRecipe);
-    }
+      if (existingIndex >= 0) {
+        // Recipe already exists, remove it (toggle behavior)
+        daySchedule.splice(existingIndex, 1);
+      } else {
+        // Add the new recipe
+        daySchedule.push(newScheduledRecipe);
+      }
 
-    updatedSchedule[selectedDay as keyof PlanSchedule] = daySchedule;
-    setSchedule(updatedSchedule);
-  };
+      updatedSchedule[selectedDay as keyof PlanSchedule] = daySchedule;
+
+      // Update both state and ref immediately
+      setSchedule(updatedSchedule);
+      latestScheduleRef.current = updatedSchedule;
+
+      // Force immediate change detection
+      setTimeout(() => {
+        const scheduleChanged =
+          JSON.stringify(updatedSchedule) !== JSON.stringify(initialSchedule);
+        const nameChanged = latestPlanNameRef.current !== initialPlanName;
+        setHasUnsavedChanges(scheduleChanged || nameChanged);
+      }, 0);
+    },
+    [recipeMap, schedule, selectedDay, initialSchedule, initialPlanName],
+  );
 
   // Handle duplicate recipe dialog actions
   const handleDuplicateRecipeAction = (
@@ -299,7 +371,11 @@ const MealPlanEditScreen: React.FC = () => {
 
   // Function to save the updated meal plan
   const handleSavePlan = async () => {
-    if (!planName.trim()) {
+    // Use latest values from refs to ensure we have the most current data
+    const currentPlanName = latestPlanNameRef.current;
+    const currentSchedule = latestScheduleRef.current;
+
+    if (!currentPlanName.trim()) {
       Alert.alert(
         'Missing Information',
         'Please enter a name for your meal plan.',
@@ -312,18 +388,20 @@ const MealPlanEditScreen: React.FC = () => {
 
       // Convert schedule to the format expected by the API
       const cleanSchedule: any = {};
-      Object.keys(schedule).forEach(day => {
-        cleanSchedule[day] = schedule[day as keyof PlanSchedule].map(item => ({
-          recipe:
-            typeof item.recipe === 'object'
-              ? (item.recipe as Recipe)._id
-              : item.recipe,
-          only_recipe: item.only_recipe,
-        }));
+      Object.keys(currentSchedule).forEach(day => {
+        cleanSchedule[day] = currentSchedule[day as keyof PlanSchedule].map(
+          item => ({
+            recipe:
+              typeof item.recipe === 'object'
+                ? (item.recipe as Recipe)._id
+                : item.recipe,
+            only_recipe: item.only_recipe,
+          }),
+        );
       });
 
       const planData = {
-        name: planName,
+        name: currentPlanName,
         schedule: cleanSchedule,
         removed_ingredient_ids: [],
       };
@@ -397,7 +475,7 @@ const MealPlanEditScreen: React.FC = () => {
             label="Plan Name"
             placeholder="Enter a name for your meal plan"
             value={planName}
-            onChangeText={setPlanName}
+            onChangeText={handlePlanNameChange}
           />
         </Section>
 
