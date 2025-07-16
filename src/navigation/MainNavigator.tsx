@@ -45,7 +45,7 @@ export const MainNavigator = () => {
           options={{ tabBarLabel: 'Account' }}
         />
       </Tab.Navigator>
-      <ThriveDeskFAB visible={true} position="bottom-right" showLabel={false} />
+      <ThriveDeskFAB visible={false} position="bottom-right" showLabel={false} />
     </View>
   );
 };

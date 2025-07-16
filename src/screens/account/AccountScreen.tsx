@@ -126,13 +126,13 @@ const AccountScreen: React.FC = () => {
   ];
 
   const supportMenuItems: MenuItem[] = [
-    {
-      icon: 'help-circle',
-      title: 'Help Center',
-      subtitle: 'Get help and find answers',
-      onPress: () => navigateToSupport(),
-      showArrow: true,
-    },
+    // {
+    //   icon: 'help-circle',
+    //   title: 'Help Center',
+    //   subtitle: 'Get help and find answers',
+    //   onPress: () => navigateToSupport(),
+    //   showArrow: true,
+    // },
     {
       icon: 'message-square',
       title: 'Support Tickets',
