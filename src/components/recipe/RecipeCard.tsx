@@ -121,7 +121,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
     }
   };
 
-  const handleUpgradePress = async () => {
+  const handleContactPress = async () => {
     const contactUrl = 'https://macrofriendlyfood.com/contact/';
 
     try {
@@ -196,7 +196,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
       {/* Right Side - Recipe Image */}
       <View style={styles.imageSection}>
-        {isValidRecipe ? (
+        {false ? (
           <TouchableOpacity
             style={styles.imageContainer}
             onPress={onPress}
@@ -251,16 +251,11 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
             />
           </TouchableOpacity>
         ) : (
-          // Locked Recipe Overlay
-          <View style={styles.lockedOverlay}>
-            <MaterialIcon name="lock-outline" size={24} color={colors.white} />
-            <Text style={styles.lockedText}>
-              <Text style={styles.lockedTextBold}>Upgrade</Text> to access
-            </Text>
+          <View style={styles.errorOverlay}>
             <TouchableOpacity
-              style={styles.upgradeButton}
-              onPress={handleUpgradePress}>
-              <Text style={styles.upgradeButtonText}>Contact Us</Text>
+              style={styles.contactButton}
+              onPress={handleContactPress}>
+              <Text style={styles.contactButtonText}>Contact Us</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -350,8 +345,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 20,
   },
-  // Locked recipe styles
-  lockedOverlay: {
+  // Valid recipe styles
+  errorOverlay: {
     width: '100%',
     height: '100%',
     backgroundColor: '#4caf50',
@@ -359,24 +354,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.sm,
   },
-  lockedText: {
-    ...typography.bodySmall,
-    color: colors.white,
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  lockedTextBold: {
-    fontWeight: 'bold',
-  },
-  upgradeButton: {
+  contactButton: {
     backgroundColor: colors.white,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
     borderRadius: borderRadius.sm,
     marginTop: spacing.xs,
   },
-  upgradeButtonText: {
+  contactButtonText: {
     ...typography.bodySmall,
     color: '#4caf50',
     fontWeight: 'bold',
