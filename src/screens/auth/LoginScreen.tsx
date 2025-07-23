@@ -8,7 +8,6 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
-  Linking,
 } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -19,13 +18,7 @@ import { Input } from '../../components/forms/Input';
 import { Button } from '../../components/forms/Button';
 import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
 import { useAuth } from '../../hooks/useAuth';
-import {
-  colors,
-  typography,
-  spacing,
-  fontWeights,
-  borderRadius,
-} from '../../theme';
+import { colors, typography, spacing, borderRadius } from '../../theme';
 import Icon from 'react-native-vector-icons/Feather';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
 
@@ -92,21 +85,6 @@ const LoginScreen: React.FC = () => {
       );
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSignUpPress = async () => {
-    const url = 'https://macrofriendlyfood.com/contact/';
-
-    try {
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert('Error', 'Cannot open the sign up page');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Cannot open the sign up page');
     }
   };
 
@@ -208,13 +186,6 @@ const LoginScreen: React.FC = () => {
               loading={loading}
               disabled={loading}
             />
-
-            <View style={styles.signUpContainer}>
-              <Text style={styles.signUpText}>Don't have an account? </Text>
-              <TouchableOpacity onPress={handleSignUpPress}>
-                <Text style={styles.signUpLink}>Sign Up</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </ScrollContainer>
       </KeyboardAvoidingView>
@@ -296,20 +267,6 @@ const styles = StyleSheet.create({
   },
   signInButton: {
     marginBottom: spacing.lg,
-  },
-  signUpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  signUpText: {
-    ...typography.bodyRegular,
-    color: colors.text.secondary,
-  },
-  signUpLink: {
-    ...typography.bodyRegular,
-    color: colors.primary,
-    fontWeight: fontWeights.semibold,
   },
 });
 

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Linking,
   Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
@@ -23,48 +22,7 @@ import {
 import { useNavigationHelpers } from '@/hooks/useNavigation';
 
 const AboutScreen: React.FC = () => {
-  const { navigateToSupport, navigateToPrivacy, navigateToTerms } =
-    useNavigationHelpers();
-
-  const handleOpenWebsite = () => {
-    Linking.openURL('https://macrofriendlyfood.com');
-  };
-
-  const handleOpenLicenses = () => {
-    // In a real app, you might show a modal or navigate to a licenses screen
-    Linking.openURL('https://macrofriendlyfood.com/licenses');
-  };
-
-  const handleRateApp = () => {
-    // Platform-specific app store URLs
-    const appStoreUrl = 'https://apps.apple.com/app/macro-friendly-food';
-    const playStoreUrl =
-      'https://play.google.com/store/apps/details?id=com.macrofriendlyfood';
-
-    // You could detect platform and open appropriate store
-    Linking.openURL(appStoreUrl);
-  };
-
-  const handleShareApp = () => {
-    const shareUrl = 'https://macrofriendlyfood.com/mobile';
-    const message = `Check out Macro Friendly Food - the best app for tracking nutrition and meal planning! ${shareUrl}`;
-
-    // Use React Native's Share API
-    // Share.share({ message });
-    console.log('Share:', message);
-  };
-
-  const renderInfoCard = (title: string, content: string, icon: string) => (
-    <View style={styles.infoCard}>
-      <View style={styles.cardIcon}>
-        <Icon name={icon} size={24} color={colors.primary} />
-      </View>
-      <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{title}</Text>
-        <Text style={styles.cardText}>{content}</Text>
-      </View>
-    </View>
-  );
+  const { navigateToPrivacy, navigateToTerms } = useNavigationHelpers();
 
   const renderActionCard = (
     title: string,
@@ -150,36 +108,6 @@ const AboutScreen: React.FC = () => {
           </View>
         </Section>
 
-        {/* Actions */}
-        <Section title="Actions">
-          {renderActionCard(
-            'Visit Website',
-            'Learn more about Macro Friendly Food',
-            'globe',
-            handleOpenWebsite,
-            true,
-          )}
-          {renderActionCard(
-            'Rate This App',
-            'Help us improve by leaving a review',
-            'star',
-            handleRateApp,
-            true,
-          )}
-          {renderActionCard(
-            'Share App',
-            'Tell your friends about this app',
-            'share-2',
-            handleShareApp,
-          )}
-          {renderActionCard(
-            'Contact Support',
-            'Get help or report issues',
-            'help-circle',
-            navigateToSupport,
-          )}
-        </Section>
-
         {/* Legal */}
         <Section title="Legal">
           {renderActionCard(
@@ -193,13 +121,6 @@ const AboutScreen: React.FC = () => {
             'Terms and conditions of use',
             'file-text',
             navigateToTerms,
-          )}
-          {renderActionCard(
-            'Open Source Licenses',
-            'Third-party software licenses',
-            'code',
-            handleOpenLicenses,
-            true,
           )}
         </Section>
 

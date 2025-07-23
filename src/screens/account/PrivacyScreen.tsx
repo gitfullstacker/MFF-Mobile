@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Linking,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { PageContainer } from '../../components/layout/PageContainer';
@@ -20,10 +19,6 @@ import {
 } from '../../theme';
 
 const PrivacyScreen: React.FC = () => {
-  const handleContactSupport = () => {
-    Linking.openURL('mailto:contact@macrofriendlyfood.com');
-  };
-
   const renderSectionContent = (content: string[]) => (
     <View style={styles.sectionContent}>
       {content.map((paragraph, index) => (
@@ -191,10 +186,7 @@ const PrivacyScreen: React.FC = () => {
             'If you have any questions about this privacy policy or our data practices, please contact us:',
           ])}
 
-          <TouchableOpacity
-            style={styles.contactButton}
-            onPress={handleContactSupport}
-            activeOpacity={0.7}>
+          <TouchableOpacity style={styles.contactButton} activeOpacity={0.7}>
             <Icon name="mail" size={20} color={colors.primary} />
             <Text style={styles.contactText}>
               contact@macrofriendlyfood.com

@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Dimensions,
   ActivityIndicator,
-  Linking,
   Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
@@ -22,6 +21,7 @@ import {
 import { Recipe } from '../../types/recipe';
 import { useSubscription } from '../../hooks/useSubscription';
 import { RatingImage, StarRating } from 'react-native-product-ratings';
+import { useNavigationHelpers } from '@/hooks/useNavigation';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -55,6 +55,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
     rating,
   } = recipe;
   const [isSaving, setIsSaving] = useState(false);
+  const { navigateToCreateTicket } = useNavigationHelpers();
   const { allowedCategoryIds, loading: subscriptionLoading } =
     useSubscription();
 
@@ -122,25 +123,13 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
   };
 
   const handleContactPress = async () => {
-    const contactUrl = 'https://macrofriendlyfood.com/contact/';
-
     try {
-      const supported = await Linking.canOpenURL(contactUrl);
-
-      if (supported) {
-        await Linking.openURL(contactUrl);
-      } else {
-        Alert.alert(
-          'Unable to open link',
-          'Cannot open the contact page. Please visit macrofriendlyfood.com/contact/ in your browser.',
-          [{ text: 'OK' }],
-        );
-      }
+      navigateToCreateTicket();
     } catch (error) {
-      console.error('Error opening contact URL:', error);
+      console.error('Error navigating to create ticket:', error);
       Alert.alert(
         'Error',
-        'Unable to open the contact page. Please try again.',
+        'Unable to open support ticket form. Please try again.',
         [{ text: 'OK' }],
       );
     }
@@ -196,7 +185,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
       {/* Right Side - Recipe Image */}
       <View style={styles.imageSection}>
-        {false ? (
+        {isValidRecipe ? (
           <TouchableOpacity
             style={styles.imageContainer}
             onPress={onPress}

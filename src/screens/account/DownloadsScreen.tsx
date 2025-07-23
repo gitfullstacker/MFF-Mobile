@@ -164,13 +164,7 @@ const DownloadsScreen: React.FC = () => {
     return (
       <EmptyState
         title="No downloads yet"
-        description="Your purchased digital content will appear here"
-        action={{
-          label: 'Browse Store',
-          onPress: () => {
-            Linking.openURL('https://macrofriendlyfood.com/store');
-          },
-        }}
+        description="Your downloadable content will appear here"
       />
     );
   };

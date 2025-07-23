@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Linking,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { PageContainer } from '../../components/layout/PageContainer';
@@ -20,10 +19,6 @@ import {
 } from '../../theme';
 
 const TermsScreen: React.FC = () => {
-  const handleContactSupport = () => {
-    Linking.openURL('mailto:contact@macrofriendlyfood.com');
-  };
-
   const renderSectionContent = (content: string[]) => (
     <View style={styles.sectionContent}>
       {content.map((paragraph, index) => (
@@ -145,21 +140,21 @@ const TermsScreen: React.FC = () => {
         </Section>
 
         {/* Subscription Terms */}
-        <Section title="Subscription and Payment">
+        {/* <Section title="Subscription and Payment">
           {renderSectionContent([
             'Some features of the App are available through paid subscriptions. By purchasing a subscription, you agree to pay all charges associated with your subscription.',
             'Subscription fees are charged on a recurring basis and will continue until you cancel your subscription. You may cancel your subscription at any time through your app store account settings.',
             'We reserve the right to change our subscription fees at any time, with notice provided to existing subscribers.',
           ])}
-        </Section>
+        </Section> */}
 
         {/* Limitation of Liability */}
-        <Section title="Limitation of Liability">
+        {/* <Section title="Limitation of Liability">
           {renderSectionContent([
             'In no event shall J&E Financial, LLC DBA Macro Friendly Food, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your use of the App.',
             'Our total liability to you for any damages arising from or related to this agreement shall not exceed the amount you have paid us in the twelve (12) months preceding the event giving rise to liability.',
           ])}
-        </Section>
+        </Section> */}
 
         {/* Termination */}
         <Section title="Termination">
@@ -190,10 +185,7 @@ const TermsScreen: React.FC = () => {
             'If you have any questions about these Terms of Service, please contact us:',
           ])}
 
-          <TouchableOpacity
-            style={styles.contactButton}
-            onPress={handleContactSupport}
-            activeOpacity={0.7}>
+          <TouchableOpacity style={styles.contactButton} activeOpacity={0.7}>
             <Icon name="mail" size={20} color={colors.primary} />
             <Text style={styles.contactText}>
               contact@macrofriendlyfood.com

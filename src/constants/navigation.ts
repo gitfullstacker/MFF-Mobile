@@ -41,7 +41,6 @@ export const SCREEN_NAMES = {
     PROFILE: 'Profile',
     PREFERENCES: 'Preferences',
     DOWNLOADS: 'Downloads',
-    SUPPORT: 'Support',
     TICKETS: 'Tickets',
     CREATE_TICKET: 'CreateTicket',
     TICKET_DETAIL: 'TicketDetail',

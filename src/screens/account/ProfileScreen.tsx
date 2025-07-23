@@ -62,7 +62,7 @@ type PasswordFormData = {
 
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, changePassword } = useAuth();
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState<'profile' | 'password'>(
     'profile',
@@ -128,11 +128,10 @@ const ProfileScreen: React.FC = () => {
     try {
       setLoading(true);
 
-      // Call your password change API endpoint here
-      // await authService.changePassword({
-      //   current_password: data.current_password,
-      //   new_password: data.new_password,
-      // });
+      await changePassword({
+        currentPassword: data.current_password,
+        newPassword: data.new_password,
+      });
 
       resetPassword();
       Alert.alert('Success', 'Password changed successfully!');
@@ -144,26 +143,6 @@ const ProfileScreen: React.FC = () => {
     }
   };
 
-  // Generate Gravatar URL
-  const getGravatarUrl = () => {
-    return `https://wordpress.com/start/wpcc/oauth2-user?ref=oauth2&oauth2_redirect=https%3A%2F%2Fpublic-api.wordpress.com%2Foauth2%2Fauthorize%2F%3Fclient_id%3D1854%26response_type%3Dcode%26blog_id%3D0%26state%3D168f563e0d8a3194eabccbafd0f4551ce3598ba1b6f20adc7e710b36e1161848%26redirect_uri%3Dhttps%253A%252F%252Fen.gravatar.com%252Fconnect%252F%253Faction%253Drequest_access_token%26jetpack-code%26jetpack-user-id%3D0%26action%3Doauth2-login&oauth2_client_id=1854`;
-  };
-
-  // Handle avatar change
-  const handleChangeAvatar = () => {
-    Alert.alert(
-      'Change Avatar',
-      'This app uses Gravatar for profile pictures. Would you like to set up or change your Gravatar?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Open Gravatar',
-          onPress: () => Linking.openURL('https://gravatar.com/'),
-        },
-      ],
-    );
-  };
-
   return (
     <PageContainer safeArea={false}>
       <Header title="Profile" showBack={true} />
@@ -171,13 +150,11 @@ const ProfileScreen: React.FC = () => {
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Avatar Section */}
         <View style={styles.avatarSection}>
-          <TouchableOpacity
-            onPress={handleChangeAvatar}
-            style={styles.avatarContainer}>
-            {user?.avatar_url || user?.email ? (
+          <TouchableOpacity style={styles.avatarContainer}>
+            {user?.avatar_url ? (
               <Image
                 source={{
-                  uri: user.avatar_url || getGravatarUrl(),
+                  uri: user.avatar_url,
                 }}
                 style={styles.avatar}
               />
@@ -186,9 +163,6 @@ const ProfileScreen: React.FC = () => {
                 <Icon name="user" size={40} color={colors.white} />
               </View>
             )}
-            <View style={styles.avatarOverlay}>
-              <Icon name="camera" size={20} color={colors.white} />
-            </View>
           </TouchableOpacity>
           <Text style={styles.avatarHint}>
             Tap to change avatar via Gravatar
@@ -391,19 +365,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gray[400],
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  avatarOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.white,
   },
   avatarHint: {
     ...typography.bodySmall,

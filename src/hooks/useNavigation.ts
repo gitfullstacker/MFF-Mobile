@@ -219,12 +219,6 @@ export const useNavigationHelpers = () => {
     });
   }, [navigation]);
 
-  const navigateToSupport = useCallback(() => {
-    navigation.navigate(SCREEN_NAMES.ROOT.ACCOUNT_STACK, {
-      screen: SCREEN_NAMES.ACCOUNT.SUPPORT,
-    });
-  }, [navigation]);
-
   const navigateToTickets = useCallback(() => {
     navigation.navigate(SCREEN_NAMES.ROOT.ACCOUNT_STACK, {
       screen: SCREEN_NAMES.ACCOUNT.TICKETS,
@@ -275,7 +269,6 @@ export const useNavigationHelpers = () => {
     navigateToProfile,
     navigateToPreferences,
     navigateToDownloads,
-    navigateToSupport,
     navigateToTickets,
     navigateToCreateTicket,
     navigateToTicketDetail,

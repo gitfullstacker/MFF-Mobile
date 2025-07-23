@@ -9,7 +9,6 @@ import MealPlanListScreen from '../screens/meal-plans/MealPlanListScreen';
 import FavoritesScreen from '../screens/favorites/FavoritesScreen';
 import AccountScreen from '../screens/account/AccountScreen';
 import { View } from 'react-native';
-import ThriveDeskFAB from '@/components/support/ThriveDeskFAB';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -45,7 +44,6 @@ export const MainNavigator = () => {
           options={{ tabBarLabel: 'Account' }}
         />
       </Tab.Navigator>
-      <ThriveDeskFAB visible={false} position="bottom-right" showLabel={false} />
     </View>
   );
 };
