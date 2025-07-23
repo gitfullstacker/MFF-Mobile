@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Alert,
   Image,
-  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useForm, Controller } from 'react-hook-form';
