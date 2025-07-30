@@ -113,20 +113,33 @@ class ApiClient {
             hasResponse: !!error.response,
             hasRequest: !!error.request,
           });
+        }
 
-          // Log response data if available
-          if (error.response?.data) {
-            console.error('❌ Error Response Data:', error.response.data);
-          }
+        // Network timeout
+        if (
+          error.code === 'ECONNABORTED' ||
+          error.message.includes('timeout')
+        ) {
+          console.error('❌ Network timeout error');
+          eventBus.emit(
+            'NETWORK_ERROR',
+            'Network timeout. Please check your connection.',
+          );
+          return Promise.reject(
+            new Error('Connection timeout. Please try again.'),
+          );
+        }
 
-          // Log request details if no response
-          if (!error.response && error.request) {
-            console.error('❌ Request made but no response:', {
-              url: error.config?.url,
-              method: error.config?.method,
-              timeout: error.config?.timeout,
-            });
-          }
+        // Network connection error
+        if (error.code === 'NETWORK_ERROR' || !error.response) {
+          console.error('❌ Network connection error');
+          eventBus.emit(
+            'NETWORK_ERROR',
+            'No internet connection. Please check your network.',
+          );
+          return Promise.reject(
+            new Error('No internet connection. Please check your network.'),
+          );
         }
 
         if (error.response?.status === 401) {

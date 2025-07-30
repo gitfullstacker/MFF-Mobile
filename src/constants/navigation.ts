@@ -157,8 +157,8 @@ export const NAVIGATION_TIMING = {
  * Deep Link Prefixes
  */
 export const DEEP_LINK_CONFIG = {
-  PREFIX: 'mealapp://',
-  PREFIXES: ['mealapp://', 'https://mealapp.com'],
+  PREFIX: 'macrofriendlyfood://',
+  PREFIXES: ['macrofriendlyfood://', 'https://macrofriendlyfood.com'],
 
   // URL patterns
   PATTERNS: {

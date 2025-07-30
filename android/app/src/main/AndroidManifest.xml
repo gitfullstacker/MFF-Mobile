@@ -31,7 +31,7 @@
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.DEFAULT" />
             <category android:name="android.intent.category.BROWSABLE" />
-            <data android:scheme="mealapp" />
+            <data android:scheme="macrofriendlyfood" />
         </intent-filter>
         
         <!-- Deep link support for web links (password reset) -->

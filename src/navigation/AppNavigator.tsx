@@ -21,7 +21,7 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({ navigationRef }) => 
   const [isAuthenticated] = useAtom(isAuthenticatedAtom);
 
   const linking = {
-    prefixes: ['mealapp://', 'https://macrofriendlyfood.com', 'https://yourdomain.com'],
+    prefixes: ['macrofriendlyfood://', 'https://macrofriendlyfood.com'],
     config: {
       screens: {
         [SCREEN_NAMES.ROOT.AUTH]: {

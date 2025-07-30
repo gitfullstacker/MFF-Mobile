@@ -147,9 +147,9 @@ const ProfileScreen: React.FC = () => {
       <Header title="Profile" showBack={true} />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Avatar Section */}
+        {/* Avatar Section - Read Only (No Touch Interaction) */}
         <View style={styles.avatarSection}>
-          <TouchableOpacity style={styles.avatarContainer}>
+          <View style={styles.avatarContainer}>
             {user?.avatar_url ? (
               <Image
                 source={{
@@ -162,10 +162,7 @@ const ProfileScreen: React.FC = () => {
                 <Icon name="user" size={40} color={colors.white} />
               </View>
             )}
-          </TouchableOpacity>
-          <Text style={styles.avatarHint}>
-            Tap to change avatar via Gravatar
-          </Text>
+          </View>
         </View>
 
         {/* Section Toggle */}
@@ -365,11 +362,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarHint: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
+  // Removed avatarHint style since we're removing the text
   sectionToggle: {
     flexDirection: 'row',
     marginHorizontal: spacing.md,
