@@ -3,6 +3,11 @@ interface JwtPayload {
   [key: string]: any;
 }
 
+interface TokenExpirationData {
+  expires_at: string;
+  expires_in: number;
+}
+
 /**
  * Decodes a JWT token and returns its payload
  * @param token The JWT token to decode
@@ -65,7 +70,33 @@ export const getTokenExpiration = (
 };
 
 /**
- * Checks if a JWT token is expired
+ * NEW: Check if token is expired using backend response data
+ * This is preferred over JWT payload parsing as it uses server-provided expiration
+ */
+export const isTokenExpiredByBackendData = (
+  tokenExpiration: TokenExpirationData | null,
+): boolean => {
+  if (!tokenExpiration?.expires_at) {
+    console.warn('Token expiration data not available');
+    return true;
+  }
+
+  try {
+    const expirationTime = new Date(tokenExpiration.expires_at).getTime();
+    const currentTime = Date.now();
+
+    // Add 30 second buffer to account for clock skew and network delays
+    const bufferTime = 30 * 1000;
+
+    return expirationTime <= currentTime + bufferTime;
+  } catch (error) {
+    console.warn('Error parsing expiration date:', error);
+    return true;
+  }
+};
+
+/**
+ * Checks if a JWT token is expired (fallback method)
  * @param token The JWT token to check
  * @returns true if expired or invalid, false if valid and not expired
  */
@@ -80,8 +111,32 @@ export const isTokenExpired = (token: string | null | undefined): boolean => {
 };
 
 /**
+ * NEW: Combined token validation using both backend data and JWT fallback
+ * @param token The JWT token
+ * @param tokenExpiration Backend expiration data
+ * @returns true if expired or invalid
+ */
+export const isTokenExpiredCombined = (
+  token: string | null | undefined,
+  tokenExpiration: TokenExpirationData | null,
+): boolean => {
+  // If we have backend expiration data, use it (preferred)
+  if (tokenExpiration) {
+    return isTokenExpiredByBackendData(tokenExpiration);
+  }
+
+  // Fallback to JWT token expiration parsing
+  return isTokenExpired(token);
+};
+
+/**
  * Additional utility to check if token exists and is valid
  */
-export const isValidToken = (token: string | null | undefined): boolean => {
-  return !!token && !isTokenExpired(token);
+export const isValidToken = (
+  token: string | null | undefined,
+  tokenExpiration?: TokenExpirationData | null,
+): boolean => {
+  if (!token) return false;
+
+  return !isTokenExpiredCombined(token, tokenExpiration || null);
 };

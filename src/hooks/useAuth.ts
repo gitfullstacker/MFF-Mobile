@@ -10,6 +10,7 @@ import {
   subscriptionStatsAtom,
   favoriteRecipeIdsAtom,
   activePlanAtom,
+  tokenExpirationAtom,
 } from '../store';
 import { authService } from '../services/auth';
 import { userService } from '../services/user';
@@ -22,11 +23,12 @@ import {
   LoginRequest,
   ResetPasswordRequest,
 } from '../types/auth';
-import { isTokenExpired } from '../utils/tokenUtils';
+import { isTokenExpiredCombined } from '../utils/tokenUtils';
 
 export const useAuth = () => {
   const [authToken, setAuthToken] = useAtom(authTokenAtom);
   const [user, setUser] = useAtom(userAtom);
+  const [tokenExpiration, setTokenExpiration] = useAtom(tokenExpirationAtom);
   const [isAuthenticated, setIsAuthenticated] = useAtom(isAuthenticatedAtom);
   const [savedCredentials, setSavedCredentials] = useAtom(savedCredentialsAtom);
   const [, setSubscriptionStats] = useAtom(subscriptionStatsAtom);
@@ -84,7 +86,15 @@ export const useAuth = () => {
   const login = useCallback(
     async (credentials: LoginRequest, rememberMe: boolean = false) => {
       try {
+        console.log('🔐 Attempting login...');
         const response = await authService.login(credentials);
+
+        console.log('✅ Login successful:', {
+          hasToken: !!response.token,
+          hasUser: !!response.user,
+          expires_at: response.expires_at,
+          expires_in: response.expires_in,
+        });
 
         // Store auth data
         setAuthToken(response.token);
@@ -96,7 +106,7 @@ export const useAuth = () => {
           setSavedCredentials({
             username: credentials.username,
             password: credentials.password,
-            rememberMe,
+            rememberMe: true,
           });
         } else {
           setSavedCredentials(null);
@@ -118,18 +128,24 @@ export const useAuth = () => {
         return response;
       } catch (error: any) {
         console.error('❌ Login failed:', error);
-        setIsAuthenticated(false);
+
+        const errorMessage =
+          error.response?.data?.message ||
+          'Login failed. Please check your credentials and try again.';
+
         addToast({
-          message: error.response?.data?.message || 'Login failed',
+          message: errorMessage,
           type: 'error',
           duration: 5000,
         });
+
         throw error;
       }
     },
     [
       setAuthToken,
       setUser,
+      setTokenExpiration,
       setIsAuthenticated,
       setSavedCredentials,
       addToast,
@@ -141,12 +157,17 @@ export const useAuth = () => {
 
   const logout = useCallback(async () => {
     try {
+      console.log('🚪 Logging out...');
+
       await AsyncStorage.removeItem('authToken');
       await AsyncStorage.removeItem('user');
 
+      // Clear all auth-related data
       setAuthToken(null);
       setUser(null);
+      setTokenExpiration(null);
       setIsAuthenticated(false);
+
       // Clear all user-specific data on logout
       setSubscriptionStats({
         status: null,
@@ -161,11 +182,18 @@ export const useAuth = () => {
       setFavoriteIds([]);
       setActivePlan(null);
 
-      // Don't clear savedCredentials on logout if rememberMe was true
+      console.log('✅ Logout successful');
+
+      addToast({
+        message: 'You have been logged out successfully.',
+        type: 'info',
+        duration: 3000,
+      });
     } catch (error) {
       console.error('❌ Logout error:', error);
       setAuthToken(null);
       setUser(null);
+      setTokenExpiration(null);
       setIsAuthenticated(false);
       setSubscriptionStats({
         status: null,
@@ -183,6 +211,7 @@ export const useAuth = () => {
   }, [
     setAuthToken,
     setUser,
+    setTokenExpiration,
     setIsAuthenticated,
     setSubscriptionStats,
     setFavoriteIds,
@@ -331,7 +360,7 @@ export const useAuth = () => {
     try {
       if (authToken && user) {
         // Check if token is expired
-        if (isTokenExpired(authToken)) {
+        if (isTokenExpiredCombined(authToken, tokenExpiration)) {
           console.log('❌ Token expired, logging out');
           await logout();
           return false;
@@ -367,6 +396,7 @@ export const useAuth = () => {
   }, [
     authToken,
     user,
+    tokenExpiration,
     setIsAuthenticated,
     logout,
     fetchAndSetSubscriptionStats,
@@ -377,9 +407,12 @@ export const useAuth = () => {
   return {
     user,
     authToken,
+    tokenExpiration,
     isAuthenticated,
     savedCredentials,
-    isTokenValid: authToken ? !isTokenExpired(authToken) : false,
+    isTokenValid: authToken
+      ? !isTokenExpiredCombined(authToken, tokenExpiration)
+      : false,
     // Authentication functions
     login,
     logout,

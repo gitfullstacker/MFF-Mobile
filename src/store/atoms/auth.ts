@@ -64,6 +64,12 @@ export const authTokenAtom = atomWithStorage<string | null>(
 
 export const userAtom = atomWithStorage<User | null>('user', null, storage);
 
+// NEW: Store token expiration data from backend response
+export const tokenExpirationAtom = atomWithStorage<{
+  expires_at: string;
+  expires_in: number;
+} | null>('tokenExpiration', null, storage);
+
 // Save username/password for "Remember Me" functionality
 export const savedCredentialsAtom = atomWithStorage<{
   username: string;

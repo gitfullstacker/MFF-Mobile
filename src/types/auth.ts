@@ -4,6 +4,8 @@ export interface LoginResponse {
   token: string;
   wp_token?: string;
   is_migrated: boolean;
+  expires_at: string;
+  expires_in: number;
   user: User;
 }
 
