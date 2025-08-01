@@ -240,24 +240,12 @@ const RecipeDetailScreen: React.FC = () => {
 
   // Render ingredient with adjusted amounts
   const renderIngredient = (item: IngredientItem, index: number) => {
-    const factor = selectedRecipe?.servings || 1;
-    let adjustedAmount = item.amount;
-
-    // If amount is a number, scale it
-    if (!isNaN(parseFloat(item.amount))) {
-      adjustedAmount = (parseFloat(item.amount) * factor).toFixed(1);
-      // Remove trailing .0
-      adjustedAmount = adjustedAmount.endsWith('.0')
-        ? adjustedAmount.slice(0, -2)
-        : adjustedAmount;
-    }
-
     return (
       <View key={`${item.uid}-${index}`} style={styles.ingredientItem}>
         <View style={styles.ingredientBullet} />
         <Text style={styles.ingredientText}>
           <Text style={styles.ingredientAmount}>
-            {adjustedAmount} {item.unit}{' '}
+            {item.amount} {item.unit}{' '}
           </Text>
           {item.name}
           {item.notes && (
