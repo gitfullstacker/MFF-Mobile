@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '@env';
-import { isTokenExpired } from '../utils/tokenUtils';
+import { isTokenExpiredCombined } from '../utils/tokenUtils';
 import { eventBus } from '@/utils/eventBus';
 
 console.log('🌍 Environment Debug:', {
@@ -48,11 +48,33 @@ class ApiClient {
           const authToken = await AsyncStorage.getItem('authToken');
 
           if (authToken) {
+            const tokenExpirationData = await AsyncStorage.getItem(
+              'tokenExpiration',
+            );
+            let tokenExpiration = null;
+
+            if (tokenExpirationData) {
+              try {
+                tokenExpiration = JSON.parse(tokenExpirationData);
+              } catch (parseError) {
+                console.warn(
+                  'Failed to parse token expiration data:',
+                  parseError,
+                );
+              }
+            }
+
             // Check if token is expired
-            if (isTokenExpired(authToken)) {
+            if (isTokenExpiredCombined(authToken, tokenExpiration)) {
               // Clear auth data
               await AsyncStorage.multiRemove(['authToken', 'user']);
               console.log('🔄 Token expired, cleared auth data');
+
+              // Emit auth error to trigger app-wide logout
+              eventBus.emit(
+                'AUTH_ERROR',
+                'Your session has expired. Please log in again.',
+              );
             } else {
               // Token is valid
               config.headers.Authorization = `Bearer ${authToken}`;
@@ -113,6 +135,20 @@ class ApiClient {
             hasResponse: !!error.response,
             hasRequest: !!error.request,
           });
+
+          // Log response data if available
+          if (error.response?.data) {
+            console.error('❌ Error Response Data:', error.response.data);
+          }
+
+          // Log request details if no response
+          if (!error.response && error.request) {
+            console.error('❌ Request made but no response:', {
+              url: error.config?.url,
+              method: error.config?.method,
+              timeout: error.config?.timeout,
+            });
+          }
         }
 
         // Network timeout
@@ -146,7 +182,11 @@ class ApiClient {
           // Handle unauthorized access - token expired or invalid
           try {
             // Clear auth data
-            await AsyncStorage.multiRemove(['authToken', 'user']);
+            await AsyncStorage.multiRemove([
+              'authToken',
+              'user',
+              'tokenExpiration',
+            ]);
             console.log('🔒 401 Unauthorized - cleared auth data');
 
             // Emit auth error event to trigger login redirect
