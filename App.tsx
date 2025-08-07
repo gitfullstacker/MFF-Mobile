@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { StatusBar, Linking } from 'react-native';
 import { Provider, useAtom } from 'jotai';
 import { AppNavigator } from './src/navigation/AppNavigator';
@@ -16,7 +16,6 @@ import { NavigationContainerRef } from '@react-navigation/native';
 import { RootStackParamList } from '@/types';
 
 const AppContent: React.FC = () => {
-  const [loading, setLoading] = useState(true);
   const [, setIsAuthenticated] = useAtom(isAuthenticatedAtom);
   const [, addToast] = useAtom(addToastAtom);
   const { checkAuthStatus } = useAuth();
@@ -81,8 +80,6 @@ const AppContent: React.FC = () => {
         console.log('✅ App initialization completed');
       } catch (error) {
         console.error('❌ Error initializing app:', error);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -124,10 +121,6 @@ const AppContent: React.FC = () => {
     }
   }, [subscriptionCheck]);
 
-  if (loading) {
-    return <LoadingOverlay message="Loading..." />;
-  }
-
   return (
     <>
       <StatusBar
@@ -144,7 +137,9 @@ const App: React.FC = () => {
   return (
     <Provider>
       <ErrorBoundary>
-        <AppContent />
+        <Suspense fallback={<LoadingOverlay message="Loading..." />}>
+          <AppContent />
+        </Suspense>
       </ErrorBoundary>
     </Provider>
   );
