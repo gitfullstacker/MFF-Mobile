@@ -283,6 +283,18 @@ const RecipeDetailScreen: React.FC = () => {
   const renderTimeInfo = () => {
     if (!selectedRecipe) return null;
 
+    const formatServingSize = (servings: number, servingsUnit: string) => {
+      if (!servings) return '1';
+      return `${servings}`;
+    };
+
+    const formatServingLabel = (servings: number, servingsUnit: string) => {
+      if (!servings || servings === 1) {
+        return 'Serve';
+      }
+      return 'Serves';
+    };
+
     return (
       <View style={styles.timeInfoContainer}>
         <View style={styles.timeCard}>
@@ -300,6 +312,21 @@ const RecipeDetailScreen: React.FC = () => {
           <Text style={styles.timeLabel}>Total</Text>
           <Text style={styles.timeValue}>
             {selectedRecipe.total_time || 0}m
+          </Text>
+        </View>
+        <View style={styles.timeCard}>
+          <Icon name="users" size={20} color={colors.primary} />
+          <Text style={styles.timeLabel}>
+            {formatServingLabel(
+              selectedRecipe.servings,
+              selectedRecipe.servings_unit,
+            )}
+          </Text>
+          <Text style={styles.timeValue}>
+            {formatServingSize(
+              selectedRecipe.servings,
+              selectedRecipe.servings_unit,
+            )}
           </Text>
         </View>
       </View>
