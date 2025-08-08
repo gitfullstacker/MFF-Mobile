@@ -108,7 +108,8 @@ const RecipeListScreen: React.FC = () => {
         key !== 'search' &&
         value !== undefined &&
         value !== null &&
-        value !== ''
+        value !== '' &&
+        value !== 'newest'
       ) {
         count++;
       }

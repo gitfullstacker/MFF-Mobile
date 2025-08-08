@@ -45,11 +45,10 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
   }, [filters]);
 
   const handleReset = useCallback(() => {
-    const resetFilters = {};
-    setLocalFilters(resetFilters);
+    setLocalFilters({ sort: 'newest' });
     setShowFavoritesOnly(false);
 
-    onApply({});
+    onApply({ sort: 'newest' });
   }, []);
 
   const handleApply = useCallback(() => {
