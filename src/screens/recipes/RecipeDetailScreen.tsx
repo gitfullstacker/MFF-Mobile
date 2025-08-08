@@ -564,6 +564,7 @@ const RecipeDetailScreen: React.FC = () => {
                 calories={selectedRecipe.nutrition.calories}
                 variant="circle"
                 size="medium"
+                precision={1}
               />
             </View>
           </Section>
