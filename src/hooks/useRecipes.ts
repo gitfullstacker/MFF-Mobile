@@ -46,7 +46,12 @@ export const useRecipes = () => {
           setRecipes(recipesWithFavoriteStatus);
           setPage(1);
         } else {
-          setRecipes(prev => [...prev, ...recipesWithFavoriteStatus]);
+          // Prevent duplicates
+          const existingIds = new Set(recipes.map(r => r._id));
+          const newRecipes = recipesWithFavoriteStatus.filter(
+            recipe => !existingIds.has(recipe._id),
+          );
+          setRecipes(prev => [...prev, ...newRecipes]);
           setPage(currentPage + 1);
         }
 
