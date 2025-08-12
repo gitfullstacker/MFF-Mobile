@@ -1,25 +1,22 @@
 import { apiClient } from './api';
-import { Recipe } from '../types/recipe';
+import { Recipe, RecipeFilters } from '../types/recipe';
 import { PaginatedResponse } from '../types/common';
-import { GetFavoritesRequest } from '@/types/favorite';
 
 export const favoriteService = {
   async getFavorites(
-    params: GetFavoritesRequest = {},
+    filters?: RecipeFilters,
   ): Promise<PaginatedResponse<Recipe>> {
-    const { page = 0, pageSize = 10, search } = params;
+    const params = new URLSearchParams();
 
-    // Build query string
-    const queryParams = new URLSearchParams({
-      page: page.toString(),
-      pageSize: pageSize.toString(),
-    });
-
-    if (search && search.trim()) {
-      queryParams.append('search', search.trim());
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value.toString());
+        }
+      });
     }
 
-    return apiClient.get(`/favorites?${queryParams.toString()}`);
+    return apiClient.get(`/favorites?${params.toString()}`);
   },
 
   async getFavoriteIds(): Promise<{ ids: string[] }> {

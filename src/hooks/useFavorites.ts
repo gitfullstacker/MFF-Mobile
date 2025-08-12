@@ -10,10 +10,10 @@ import {
   suggestedPlanAtom,
   activePlanAtom,
   selectedPlanAtom,
+  recipeFiltersAtom,
 } from '../store';
 import { favoriteService } from '../services/favorite';
-import { Recipe } from '../types/recipe';
-import { FavoriteFilters } from '@/types/favorite';
+import { Recipe, RecipeFilters } from '../types/recipe';
 import { PlanSchedule } from '@/types/plan';
 
 const RECENT_RECIPES_KEY = 'recentRecipes';
@@ -23,6 +23,7 @@ export const useFavorites = () => {
   const [favoriteRecipes, setFavoriteRecipes] = useAtom(favoriteRecipesAtom);
   const [recipes, setRecipes] = useAtom(recipesAtom);
   const [selectedRecipe, setSelectedRecipe] = useAtom(selectedRecipeAtom);
+  const [filters, setFilters] = useAtom(recipeFiltersAtom);
   const [suggestedPlan, setSuggestedPlan] = useAtom(suggestedPlanAtom);
   const [activePlan, setActivePlan] = useAtom(activePlanAtom);
   const [selectedPlan, setSelectedPlan] = useAtom(selectedPlanAtom);
@@ -33,7 +34,6 @@ export const useFavorites = () => {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filters, setFilters] = useState<FavoriteFilters>({});
 
   // Helper function to update recent recipes in AsyncStorage
   const updateRecentRecipesStorage = useCallback(
@@ -147,18 +147,18 @@ export const useFavorites = () => {
   );
 
   const fetchFavorites = useCallback(
-    async (appliedFilters?: FavoriteFilters, reset = false) => {
-      try {
-        if (loading && !reset && !refreshing) return;
+    async (appliedFilters?: RecipeFilters, reset = false) => {
+      if (loading && !reset && !refreshing) return;
 
+      try {
         setLoading(true);
         const currentPage = reset ? 0 : page + 1;
         const filtersToUse = appliedFilters || filters;
 
         const response = await favoriteService.getFavorites({
+          ...filtersToUse,
           page: currentPage,
-          pageSize: 18, // Match backend default
-          search: filtersToUse.search,
+          pageSize: 18,
         });
 
         // Since these are favorites from the API, they should all be favorites
@@ -183,37 +183,27 @@ export const useFavorites = () => {
         }
 
         setHasMore(response.hasMore);
-        setLoading(false);
-        return response;
       } catch (error: any) {
-        console.error('Error fetching favorites:', error);
-        setLoading(false);
-        setHasMore(false);
         addToast({
           message: error.response?.data?.message || 'Failed to fetch favorites',
           type: 'error',
           duration: 5000,
         });
-        return { data: [], total: 0, hasMore: false };
+        setHasMore(false);
+      } finally {
+        setLoading(false);
       }
     },
     [
+      favoriteRecipes,
+      filters,
+      page,
+      hasMore,
       loading,
       refreshing,
-      favoriteRecipes,
       setFavoriteRecipes,
       addToast,
-      page,
-      filters,
     ],
-  );
-
-  const applyFilters = useCallback(
-    (newFilters: FavoriteFilters) => {
-      setFilters(newFilters);
-      fetchFavorites(newFilters, true);
-    },
-    [setFilters, fetchFavorites],
   );
 
   const toggleFavorite = useCallback(
@@ -303,12 +293,20 @@ export const useFavorites = () => {
   }, [loading, hasMore, fetchFavorites]);
 
   const refreshFavorites = useCallback(
-    async (appliedFilters?: FavoriteFilters) => {
+    async (appliedFilters?: RecipeFilters) => {
       setRefreshing(true);
       await fetchFavorites(appliedFilters || filters, true);
       setRefreshing(false);
     },
     [fetchFavorites, filters],
+  );
+
+  const applyFilters = useCallback(
+    (newFilters: RecipeFilters) => {
+      setFilters(newFilters);
+      fetchFavorites(newFilters, true);
+    },
+    [setFilters, fetchFavorites],
   );
 
   return {

@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Switch,
 } from 'react-native';
 import { RangeSlider } from 'react-native-product-sliders';
 import Icon from 'react-native-vector-icons/Feather';
@@ -37,31 +36,20 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
   onApply,
 }) => {
   const [localFilters, setLocalFilters] = useState<RecipeFilters>(filters);
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   useEffect(() => {
     setLocalFilters(filters);
-    setShowFavoritesOnly(!!filters.favorites);
   }, [filters]);
 
   const handleReset = useCallback(() => {
     setLocalFilters({ sort: 'newest' });
-    setShowFavoritesOnly(false);
-
     onApply({ sort: 'newest' });
   }, []);
 
   const handleApply = useCallback(() => {
     const updatedFilters = { ...localFilters };
-
-    if (showFavoritesOnly) {
-      updatedFilters.favorites = true;
-    } else {
-      updatedFilters.favorites = undefined;
-    }
-
     onApply(updatedFilters);
-  }, [localFilters, showFavoritesOnly, onApply]);
+  }, [localFilters, onApply]);
 
   const updateFilter = useCallback(
     (key: keyof RecipeFilters, value: any) => {
@@ -270,28 +258,6 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
           <Text style={styles.sectionTitle}>Sort By</Text>
           {renderSortOptions()}
         </View>
-
-        {/* Favorites Switch */}
-        <View style={styles.switchSection}>
-          <View style={styles.switchLabelContainer}>
-            <Icon
-              name="heart"
-              size={18}
-              color={colors.primary}
-              style={styles.switchIcon}
-            />
-            <Text style={styles.switchLabel}>Show favorites only</Text>
-          </View>
-          <Switch
-            value={showFavoritesOnly}
-            onValueChange={setShowFavoritesOnly}
-            trackColor={{
-              false: colors.gray[300],
-              true: colors.primary + '70',
-            }}
-            thumbColor={showFavoritesOnly ? colors.primary : colors.gray[100]}
-          />
-        </View>
       </ScrollView>
     </View>
   );
@@ -428,26 +394,6 @@ const styles = StyleSheet.create({
   },
   sortOptionTextSelected: {
     color: colors.white,
-    fontWeight: typography.fontWeights.medium,
-  },
-  switchSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
-  },
-  switchLabelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  switchIcon: {
-    marginRight: spacing.sm,
-  },
-  switchLabel: {
-    ...typography.bodyRegular,
-    color: colors.text.primary,
     fontWeight: typography.fontWeights.medium,
   },
   resetButton: {

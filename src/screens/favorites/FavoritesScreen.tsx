@@ -1,23 +1,32 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
+  Text,
   StyleSheet,
   FlatList,
+  TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
   Dimensions,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Feather';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { Header } from '../../components/navigation/Header';
 import { Input } from '../../components/forms/Input';
 import { RecipeCard } from '../../components/recipe/RecipeCard';
+import { RecipeFilterModal } from '../../components/modals/RecipeFilterModal';
 import { EmptyState } from '../../components/feedback/EmptyState';
-import { colors, spacing } from '../../theme';
-import { Recipe } from '../../types/recipe';
+import {
+  colors,
+  typography,
+  spacing,
+  borderRadius,
+  fontWeights,
+} from '../../theme';
+import { Recipe, RecipeFilters } from '../../types/recipe';
 import { useFavorites } from '@/hooks/useFavorites';
 import { SCREEN_NAMES } from '@/constants';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
-import { FavoriteFilters } from '@/types/favorite';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -37,6 +46,7 @@ const FavoritesScreen: React.FC = () => {
   } = useFavorites();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [showRecipeFilterModal, setShowRecipeFilterModal] = useState(false);
 
   // Determine number of columns based on screen width and orientation
   // Show 1 column on phones, 2 columns on tablets portrait, 3 columns on tablets landscape
@@ -71,6 +81,14 @@ const FavoritesScreen: React.FC = () => {
     fetchFavorites({}, true);
   }, []);
 
+  const handleSearch = useCallback(() => {
+    const newFilters: RecipeFilters = {
+      ...filters,
+      search: searchQuery.trim() || undefined,
+    };
+    applyFilters(newFilters);
+  }, [searchQuery, filters, applyFilters]);
+
   const handleRefresh = useCallback(async () => {
     await refreshFavorites(filters);
   }, [refreshFavorites, filters]);
@@ -81,13 +99,29 @@ const FavoritesScreen: React.FC = () => {
     }
   }, [loading, hasMore, loadMoreFavorites]);
 
-  const handleSearch = useCallback(() => {
-    const newFilters: FavoriteFilters = {
-      ...filters,
-      search: searchQuery.trim() || undefined,
-    };
-    applyFilters(newFilters);
-  }, [searchQuery, filters, applyFilters]);
+  const handleApplyFilters = useCallback(
+    (newFilters: RecipeFilters) => {
+      applyFilters(newFilters);
+      setShowRecipeFilterModal(false);
+    },
+    [applyFilters],
+  );
+
+  const getFilterCount = () => {
+    let count = 0;
+    Object.entries(filters).forEach(([key, value]) => {
+      if (
+        key !== 'search' &&
+        value !== undefined &&
+        value !== null &&
+        value !== '' &&
+        value !== 'newest'
+      ) {
+        count++;
+      }
+    });
+    return count;
+  };
 
   const renderRecipe = ({ item }: { item: Recipe }) => {
     const isMultiColumn = numColumns > 1;
@@ -116,12 +150,12 @@ const FavoritesScreen: React.FC = () => {
   };
 
   const renderEmptyState = () => {
-    if (loading && !refreshing) return null;
+    if (loading) return null;
 
     if (filters.search) {
       return (
         <EmptyState
-          title="No recipes found"
+          title="No favorites found"
           description={`We couldn't find any favorites matching "${filters.search}"`}
           action={{
             label: 'Clear Search',
@@ -148,9 +182,18 @@ const FavoritesScreen: React.FC = () => {
     );
   };
 
+  const filterCount = getFilterCount();
+
   return (
     <PageContainer safeArea={false}>
-      <Header title="Favorites" showBack={false} />
+      <Header
+        title="Favorites"
+        showBack={false}
+        rightAction={{
+          icon: 'filter',
+          onPress: () => setShowRecipeFilterModal(true),
+        }}
+      />
 
       <View style={styles.searchContainer}>
         <Input
@@ -169,6 +212,15 @@ const FavoritesScreen: React.FC = () => {
           returnKeyType="search"
           containerStyle={styles.searchInput}
         />
+
+        {filterCount > 0 && (
+          <TouchableOpacity
+            style={styles.filterBadge}
+            onPress={() => setShowRecipeFilterModal(true)}>
+            <Text style={styles.filterBadgeText}>{filterCount} filters</Text>
+            <Icon name="x" size={14} color={colors.primary} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <FlatList
@@ -192,6 +244,13 @@ const FavoritesScreen: React.FC = () => {
         ListEmptyComponent={renderEmptyState}
         ListFooterComponent={renderFooter}
       />
+
+      <RecipeFilterModal
+        visible={showRecipeFilterModal}
+        onClose={() => setShowRecipeFilterModal(false)}
+        filters={filters}
+        onApply={handleApplyFilters}
+      />
     </PageContainer>
   );
 };
@@ -203,6 +262,22 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     marginBottom: 0,
+  },
+  filterBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary + '20',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    marginTop: spacing.sm,
+    alignSelf: 'flex-start',
+  },
+  filterBadgeText: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    marginRight: spacing.xs,
+    fontWeight: fontWeights.medium,
   },
   listContent: {
     padding: spacing.sm,

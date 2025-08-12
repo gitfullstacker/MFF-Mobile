@@ -33,12 +33,20 @@ const { width: screenWidth } = Dimensions.get('window');
 const RecipeListScreen: React.FC = () => {
   const { navigateToRecipeDetail } = useNavigationHelpers();
   const { toggleFavorite } = useFavorites();
-  const { recipes, loading, hasMore, filters, fetchRecipes, applyFilters } =
-    useRecipes();
+  const {
+    loading,
+    recipes,
+    refreshing,
+    hasMore,
+    filters,
+    fetchRecipes,
+    loadMoreRecipes,
+    refreshRecipes,
+    applyFilters,
+  } = useRecipes();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showRecipeFilterModal, setShowRecipeFilterModal] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
 
   // Determine number of columns based on screen width and orientation
   // Show 1 column on phones, 2 columns on tablets portrait, 3 columns on tablets landscape
@@ -70,7 +78,7 @@ const RecipeListScreen: React.FC = () => {
 
   useEffect(() => {
     // Initial load
-    fetchRecipes();
+    fetchRecipes({}, true);
   }, []);
 
   const handleSearch = useCallback(() => {
@@ -82,16 +90,14 @@ const RecipeListScreen: React.FC = () => {
   }, [searchQuery, filters, applyFilters]);
 
   const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchRecipes(filters, true);
-    setRefreshing(false);
-  }, [fetchRecipes, filters]);
+    await refreshRecipes(filters);
+  }, [refreshRecipes, filters]);
 
   const handleLoadMore = useCallback(() => {
     if (!loading && hasMore) {
-      fetchRecipes();
+      loadMoreRecipes();
     }
-  }, [loading, hasMore, fetchRecipes]);
+  }, [loading, hasMore, loadMoreRecipes]);
 
   const handleApplyFilters = useCallback(
     (newFilters: RecipeFilters) => {

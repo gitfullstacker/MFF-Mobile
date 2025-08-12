@@ -8,7 +8,7 @@ import {
   recipeFiltersAtom,
 } from '../store';
 import { recipeService } from '../services/recipe';
-import { RecipeFilters } from '../types/recipe';
+import { Recipe, RecipeFilters } from '../types/recipe';
 
 export const useRecipes = () => {
   const [recipes, setRecipes] = useAtom(recipesAtom);
@@ -18,16 +18,18 @@ export const useRecipes = () => {
   const [, addToast] = useAtom(addToastAtom);
 
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchRecipes = useCallback(
     async (appliedFilters?: RecipeFilters, reset = false) => {
-      if (loading || (!hasMore && !reset)) return;
+      if (loading && !reset && !refreshing) return;
 
       try {
         setLoading(true);
-        const currentPage = reset ? 0 : page;
+        // FIXED: For pagination, use next page when not resetting
+        const currentPage = reset ? 0 : page + 1;
         const filtersToUse = appliedFilters || filters;
 
         const response = await recipeService.getRecipes({
@@ -37,22 +39,24 @@ export const useRecipes = () => {
         });
 
         // Sync favorite status with global state
-        const recipesWithFavoriteStatus = response.data.map(recipe => ({
-          ...recipe,
-          is_favorite: favoriteIds.includes(recipe._id),
-        }));
+        const recipesWithFavoriteStatus = response.data.map(
+          (recipe: Recipe) => ({
+            ...recipe,
+            is_favorite: favoriteIds.includes(recipe._id),
+          }),
+        );
 
         if (reset) {
           setRecipes(recipesWithFavoriteStatus);
-          setPage(1);
+          setPage(0);
         } else {
           // Prevent duplicates
           const existingIds = new Set(recipes.map(r => r._id));
           const newRecipes = recipesWithFavoriteStatus.filter(
-            recipe => !existingIds.has(recipe._id),
+            (recipe: Recipe) => !existingIds.has(recipe._id),
           );
           setRecipes(prev => [...prev, ...newRecipes]);
-          setPage(currentPage + 1);
+          setPage(currentPage);
         }
 
         setHasMore(response.hasMore);
@@ -62,6 +66,7 @@ export const useRecipes = () => {
           type: 'error',
           duration: 5000,
         });
+        setHasMore(false);
       } finally {
         setLoading(false);
       }
@@ -70,8 +75,8 @@ export const useRecipes = () => {
       recipes,
       filters,
       page,
-      hasMore,
       loading,
+      refreshing,
       setRecipes,
       addToast,
       favoriteIds,
@@ -106,6 +111,21 @@ export const useRecipes = () => {
     [setSelectedRecipe, addToast, favoriteIds],
   );
 
+  const loadMoreRecipes = useCallback(() => {
+    if (!loading && hasMore) {
+      fetchRecipes();
+    }
+  }, [loading, hasMore, fetchRecipes]);
+
+  const refreshRecipes = useCallback(
+    async (appliedFilters?: RecipeFilters) => {
+      setRefreshing(true);
+      await fetchRecipes(appliedFilters || filters, true);
+      setRefreshing(false);
+    },
+    [fetchRecipes, filters],
+  );
+
   const applyFilters = useCallback(
     (newFilters: RecipeFilters) => {
       setFilters(newFilters);
@@ -119,9 +139,12 @@ export const useRecipes = () => {
     selectedRecipe,
     filters,
     loading,
+    refreshing,
     hasMore,
     fetchRecipes,
     fetchRecipe,
+    loadMoreRecipes,
+    refreshRecipes,
     applyFilters,
   };
 };
