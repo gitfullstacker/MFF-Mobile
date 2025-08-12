@@ -9,8 +9,8 @@ export const useDownloads = () => {
 
   const [filters, setFilters] = useState<DownloadFilters>();
   const [downloads, setDownloads] = useState<Download[]>([]);
-  const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 

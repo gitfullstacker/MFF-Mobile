@@ -22,30 +22,30 @@ export const usePlans = () => {
   const [favoriteIds] = useAtom(favoriteRecipeIdsAtom);
   const [, addToast] = useAtom(addToastAtom);
 
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const [filters, setFilters] = useState<PlanFilters>({});
 
   const fetchPlans = useCallback(
     async (appliedFilters?: PlanFilters, reset = false) => {
+      if (loading && !reset && !refreshing) return;
+
       try {
-        if (loading && !reset) return;
-
         setLoading(true);
-
-        const page = reset ? 0 : currentPage + 1;
+        const currentPage = reset ? 0 : page + 1;
         const filtersToUse = appliedFilters || filters;
 
         const response = await planService.getPlans({
-          page,
-          pageSize: 10,
           ...filtersToUse,
+          page: currentPage,
+          pageSize: 18,
         });
 
         if (reset) {
           setPlans(response.data);
-          setCurrentPage(0);
+          setPage(0);
         } else {
           // Prevent duplicates when adding new data
           const existingIds = new Set(plans.map(p => p._id));
@@ -53,7 +53,7 @@ export const usePlans = () => {
             (plan: Plan) => !existingIds.has(plan._id),
           );
           setPlans(prev => [...prev, ...newPlans]);
-          setCurrentPage(page);
+          setPage(currentPage);
         }
 
         setHasMore(response.hasMore);
@@ -64,11 +64,12 @@ export const usePlans = () => {
           type: 'error',
           duration: 5000,
         });
+        setHasMore(false);
       } finally {
         setLoading(false);
       }
     },
-    [loading, currentPage, plans, setPlans, addToast, filters],
+    [plans, filters, page, loading, refreshing, setPlans, addToast],
   );
 
   const fetchPlan = useCallback(
@@ -267,12 +268,27 @@ export const usePlans = () => {
     }
   }, [setSuggestedPlan, addToast, favoriteIds]);
 
+  const loadMorePlans = useCallback(() => {
+    if (!loading && hasMore) {
+      fetchPlans();
+    }
+  }, [loading, hasMore, fetchPlans]);
+
+  const refreshPlans = useCallback(
+    async (appliedFilters?: PlanFilters) => {
+      setRefreshing(true);
+      await fetchPlans(appliedFilters || filters, true);
+      setRefreshing(false);
+    },
+    [fetchPlans, filters],
+  );
+
   const applyFilters = useCallback(
     (newFilters: PlanFilters) => {
       setFilters(newFilters);
       fetchPlans(newFilters, true);
     },
-    [fetchPlans],
+    [setFilters, fetchPlans],
   );
 
   return {
@@ -281,6 +297,7 @@ export const usePlans = () => {
     suggestedPlan,
     filters,
     loading,
+    refreshing,
     hasMore,
     fetchPlans,
     fetchPlan,
@@ -288,6 +305,8 @@ export const usePlans = () => {
     updatePlan,
     deletePlan,
     duplicatePlan,
+    loadMorePlans,
+    refreshPlans,
     applyFilters,
     fetchSuggestedMealPlan,
   };

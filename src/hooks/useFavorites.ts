@@ -29,9 +29,8 @@ export const useFavorites = () => {
   const [selectedPlan, setSelectedPlan] = useAtom(selectedPlanAtom);
   const [, addToast] = useAtom(addToastAtom);
 
-  // Local state for pagination and filters
-  const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 

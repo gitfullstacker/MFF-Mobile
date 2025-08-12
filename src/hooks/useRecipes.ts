@@ -17,8 +17,8 @@ export const useRecipes = () => {
   const [favoriteIds] = useAtom(favoriteRecipeIdsAtom);
   const [, addToast] = useAtom(addToastAtom);
 
-  const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 

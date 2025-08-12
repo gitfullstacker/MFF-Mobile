@@ -28,6 +28,7 @@ import { PlanWeekdayIndicator } from '@/components/meal-plan/PlanWeekdayIndicato
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { useActivePlan } from '../../hooks/useActivePlan';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
+import { LoadingOverlay } from '@/components/feedback/LoadingOverlay';
 
 const MealPlanListScreen: React.FC = () => {
   const {
@@ -36,13 +37,16 @@ const MealPlanListScreen: React.FC = () => {
     navigateToEditMealPlan,
   } = useNavigationHelpers();
   const {
-    plans,
     loading,
+    plans,
+    refreshing,
     hasMore,
     filters,
     fetchPlans,
     deletePlan,
     duplicatePlan,
+    loadMorePlans,
+    refreshPlans,
     applyFilters,
   } = usePlans();
   const {
@@ -52,7 +56,6 @@ const MealPlanListScreen: React.FC = () => {
   } = useActivePlan();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
@@ -74,16 +77,14 @@ const MealPlanListScreen: React.FC = () => {
   }, [searchQuery, filters, applyFilters]);
 
   const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchPlans(filters, true);
-    setRefreshing(false);
-  }, [fetchPlans, filters]);
+    await refreshPlans(filters);
+  }, [refreshPlans, filters]);
 
   const handleLoadMore = useCallback(() => {
     if (!loading && hasMore) {
-      fetchPlans();
+      loadMorePlans();
     }
-  }, [loading, hasMore, fetchPlans]);
+  }, [loading, hasMore, loadMorePlans]);
 
   const confirmDeletePlan = (plan: Plan) => {
     setPlanToDelete(plan);
@@ -355,6 +356,8 @@ const MealPlanListScreen: React.FC = () => {
         onConfirm={handleDuplicatePlan}
         confirmText="Duplicate"
       />
+
+      {loading && !refreshing && <LoadingOverlay message="Loading plans..." />}
     </PageContainer>
   );
 };
