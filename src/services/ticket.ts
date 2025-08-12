@@ -1,30 +1,20 @@
 import { apiClient } from './api';
 import { Ticket, CreateTicketRequest } from '../types/ticket';
 import { PaginatedResponse } from '../types/common';
+import { DownloadFilters } from '@/types/download';
 
 export const ticketService = {
   async getTickets(
-    page = 0,
-    pageSize = 20,
-    type?: string,
-    search?: string,
+    filters?: DownloadFilters,
   ): Promise<PaginatedResponse<Ticket>> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      pageSize: pageSize.toString(),
-    });
+    const params = new URLSearchParams();
 
-    // Add type filter if specified and not 'all'
-    if (type && type !== 'all') {
-      params.append('type', type);
-    } else {
-      // Send 'all' explicitly to match backend DTO default
-      params.append('type', 'all');
-    }
-
-    // Add search parameter if provided
-    if (search && search.trim()) {
-      params.append('search', search.trim());
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value.toString());
+        }
+      });
     }
 
     return apiClient.get(`/tickets?${params.toString()}`);

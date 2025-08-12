@@ -30,3 +30,10 @@ export interface CreateTicketRequest {
   description: string;
   type: string; // Changed from 'bug' | 'feature' to string
 }
+
+export interface TicketFilters {
+  type?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}

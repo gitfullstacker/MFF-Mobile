@@ -2,44 +2,60 @@ import { useCallback, useState } from 'react';
 import { useAtom } from 'jotai';
 import { addToastAtom } from '../store';
 import { ticketService } from '../services/ticket';
-import { Ticket, CreateTicketRequest } from '../types/ticket';
+import { Ticket, CreateTicketRequest, TicketFilters } from '../types/ticket';
 
 export const useTickets = () => {
   const [, addToast] = useAtom(addToastAtom);
+
+  const [filters, setFilters] = useState<TicketFilters>();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchTickets = useCallback(
-    async (page = 0, pageSize = 20, type?: string, search?: string) => {
+    async (appliedFilters?: TicketFilters, reset = false) => {
+      if (loading && !reset && !refreshing) return;
+
       try {
         setLoading(true);
-        const response = await ticketService.getTickets(
-          page,
-          pageSize,
-          type,
-          search,
-        );
+        const currentPage = reset ? 0 : page + 1;
+        const filtersToUse = appliedFilters || filters;
 
-        if (page === 0) {
+        const response = await ticketService.getTickets({
+          ...filtersToUse,
+          page: currentPage,
+          pageSize: 20,
+        });
+
+        if (reset) {
           setTickets(response.data);
+          setPage(0);
         } else {
-          setTickets(prev => [...prev, ...response.data]);
+          // Prevent duplicates
+          const existingIds = new Set(tickets.map(d => d._id));
+          const newTickets = response.data.filter(
+            (ticket: Ticket) => !existingIds.has(ticket._id),
+          );
+          setTickets(prev => [...prev, ...newTickets]);
+          setPage(currentPage);
         }
 
-        return response;
+        setHasMore(response.hasMore);
       } catch (error: any) {
         addToast({
           message: error.response?.data?.message || 'Failed to fetch tickets',
           type: 'error',
           duration: 5000,
         });
-        throw error;
+        setHasMore(false);
       } finally {
         setLoading(false);
       }
     },
-    [addToast],
+    [tickets, filters, page, loading, refreshing, setTickets, addToast],
   );
 
   const fetchTicket = useCallback(
@@ -150,19 +166,43 @@ export const useTickets = () => {
     [selectedTicket, addToast],
   );
 
-  const refreshTickets = useCallback(() => {
-    setTickets([]);
-  }, []);
+  const loadMoreTickets = useCallback(() => {
+    if (!loading && hasMore) {
+      fetchTickets();
+    }
+  }, [loading, hasMore, fetchTickets]);
+
+  const refreshTickets = useCallback(
+    async (appliedFilters?: TicketFilters) => {
+      setRefreshing(true);
+      await fetchTickets(appliedFilters || filters, true);
+      setRefreshing(false);
+    },
+    [fetchTickets, filters],
+  );
+
+  const applyFilters = useCallback(
+    (newFilters: TicketFilters) => {
+      setFilters(newFilters);
+      fetchTickets(newFilters, true);
+    },
+    [setFilters, fetchTickets],
+  );
 
   return {
     tickets,
     selectedTicket,
+    filters,
     loading,
+    refreshing,
+    hasMore,
     fetchTickets,
     fetchTicket,
     createTicket,
     addAttachment,
     addComment,
+    loadMoreTickets,
     refreshTickets,
+    applyFilters,
   };
 };
