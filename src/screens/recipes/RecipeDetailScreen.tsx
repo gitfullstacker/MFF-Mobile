@@ -124,6 +124,11 @@ const RecipeDetailScreen: React.FC = () => {
     };
   }, [cookModeActive]);
 
+  const stripHtmlTags = (html: any) => {
+    if (!html) return '';
+    return html.replace(/<[^>]*>/g, '').trim();
+  };
+
   // Handle scroll event manually
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -653,7 +658,9 @@ const RecipeDetailScreen: React.FC = () => {
                             {stepIndex + 1}
                           </Text>
                         </View>
-                        <Text style={styles.instructionText}>{step.text}</Text>
+                        <Text style={styles.instructionText}>
+                          {stripHtmlTags(step.text)}
+                        </Text>
                       </View>
                     ))}
                   </View>
