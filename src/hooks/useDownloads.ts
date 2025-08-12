@@ -1,72 +1,83 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { downloadService } from '../services/download';
 import { Download, DownloadFilters } from '../types/download';
-import { PaginatedResponse } from '../types/common';
+import { useAtom } from 'jotai';
+import { addToastAtom } from '@/store';
 
 export const useDownloads = () => {
+  const [, addToast] = useAtom(addToastAtom);
+
+  const [filters, setFilters] = useState<DownloadFilters>();
   const [downloads, setDownloads] = useState<Download[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [pagination, setPagination] = useState({
-    total: 0,
-    page: 0,
-    pageSize: 20,
-    totalPages: 0,
-    hasMore: false,
-  });
 
   const fetchDownloads = useCallback(
-    async (filters?: DownloadFilters, append = false) => {
+    async (appliedFilters?: DownloadFilters, reset = false) => {
+      if (loading && !reset && !refreshing) return;
+
       try {
-        if (!append) {
-          setLoading(true);
-        }
-        setError(null);
+        setLoading(true);
+        const currentPage = reset ? 0 : page + 1;
+        const filtersToUse = appliedFilters || filters;
 
-        const response: PaginatedResponse<Download> =
-          await downloadService.getDownloads(filters);
-
-        if (append) {
-          setDownloads(prev => [...prev, ...response.data]);
-        } else {
-          setDownloads(response.data);
-        }
-
-        setPagination({
-          total: response.total,
-          page: response.page,
-          pageSize: response.pageSize,
-          totalPages: response.totalPages,
-          hasMore: response.hasMore,
+        const response = await downloadService.getDownloads({
+          ...filtersToUse,
+          page: currentPage,
+          pageSize: 20,
         });
-      } catch (err: any) {
-        console.error('Error fetching downloads:', err);
-        setError(err.message || 'Failed to fetch downloads');
+
+        if (reset) {
+          setDownloads(response.data);
+          setPage(0);
+        } else {
+          // Prevent duplicates
+          const existingIds = new Set(downloads.map(d => d._id));
+          const newDownloads = response.data.filter(
+            (download: Download) => !existingIds.has(download._id),
+          );
+          setDownloads(prev => [...prev, ...newDownloads]);
+          setPage(currentPage);
+        }
+
+        setHasMore(response.hasMore);
+      } catch (error: any) {
+        addToast({
+          message: error.response?.data?.message || 'Failed to fetch downloads',
+          type: 'error',
+          duration: 5000,
+        });
+        setHasMore(false);
       } finally {
         setLoading(false);
-        setRefreshing(false);
       }
     },
-    [],
+    [downloads, filters, page, loading, refreshing, setDownloads, addToast],
   );
+
+  const loadMoreDownloads = useCallback(() => {
+    if (!loading && hasMore) {
+      fetchDownloads();
+    }
+  }, [loading, hasMore, fetchDownloads]);
 
   const refreshDownloads = useCallback(
-    async (filters?: DownloadFilters) => {
+    async (appliedFilters?: DownloadFilters) => {
       setRefreshing(true);
-      await fetchDownloads({ ...filters, page: 0 });
+      await fetchDownloads(appliedFilters || filters, true);
+      setRefreshing(false);
     },
-    [fetchDownloads],
+    [fetchDownloads, filters],
   );
 
-  const loadMoreDownloads = useCallback(
-    async (filters?: DownloadFilters) => {
-      if (pagination.hasMore && !loading) {
-        const nextPage = pagination.page + 1;
-        await fetchDownloads({ ...filters, page: nextPage }, true);
-      }
+  const applyFilters = useCallback(
+    (newFilters: DownloadFilters) => {
+      setFilters(newFilters);
+      fetchDownloads(newFilters, true);
     },
-    [fetchDownloads, pagination.hasMore, pagination.page, loading],
+    [setFilters, fetchDownloads],
   );
 
   const downloadFile = useCallback(async (download: Download) => {
@@ -81,28 +92,16 @@ export const useDownloads = () => {
     }
   }, []);
 
-  const searchDownloads = useCallback(
-    async (searchTerm: string) => {
-      await fetchDownloads({ search: searchTerm, page: 0 });
-    },
-    [fetchDownloads],
-  );
-
-  // Initial load
-  useEffect(() => {
-    fetchDownloads();
-  }, [fetchDownloads]);
-
   return {
     downloads,
+    filters,
     loading,
-    error,
     refreshing,
-    pagination,
+    hasMore,
     fetchDownloads,
-    refreshDownloads,
     loadMoreDownloads,
+    refreshDownloads,
+    applyFilters,
     downloadFile,
-    searchDownloads,
   };
 };

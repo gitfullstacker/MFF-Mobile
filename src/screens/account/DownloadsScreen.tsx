@@ -24,47 +24,46 @@ import {
   shadows,
 } from '../../theme';
 import { useDownloads } from '../../hooks/useDownloads';
-import { Download } from '@/types/download';
+import { Download, DownloadFilters } from '@/types/download';
 
 const DownloadsScreen: React.FC = () => {
-  const navigation = useNavigation();
-  const [searchQuery, setSearchQuery] = useState('');
-
   const {
-    downloads: apiDownloads,
     loading,
-    error,
+    downloads,
     refreshing,
-    pagination,
+    hasMore,
+    filters,
+    fetchDownloads,
     refreshDownloads,
     loadMoreDownloads,
+    applyFilters,
     downloadFile,
-    searchDownloads,
   } = useDownloads();
 
-  const [filteredDownloads, setFilteredDownloads] = useState<Download[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    setFilteredDownloads(
-      searchQuery.trim()
-        ? apiDownloads.filter(download =>
-            download.download_name
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()),
-          )
-        : apiDownloads,
-    );
-  }, [apiDownloads, searchQuery]);
+    // Initial load
+    fetchDownloads({}, true);
+  }, []);
+
+  const handleSearch = useCallback(() => {
+    const newFilters: DownloadFilters = {
+      ...filters,
+      search: searchQuery.trim() || undefined,
+    };
+    applyFilters(newFilters);
+  }, [searchQuery, filters, applyFilters]);
 
   const handleRefresh = useCallback(async () => {
-    await refreshDownloads();
-  }, [refreshDownloads]);
+    await refreshDownloads(filters);
+  }, [refreshDownloads, filters]);
 
-  const handleLoadMore = useCallback(async () => {
-    if (pagination.hasMore) {
-      await loadMoreDownloads();
+  const handleLoadMore = useCallback(() => {
+    if (!loading && hasMore) {
+      loadMoreDownloads();
     }
-  }, [loadMoreDownloads, pagination.hasMore]);
+  }, [loading, hasMore, loadMoreDownloads]);
 
   const handleDownload = async (download: Download) => {
     try {
@@ -91,16 +90,11 @@ const DownloadsScreen: React.FC = () => {
     }
   };
 
-  const handleSearch = useCallback(
+  const handleApplyFilters = useCallback(
     (text: string) => {
-      setSearchQuery(text);
-      if (text.trim()) {
-        searchDownloads(text);
-      } else {
-        refreshDownloads();
-      }
+      applyFilters({ search: text.trim() });
     },
-    [searchDownloads, refreshDownloads],
+    [applyFilters],
   );
 
   const renderDownloadCard = ({ item }: { item: Download }) => {
@@ -144,16 +138,18 @@ const DownloadsScreen: React.FC = () => {
   const renderEmptyState = () => {
     if (loading) return null;
 
-    if (searchQuery) {
+    if (filters?.search) {
       return (
         <EmptyState
           title="No downloads found"
-          description={`No downloads match "${searchQuery}"`}
+          description={`No downloads match "${filters.search}"`}
           action={{
             label: 'Clear Search',
             onPress: () => {
               setSearchQuery('');
-              refreshDownloads();
+              const newFilters = { ...filters };
+              delete newFilters.search;
+              applyFilters(newFilters);
             },
           }}
         />
@@ -178,20 +174,24 @@ const DownloadsScreen: React.FC = () => {
           <Input
             placeholder="Search downloads..."
             value={searchQuery}
-            onChangeText={handleSearch}
+            onChangeText={setSearchQuery}
             leftIcon="search"
             rightIcon={searchQuery ? 'x' : undefined}
             onRightIconPress={() => {
               setSearchQuery('');
-              refreshDownloads();
+              const newFilters = { ...filters };
+              delete newFilters.search;
+              applyFilters(newFilters);
             }}
+            onSubmitEditing={handleSearch}
+            returnKeyType="search"
             containerStyle={styles.searchInput}
           />
         </View>
 
         {/* Downloads List */}
         <FlatList
-          data={filteredDownloads}
+          data={downloads}
           renderItem={renderDownloadCard}
           keyExtractor={item => item._id}
           contentContainerStyle={styles.listContent}

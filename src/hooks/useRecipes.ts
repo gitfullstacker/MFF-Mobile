@@ -28,7 +28,6 @@ export const useRecipes = () => {
 
       try {
         setLoading(true);
-        // FIXED: For pagination, use next page when not resetting
         const currentPage = reset ? 0 : page + 1;
         const filtersToUse = appliedFilters || filters;
 

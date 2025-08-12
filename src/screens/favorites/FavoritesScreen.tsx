@@ -27,6 +27,7 @@ import { Recipe, RecipeFilters } from '../../types/recipe';
 import { useFavorites } from '@/hooks/useFavorites';
 import { SCREEN_NAMES } from '@/constants';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
+import { LoadingOverlay } from '@/components/feedback/LoadingOverlay';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -251,6 +252,10 @@ const FavoritesScreen: React.FC = () => {
         filters={filters}
         onApply={handleApplyFilters}
       />
+
+      {loading && !refreshing && (
+        <LoadingOverlay message="Loading favorites..." />
+      )}
     </PageContainer>
   );
 };
