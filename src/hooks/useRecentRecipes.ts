@@ -36,7 +36,9 @@ export const useRecentRecipes = () => {
 
         return limitedRecipes;
       } catch (error) {
-        console.error('Error fetching recent recipes:', error);
+        if (__DEV__) {
+          console.error('Error fetching recent recipes:', error);
+        }
         addToast({
           message: 'Failed to load recent recipes',
           type: 'error',
@@ -109,7 +111,9 @@ export const useRecentRecipes = () => {
         // Update global state immediately
         setRecentRecipes(updatedRecipes);
       } catch (error) {
-        console.error('Error adding to recent recipes:', error);
+        if (__DEV__) {
+          console.error('Error adding to recent recipes:', error);
+        }
         addToast({
           message: 'Failed to update recent recipes',
           type: 'error',
@@ -133,7 +137,9 @@ export const useRecentRecipes = () => {
         );
         setRecentRecipes(filtered);
       } catch (error) {
-        console.error('Error removing from recent recipes:', error);
+        if (__DEV__) {
+          console.error('Error removing from recent recipes:', error);
+        }
         addToast({
           message: 'Failed to remove from recent recipes',
           type: 'error',
@@ -154,7 +160,9 @@ export const useRecentRecipes = () => {
         duration: 3000,
       });
     } catch (error) {
-      console.error('Error clearing recent recipes:', error);
+      if (__DEV__) {
+        console.error('Error clearing recent recipes:', error);
+      }
       addToast({
         message: 'Failed to clear recent recipes',
         type: 'error',

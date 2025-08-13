@@ -42,7 +42,9 @@ export const useAuth = () => {
       setSubscriptionStats(stats);
       return stats;
     } catch (error) {
-      console.error('Error fetching subscription stats:', error);
+      if (__DEV__) {
+        console.error('Error fetching subscription stats:', error);
+      }
       // Set default stats on error
       setSubscriptionStats({
         status: null,
@@ -65,7 +67,9 @@ export const useAuth = () => {
       setFavoriteIds(favoriteRecipeIds);
       return favoriteRecipeIds;
     } catch (error) {
-      console.error('Error fetching favorite recipe IDs:', error);
+      if (__DEV__) {
+        console.error('Error fetching favorite recipe IDs:', error);
+      }
       setFavoriteIds([]);
       return [];
     }
@@ -77,7 +81,9 @@ export const useAuth = () => {
       setActivePlan(plan);
       return plan;
     } catch (error) {
-      console.error('Error fetching active plan:', error);
+      if (__DEV__) {
+        console.error('Error fetching active plan:', error);
+      }
       setActivePlan(null);
       return null;
     }
@@ -127,7 +133,9 @@ export const useAuth = () => {
 
         return response;
       } catch (error: any) {
-        console.error('❌ Login failed:', error);
+        if (__DEV__) {
+          console.error('❌ Login failed:', error);
+        }
 
         const errorMessage =
           error.response?.data?.message ||
@@ -190,7 +198,9 @@ export const useAuth = () => {
         duration: 3000,
       });
     } catch (error) {
-      console.error('❌ Logout error:', error);
+      if (__DEV__) {
+        console.error('❌ Logout error:', error);
+      }
       setAuthToken(null);
       setUser(null);
       setTokenExpiration(null);
@@ -246,7 +256,9 @@ export const useAuth = () => {
 
         return updatedProfile;
       } catch (error: any) {
-        console.error('❌ Update profile failed:', error);
+        if (__DEV__) {
+          console.error('❌ Update profile failed:', error);
+        }
 
         const errorMessage =
           error.response?.data?.message ||
@@ -277,7 +289,9 @@ export const useAuth = () => {
 
         return response;
       } catch (error: any) {
-        console.error('❌ Forgot password failed:', error);
+        if (__DEV__) {
+          console.error('❌ Forgot password failed:', error);
+        }
 
         const errorMessage =
           error.response?.data?.message ||
@@ -308,7 +322,9 @@ export const useAuth = () => {
 
         return response;
       } catch (error: any) {
-        console.error('❌ Reset password failed:', error);
+        if (__DEV__) {
+          console.error('❌ Reset password failed:', error);
+        }
 
         const errorMessage =
           error.response?.data?.message ||
@@ -339,7 +355,9 @@ export const useAuth = () => {
 
         return response;
       } catch (error: any) {
-        console.error('❌ Change password failed:', error);
+        if (__DEV__) {
+          console.error('❌ Change password failed:', error);
+        }
 
         const errorMessage =
           error.response?.data?.message ||
@@ -390,7 +408,9 @@ export const useAuth = () => {
         return false;
       }
     } catch (error) {
-      console.error('❌ Error checking auth status:', error);
+      if (__DEV__) {
+        console.error('❌ Error checking auth status:', error);
+      }
       setIsAuthenticated(false);
       return false;
     }

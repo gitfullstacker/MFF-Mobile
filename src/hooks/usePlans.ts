@@ -254,7 +254,9 @@ export const usePlans = () => {
       setSuggestedPlan(plan);
       return plan;
     } catch (error: any) {
-      console.error('Error fetching suggested meal plan:', error);
+      if (__DEV__) {
+        console.error('Error fetching suggested meal plan:', error);
+      }
       addToast({
         message:
           error.response?.data?.message ||

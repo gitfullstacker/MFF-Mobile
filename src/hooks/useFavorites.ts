@@ -52,7 +52,9 @@ export const useFavorites = () => {
           );
         }
       } catch (error) {
-        console.error('Error updating recent recipes storage:', error);
+        if (__DEV__) {
+          console.error('Error updating recent recipes storage:', error);
+        }
       }
     },
     [],

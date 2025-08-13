@@ -15,7 +15,9 @@ export const useActivePlan = () => {
       setActivePlan(plan);
       return plan;
     } catch (error: any) {
-      console.error('Error fetching active plan:', error);
+      if (__DEV__) {
+        console.error('Error fetching active plan:', error);
+      }
       // Don't show error toast for missing active plan (it's optional)
       if (error.response?.status !== 404) {
         addToast({
@@ -47,7 +49,9 @@ export const useActivePlan = () => {
 
         return plan;
       } catch (error: any) {
-        console.error('Error setting active plan:', error);
+        if (__DEV__) {
+          console.error('Error setting active plan:', error);
+        }
         addToast({
           message: error.response?.data?.message || 'Failed to set active plan',
           type: 'error',

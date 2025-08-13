@@ -100,7 +100,9 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
         onFavoriteToggle(recipe);
       }
     } catch (error) {
-      console.error('Error toggling favorite:', error);
+      if (__DEV__) {
+        console.error('Error toggling favorite:', error);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -126,7 +128,9 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
     try {
       navigateToCreateTicket();
     } catch (error) {
-      console.error('Error navigating to create ticket:', error);
+      if (__DEV__) {
+        console.error('Error navigating to create ticket:', error);
+      }
       Alert.alert(
         'Error',
         'Unable to open support ticket form. Please try again.',

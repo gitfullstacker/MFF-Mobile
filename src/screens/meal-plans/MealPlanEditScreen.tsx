@@ -142,7 +142,9 @@ const MealPlanEditScreen: React.FC = () => {
         const plan = await fetchPlan(planId);
         setCurrentPlan(plan);
       } catch (error) {
-        console.error('Error fetching plan:', error);
+        if (__DEV__) {
+          console.error('Error fetching plan:', error);
+        }
         Alert.alert('Error', 'Failed to load meal plan. Please try again.');
         navigation.goBack();
       } finally {
@@ -414,7 +416,9 @@ const MealPlanEditScreen: React.FC = () => {
       // Navigate back to meal plan details
       navigation.goBack();
     } catch (error) {
-      console.error('Error updating meal plan:', error);
+      if (__DEV__) {
+        console.error('Error updating meal plan:', error);
+      }
       Alert.alert('Error', 'Failed to update meal plan. Please try again.');
     } finally {
       setLoading(false);

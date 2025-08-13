@@ -253,7 +253,9 @@ const MealPlanDetailScreen: React.FC = () => {
       await duplicatePlan(planId);
       safeGoBack();
     } catch (error) {
-      console.error('Error duplicating plan:', error);
+      if (__DEV__) {
+        console.error('Error duplicating plan:', error);
+      }
       Alert.alert('Error', 'Failed to duplicate meal plan. Please try again.');
     } finally {
       setLoading(false);
@@ -280,7 +282,9 @@ const MealPlanDetailScreen: React.FC = () => {
               await deletePlan(planId);
               safeGoBack();
             } catch (error) {
-              console.error('Error deleting plan:', error);
+              if (__DEV__) {
+                console.error('Error deleting plan:', error);
+              }
               Alert.alert(
                 'Error',
                 'Failed to delete meal plan. Please try again.',

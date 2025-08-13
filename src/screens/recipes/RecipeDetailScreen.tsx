@@ -173,7 +173,9 @@ const RecipeDetailScreen: React.FC = () => {
       setReviewsPage(currentPage);
       setHasMoreReviews(pagination.hasMore);
     } catch (error) {
-      console.error('Error loading reviews:', error);
+      if (__DEV__) {
+        console.error('Error loading reviews:', error);
+      }
       setHasMoreReviews(false);
     } finally {
       setReviewsLoading(false);
@@ -205,7 +207,9 @@ const RecipeDetailScreen: React.FC = () => {
 
       Alert.alert('Success', 'Your review has been submitted!');
     } catch (error) {
-      console.error('Error submitting review:', error);
+      if (__DEV__) {
+        console.error('Error submitting review:', error);
+      }
       Alert.alert('Error', 'Failed to submit review. Please try again.');
     } finally {
       setSubmittingReview(false);
@@ -220,7 +224,9 @@ const RecipeDetailScreen: React.FC = () => {
     try {
       await toggleFavorite(selectedRecipe);
     } catch (error) {
-      console.error('Error toggling favorite:', error);
+      if (__DEV__) {
+        console.error('Error toggling favorite:', error);
+      }
     } finally {
       setIsTogglingFavorite(false);
     }

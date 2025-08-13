@@ -115,7 +115,9 @@ const ProfileScreen: React.FC = () => {
       await updateProfile(data);
       Alert.alert('Success', 'Profile updated successfully!');
     } catch (error) {
-      console.error('Error updating profile:', error);
+      if (__DEV__) {
+        console.error('Error updating profile:', error);
+      }
       Alert.alert('Error', 'Failed to update profile. Please try again.');
     } finally {
       setLoading(false);
@@ -135,7 +137,9 @@ const ProfileScreen: React.FC = () => {
       resetPassword();
       Alert.alert('Success', 'Password changed successfully!');
     } catch (error) {
-      console.error('Error changing password:', error);
+      if (__DEV__) {
+        console.error('Error changing password:', error);
+      }
       Alert.alert('Error', 'Failed to change password. Please try again.');
     } finally {
       setLoading(false);

@@ -54,7 +54,9 @@ const TicketDetailScreen: React.FC = () => {
     try {
       await fetchTicket(ticketId);
     } catch (error) {
-      console.error('Error loading ticket:', error);
+      if (__DEV__) {
+        console.error('Error loading ticket:', error);
+      }
     }
   };
 
@@ -72,7 +74,9 @@ const TicketDetailScreen: React.FC = () => {
       await addComment(selectedTicket._id, commentText.trim());
       setCommentText('');
     } catch (error) {
-      console.error('Error adding comment:', error);
+      if (__DEV__) {
+        console.error('Error adding comment:', error);
+      }
     } finally {
       setAddingComment(false);
     }

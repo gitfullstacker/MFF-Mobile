@@ -108,7 +108,9 @@ const ResetPasswordScreen: React.FC = () => {
       }, 2000);
     } catch (error: any) {
       // Error handling is done in useAuth hook
-      console.error('Reset password error:', error);
+      if (__DEV__) {
+        console.error('Reset password error:', error);
+      }
     } finally {
       setLoading(false);
     }

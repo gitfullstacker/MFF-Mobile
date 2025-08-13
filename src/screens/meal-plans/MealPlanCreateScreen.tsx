@@ -357,7 +357,9 @@ const MealPlanCreateScreen: React.FC = () => {
       // Navigate back to meal plans list
       navigation.goBack();
     } catch (error) {
-      console.error('Error creating meal plan:', error);
+      if (__DEV__) {
+        console.error('Error creating meal plan:', error);
+      }
       Alert.alert('Error', 'Failed to create meal plan. Please try again.');
     } finally {
       setLoading(false);

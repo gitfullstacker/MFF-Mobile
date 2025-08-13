@@ -1,4 +1,3 @@
-import { atom } from 'jotai';
 import { atomWithStorage, createJSONStorage } from 'jotai/utils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -8,7 +7,9 @@ const storage = createJSONStorage<any>(() => ({
       const item = await AsyncStorage.getItem(key);
       return item ? JSON.parse(item) : null;
     } catch (error) {
-      console.error(`Error getting ${key} from storage:`, error);
+      if (__DEV__) {
+        console.error(`Error getting ${key} from storage:`, error);
+      }
       return null;
     }
   },
@@ -16,14 +17,18 @@ const storage = createJSONStorage<any>(() => ({
     try {
       await AsyncStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
-      console.error(`Error setting ${key} in storage:`, error);
+      if (__DEV__) {
+        console.error(`Error setting ${key} in storage:`, error);
+      }
     }
   },
   removeItem: async (key: string) => {
     try {
       await AsyncStorage.removeItem(key);
     } catch (error) {
-      console.error(`Error removing ${key} from storage:`, error);
+      if (__DEV__) {
+        console.error(`Error removing ${key} from storage:`, error);
+      }
     }
   },
 }));

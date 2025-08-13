@@ -42,7 +42,9 @@ const AppContent: React.FC = () => {
         await setupIcons();
         console.log('✅ App initialization completed');
       } catch (error) {
-        console.error('❌ Error initializing app:', error);
+        if (__DEV__) {
+          console.error('❌ Error initializing app:', error);
+        }
       }
     };
 

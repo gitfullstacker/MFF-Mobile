@@ -40,7 +40,9 @@ export const useSubscription = () => {
 
         return stats;
       } catch (error: any) {
-        console.error('Error fetching subscription stats:', error);
+        if (__DEV__) {
+          console.error('Error fetching subscription stats:', error);
+        }
         setSubscriptionStats(DEFAULT_STATS);
 
         if (showToast) {

@@ -135,7 +135,9 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
         title: 'Shopping List',
       });
     } catch (error) {
-      console.error('Error sharing shopping list:', error);
+      if (__DEV__) {
+        console.error('Error sharing shopping list:', error);
+      }
     }
   };
 

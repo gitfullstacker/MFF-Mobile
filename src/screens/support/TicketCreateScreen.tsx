@@ -92,7 +92,9 @@ const TicketCreateScreen: React.FC = () => {
           try {
             await addAttachment(ticket._id, file);
           } catch (error) {
-            console.error('Error uploading attachment:', error);
+            if (__DEV__) {
+              console.error('Error uploading attachment:', error);
+            }
             // Continue with other files even if one fails
           }
         }
@@ -114,7 +116,9 @@ const TicketCreateScreen: React.FC = () => {
         ],
       );
     } catch (error) {
-      console.error('Error creating ticket:', error);
+      if (__DEV__) {
+        console.error('Error creating ticket:', error);
+      }
       // Toast notification is handled by useTickets hook
     }
   };
@@ -169,7 +173,9 @@ const TicketCreateScreen: React.FC = () => {
       }
 
       // Handle actual errors only
-      console.error('DocumentPicker error:', error);
+      if (__DEV__) {
+        console.error('DocumentPicker error:', error);
+      }
       Alert.alert('Error', 'Failed to select file. Please try again.');
     }
   };

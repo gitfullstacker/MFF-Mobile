@@ -209,7 +209,9 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
         [{ text: 'OK', onPress: handleSuccess }],
       );
     } catch (error) {
-      console.error('Error adding recipe to plan:', error);
+      if (__DEV__) {
+        console.error('Error adding recipe to plan:', error);
+      }
       Alert.alert(
         'Error',
         'Failed to add recipe to meal plan. Please try again.',
@@ -283,7 +285,9 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
         [{ text: 'OK', onPress: handleSuccess }],
       );
     } catch (error) {
-      console.error('Error adding recipe to plan:', error);
+      if (__DEV__) {
+        console.error('Error adding recipe to plan:', error);
+      }
       Alert.alert(
         'Error',
         'Failed to add recipe to meal plan. Please try again.',

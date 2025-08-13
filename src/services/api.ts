@@ -53,7 +53,9 @@ class ApiClient {
             console.log('❌ No auth token in AsyncStorage');
           }
         } catch (error) {
-          console.error('❌ Error getting auth token:', error);
+          if (__DEV__) {
+            console.error('❌ Error getting auth token:', error);
+          }
         }
 
         // Enhanced debug log for requests
@@ -70,7 +72,9 @@ class ApiClient {
         return config;
       },
       error => {
-        console.error('❌ Request interceptor error:', error);
+        if (__DEV__) {
+          console.error('❌ Request interceptor error:', error);
+        }
         return Promise.reject(error);
       },
     );
@@ -125,7 +129,9 @@ class ApiClient {
           error.code === 'ECONNABORTED' ||
           error.message.includes('timeout')
         ) {
-          console.error('❌ Network timeout error');
+          if (__DEV__) {
+            console.error('❌ Network timeout error');
+          }
           eventBus.emit(
             'NETWORK_ERROR',
             'Network timeout. Please check your connection.',
@@ -137,7 +143,9 @@ class ApiClient {
 
         // Network connection error
         if (error.code === 'NETWORK_ERROR' || !error.response) {
-          console.error('❌ Network connection error');
+          if (__DEV__) {
+            console.error('❌ Network connection error');
+          }
           eventBus.emit(
             'NETWORK_ERROR',
             'No internet connection. Please check your network.',
@@ -164,7 +172,9 @@ class ApiClient {
               'Your session has expired. Please log in again.',
             );
           } catch (storageError) {
-            console.error('Error clearing auth data:', storageError);
+            if (__DEV__) {
+              console.error('Error clearing auth data:', storageError);
+            }
           }
         }
 
@@ -178,10 +188,12 @@ class ApiClient {
       const response = await this.instance.get<T>(url, config);
       return response.data;
     } catch (error) {
-      console.error('❌ GET request failed:', {
-        url,
-        error: (error as Error).message,
-      });
+      if (__DEV__) {
+        console.error('❌ GET request failed:', {
+          url,
+          error: (error as Error).message,
+        });
+      }
       throw error;
     }
   }
@@ -191,10 +203,12 @@ class ApiClient {
       const response = await this.instance.post<T>(url, data, config);
       return response.data;
     } catch (error) {
-      console.error('❌ POST request failed:', {
-        url,
-        error: (error as Error).message,
-      });
+      if (__DEV__) {
+        console.error('❌ POST request failed:', {
+          url,
+          error: (error as Error).message,
+        });
+      }
       throw error;
     }
   }
@@ -204,10 +218,12 @@ class ApiClient {
       const response = await this.instance.put<T>(url, data, config);
       return response.data;
     } catch (error) {
-      console.error('❌ PUT request failed:', {
-        url,
-        error: (error as Error).message,
-      });
+      if (__DEV__) {
+        console.error('❌ PUT request failed:', {
+          url,
+          error: (error as Error).message,
+        });
+      }
       throw error;
     }
   }
@@ -217,10 +233,12 @@ class ApiClient {
       const response = await this.instance.delete<T>(url, config);
       return response.data;
     } catch (error) {
-      console.error('❌ DELETE request failed:', {
-        url,
-        error: (error as Error).message,
-      });
+      if (__DEV__) {
+        console.error('❌ DELETE request failed:', {
+          url,
+          error: (error as Error).message,
+        });
+      }
       throw error;
     }
   }
@@ -234,10 +252,12 @@ class ApiClient {
       });
       return response.data;
     } catch (error) {
-      console.error('❌ UPLOAD request failed:', {
-        url,
-        error: (error as Error).message,
-      });
+      if (__DEV__) {
+        console.error('❌ UPLOAD request failed:', {
+          url,
+          error: (error as Error).message,
+        });
+      }
       throw error;
     }
   }

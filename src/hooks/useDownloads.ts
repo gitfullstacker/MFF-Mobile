@@ -87,7 +87,9 @@ export const useDownloads = () => {
         download.file.name,
       );
     } catch (err: any) {
-      console.error('Error downloading file:', err);
+      if (__DEV__) {
+        console.error('Error downloading file:', err);
+      }
       throw new Error(err.message || 'Failed to download file');
     }
   }, []);

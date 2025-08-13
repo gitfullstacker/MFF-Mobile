@@ -63,7 +63,9 @@ export const SuggestedMealPlanSection: React.FC<
       setLoading(true);
       await fetchSuggestedMealPlan();
     } catch (error) {
-      console.error('Failed to load suggested meal plan:', error);
+      if (__DEV__) {
+        console.error('Failed to load suggested meal plan:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -124,7 +126,9 @@ export const SuggestedMealPlanSection: React.FC<
       // Call optional callback if provided
       onSavePlan?.(suggestedPlan);
     } catch (error: any) {
-      console.error('Error saving plan:', error);
+      if (__DEV__) {
+        console.error('Error saving plan:', error);
+      }
       Alert.alert(
         'Error',
         error.response?.data?.message ||

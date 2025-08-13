@@ -99,7 +99,9 @@ const MealPlanListScreen: React.FC = () => {
       await deletePlan(planToDelete._id);
       Alert.alert('Success', 'Meal plan deleted successfully');
     } catch (error) {
-      console.error('Error deleting plan:', error);
+      if (__DEV__) {
+        console.error('Error deleting plan:', error);
+      }
       Alert.alert('Error', 'Failed to delete meal plan');
     } finally {
       setPlanToDelete(null);
@@ -119,7 +121,9 @@ const MealPlanListScreen: React.FC = () => {
       await duplicatePlan(planToDuplicate._id);
       Alert.alert('Success', 'Meal plan duplicated successfully');
     } catch (error) {
-      console.error('Error duplicating plan:', error);
+      if (__DEV__) {
+        console.error('Error duplicating plan:', error);
+      }
       Alert.alert('Error', 'Failed to duplicate meal plan');
     } finally {
       setPlanToDuplicate(null);
@@ -139,7 +143,9 @@ const MealPlanListScreen: React.FC = () => {
       await setActivePlanById(planToSetActive._id);
       Alert.alert('Success', 'Active meal plan updated successfully');
     } catch (error) {
-      console.error('Error setting active plan:', error);
+      if (__DEV__) {
+        console.error('Error setting active plan:', error);
+      }
       Alert.alert('Error', 'Failed to set active meal plan');
     } finally {
       setPlanToSetActive(null);
