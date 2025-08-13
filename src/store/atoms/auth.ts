@@ -31,14 +31,13 @@ const storage = createJSONStorage<any>(() => ({
 
       // For authToken, store as plain string
       if (key === 'authToken') {
-        // Value is already JSON.stringify'd by atomWithStorage, so we need to parse it first
         const actualValue =
-          typeof value === 'string' ? JSON.parse(value) : value;
-        if (actualValue === null || actualValue === undefined) {
-          await AsyncStorage.removeItem(key);
-        } else {
-          await AsyncStorage.setItem(key, actualValue);
-        }
+          typeof value === 'string' &&
+          value.startsWith('"') &&
+          value.endsWith('"')
+            ? JSON.parse(value)
+            : value;
+        await AsyncStorage.setItem(key, actualValue);
       } else {
         await AsyncStorage.setItem(key, JSON.stringify(value));
       }

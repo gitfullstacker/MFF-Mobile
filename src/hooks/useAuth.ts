@@ -216,6 +216,7 @@ export const useAuth = () => {
     setSubscriptionStats,
     setFavoriteIds,
     setActivePlan,
+    addToast,
   ]);
 
   const updateProfile = useCallback(

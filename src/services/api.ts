@@ -1,7 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '@env';
-import { isTokenExpiredCombined } from '../utils/tokenUtils';
 import { eventBus } from '@/utils/eventBus';
 
 console.log('🌍 Environment Debug:', {
@@ -48,38 +47,8 @@ class ApiClient {
           const authToken = await AsyncStorage.getItem('authToken');
 
           if (authToken) {
-            const tokenExpirationData = await AsyncStorage.getItem(
-              'tokenExpiration',
-            );
-            let tokenExpiration = null;
-
-            if (tokenExpirationData) {
-              try {
-                tokenExpiration = JSON.parse(tokenExpirationData);
-              } catch (parseError) {
-                console.warn(
-                  'Failed to parse token expiration data:',
-                  parseError,
-                );
-              }
-            }
-
-            // Check if token is expired
-            if (isTokenExpiredCombined(authToken, tokenExpiration)) {
-              // Clear auth data
-              await AsyncStorage.multiRemove(['authToken', 'user']);
-              console.log('🔄 Token expired, cleared auth data');
-
-              // Emit auth error to trigger app-wide logout
-              eventBus.emit(
-                'AUTH_ERROR',
-                'Your session has expired. Please log in again.',
-              );
-            } else {
-              // Token is valid
-              config.headers.Authorization = `Bearer ${authToken}`;
-              console.log('🔑 Bearer token added to request');
-            }
+            config.headers.Authorization = `Bearer ${authToken}`;
+            console.log('🔑 Bearer token added to request');
           } else {
             console.log('❌ No auth token in AsyncStorage');
           }
