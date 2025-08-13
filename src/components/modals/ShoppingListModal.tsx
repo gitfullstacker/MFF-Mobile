@@ -42,17 +42,23 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
     const items: IngredientItem[] = [];
 
     recipes.forEach(recipe => {
+      const seen = new Set<string>();
       recipe.ingredients.forEach(group => {
-        group.items.forEach(ingredient => {
-          items.push({
-            name: ingredient.name,
-            amount: ingredient.amount,
-            unit: ingredient.unit,
-            notes: ingredient.notes,
-            checked: false,
-            recipeId: recipe._id,
-            recipeName: recipe.name,
-          });
+        group.items.forEach((ingredient, index) => {
+          const key = `${ingredient.name}-${ingredient.name}-${ingredient.amount}-${ingredient.unit}`;
+
+          if (!seen.has(key)) {
+            seen.add(key);
+            items.push({
+              name: ingredient.name,
+              amount: ingredient.amount,
+              unit: ingredient.unit,
+              notes: ingredient.notes,
+              checked: false,
+              recipeId: recipe._id,
+              recipeName: recipe.name,
+            });
+          }
         });
       });
     });
