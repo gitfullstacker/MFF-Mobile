@@ -11,7 +11,7 @@ interface DuplicateRecipeModalProps {
   onClose: () => void;
   recipe: Recipe | null;
   existingDays: string[];
-  onAction: (action: 'cancel' | 'with-ingredients' | 'only-recipe') => void;
+  onAction: (action: 'with-ingredients' | 'only-recipe') => void;
 }
 
 export const DuplicateRecipeModal: React.FC<DuplicateRecipeModalProps> = ({
@@ -23,13 +23,8 @@ export const DuplicateRecipeModal: React.FC<DuplicateRecipeModalProps> = ({
 }) => {
   if (!recipe) return null;
 
-  const handleAction = (
-    action: 'cancel' | 'with-ingredients' | 'only-recipe',
-  ) => {
+  const handleAction = (action: 'with-ingredients' | 'only-recipe') => {
     onAction(action);
-    if (action !== 'cancel') {
-      onClose();
-    }
   };
 
   return (
@@ -90,7 +85,7 @@ export const DuplicateRecipeModal: React.FC<DuplicateRecipeModalProps> = ({
         <View style={styles.actions}>
           <Button
             title="Cancel"
-            onPress={() => handleAction('cancel')}
+            onPress={onClose}
             variant="outline"
             style={styles.actionButton}
           />

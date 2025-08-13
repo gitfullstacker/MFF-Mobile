@@ -273,19 +273,14 @@ const MealPlanCreateScreen: React.FC = () => {
 
   // Handle duplicate recipe dialog actions
   const handleDuplicateRecipeAction = (
-    action: 'cancel' | 'with-ingredients' | 'only-recipe',
+    action: 'with-ingredients' | 'only-recipe',
   ) => {
     if (!duplicateRecipeInfo) return;
-
-    if (action === 'cancel') {
-      setDuplicateRecipeInfo(null);
-      setShowRecipePicker(true); // Show recipe picker again
-      return;
-    }
 
     const onlyRecipe = action === 'only-recipe';
     addRecipeToSchedule(duplicateRecipeInfo.recipe, onlyRecipe);
     setDuplicateRecipeInfo(null);
+    setShowDuplicateDialog(false);
   };
 
   // Function to save the meal plan
