@@ -147,7 +147,7 @@ const ProfileScreen: React.FC = () => {
   };
 
   return (
-    <PageContainer safeArea={false}>
+    <PageContainer>
       <Header title="Profile" showBack={true} />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>

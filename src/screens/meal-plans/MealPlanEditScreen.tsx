@@ -466,7 +466,7 @@ const MealPlanEditScreen: React.FC = () => {
   }
 
   return (
-    <PageContainer safeArea={false}>
+    <PageContainer>
       <Header title="Edit Meal Plan" showBack={true} />
 
       <ScrollView

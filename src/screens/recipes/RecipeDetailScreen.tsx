@@ -459,11 +459,10 @@ const RecipeDetailScreen: React.FC = () => {
   }
 
   return (
-    <PageContainer safeArea={false} padding={false}>
+    <PageContainer padding={false}>
       <StatusBar
-        translucent
         backgroundColor="transparent"
-        barStyle="light-content"
+        barStyle={Platform.OS === 'android' ? 'dark-content' : 'light-content'}
       />
 
       {/* Cook Mode Floating Button */}

@@ -212,7 +212,7 @@ const TicketListScreen: React.FC = () => {
   };
 
   return (
-    <PageContainer safeArea={false}>
+    <PageContainer>
       <Header
         title="Support Tickets"
         showBack={true}

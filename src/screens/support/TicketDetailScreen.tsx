@@ -304,7 +304,7 @@ const TicketDetailScreen: React.FC = () => {
 
   if (loading && !selectedTicket) {
     return (
-      <PageContainer safeArea={false}>
+      <PageContainer>
         <Header title="Ticket Details" showBack={true} />
         <LoadingOverlay message="Loading ticket details..." />
       </PageContainer>
@@ -313,7 +313,7 @@ const TicketDetailScreen: React.FC = () => {
 
   if (!selectedTicket) {
     return (
-      <PageContainer safeArea={false}>
+      <PageContainer>
         <Header title="Ticket Details" showBack={true} />
         <View style={styles.container}>
           <EmptyState
@@ -330,7 +330,7 @@ const TicketDetailScreen: React.FC = () => {
   }
 
   return (
-    <PageContainer safeArea={false}>
+    <PageContainer>
       <Header title="Ticket Details" showBack={true} />
 
       <ScrollView

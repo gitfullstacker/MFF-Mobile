@@ -1,18 +1,18 @@
 import 'react-native-gesture-handler';
 import React, { Suspense, useEffect, useRef } from 'react';
-import { StatusBar } from 'react-native';
+import { Platform, StatusBar } from 'react-native';
 import { Provider, useAtom } from 'jotai';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { ToastContainer } from './src/components/feedback/Toast';
 import { ErrorBoundary } from './src/components/feedback/ErrorBoundary';
 import { LoadingOverlay } from './src/components/feedback/LoadingOverlay';
-import { colors } from './src/theme';
 import { setupIcons } from '@/utils/iconSetup';
 import { eventBus } from '@/utils/eventBus';
 import { isAuthenticatedAtom, addToastAtom } from '@/store';
 import { NavigationContainerRef } from '@react-navigation/native';
 import { RootStackParamList } from '@/types';
 import { useSubscriptionStatusChecker } from '@/hooks/useSubscriptionStatusChecker';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const AppContent: React.FC = () => {
   const [, setIsAuthenticated] = useAtom(isAuthenticatedAtom);
@@ -100,14 +100,15 @@ const AppContent: React.FC = () => {
   }, [forceCheck, getDebugInfo, performCheck, isChecking]);
 
   return (
-    <>
+    <SafeAreaProvider>
       <StatusBar
         barStyle="dark-content"
-        backgroundColor={colors.background.light}
+        backgroundColor="transparent"
+        translucent={Platform.OS === 'android'}
       />
       <AppNavigator navigationRef={navigationRef} />
       <ToastContainer />
-    </>
+    </SafeAreaProvider>
   );
 };
 

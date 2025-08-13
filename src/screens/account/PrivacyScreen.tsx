@@ -41,7 +41,7 @@ const PrivacyScreen: React.FC = () => {
   );
 
   return (
-    <PageContainer safeArea={false}>
+    <PageContainer>
       <Header title="Privacy Policy" showBack={true} />
 
       <ScrollView

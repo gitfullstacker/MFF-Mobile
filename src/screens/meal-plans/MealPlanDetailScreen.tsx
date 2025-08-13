@@ -318,7 +318,7 @@ const MealPlanDetailScreen: React.FC = () => {
   }
 
   return (
-    <PageContainer safeArea={false}>
+    <PageContainer>
       <Header
         title="Meal Plan Details"
         showBack={true}

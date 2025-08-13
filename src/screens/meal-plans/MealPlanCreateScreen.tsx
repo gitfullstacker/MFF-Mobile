@@ -390,7 +390,7 @@ const MealPlanCreateScreen: React.FC = () => {
   };
 
   return (
-    <PageContainer safeArea={false}>
+    <PageContainer>
       <Header title="Create Meal Plan" showBack={true} />
 
       <ScrollView

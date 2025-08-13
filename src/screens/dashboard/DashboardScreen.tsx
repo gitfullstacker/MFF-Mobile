@@ -10,6 +10,8 @@ import {
   Animated,
   Dimensions,
   Alert,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { format } from 'date-fns';
 import Icon from 'react-native-vector-icons/Feather';
@@ -40,6 +42,7 @@ import { useRecentRecipes } from '@/hooks/useRecentRecipes';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
 import { useRecipes } from '@/hooks/useRecipes';
+import { Header } from '@/components/navigation/Header';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -493,7 +496,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingTop:
+      Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 20,
+    paddingBottom: spacing.md,
   },
   logo: {
     height: 43,

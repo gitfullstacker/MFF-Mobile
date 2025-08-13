@@ -41,7 +41,7 @@ const TermsScreen: React.FC = () => {
   );
 
   return (
-    <PageContainer safeArea={false}>
+    <PageContainer>
       <Header title="Terms of Service" showBack={true} />
 
       <ScrollView

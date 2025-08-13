@@ -234,7 +234,7 @@ const TicketCreateScreen: React.FC = () => {
   };
 
   return (
-    <PageContainer safeArea={false}>
+    <PageContainer>
       <Header title="Create Support Ticket" showBack={true} />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>

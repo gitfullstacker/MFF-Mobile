@@ -186,7 +186,7 @@ const FavoritesScreen: React.FC = () => {
   const filterCount = getFilterCount();
 
   return (
-    <PageContainer safeArea={false}>
+    <PageContainer>
       <Header
         title="Favorites"
         showBack={false}

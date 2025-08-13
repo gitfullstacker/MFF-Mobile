@@ -96,7 +96,7 @@ const PreferencesScreen: React.FC = () => {
   );
 
   return (
-    <PageContainer safeArea={false}>
+    <PageContainer>
       <Header title="Preferences" showBack={true} />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>

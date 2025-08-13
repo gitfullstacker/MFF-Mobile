@@ -165,7 +165,7 @@ const DownloadsScreen: React.FC = () => {
   };
 
   return (
-    <PageContainer safeArea={false}>
+    <PageContainer>
       <Header title="Downloads" showBack={true} />
 
       <View style={styles.container}>

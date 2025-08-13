@@ -51,7 +51,7 @@ const AboutScreen: React.FC = () => {
   );
 
   return (
-    <PageContainer safeArea={false}>
+    <PageContainer>
       <Header title="About" showBack={true} />
 
       <ScrollView
