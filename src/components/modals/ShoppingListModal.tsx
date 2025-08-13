@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -100,11 +100,14 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
   const generateShoppingListText = () => {
     let text = 'Shopping List\n\n';
 
+    // Filter out checked (crossed-off) ingredients
+    const uncheckedIngredients = ingredients.filter(item => !item.checked);
+
     if (groupByRecipe) {
       const recipeGroups = getRecipeGroups();
       const groupedByRecipe: { [key: string]: IngredientItem[] } = {};
 
-      ingredients.forEach(item => {
+      uncheckedIngredients.forEach(item => {
         if (!groupedByRecipe[item.recipeId]) {
           groupedByRecipe[item.recipeId] = [];
         }
@@ -121,7 +124,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
         text += '\n';
       });
     } else {
-      ingredients
+      uncheckedIngredients
         .sort((a, b) => a.name.localeCompare(b.name))
         .forEach(item => {
           text += `- ${item.amount} ${item.unit} ${item.name}`;
