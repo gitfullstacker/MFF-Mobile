@@ -126,7 +126,44 @@ const RecipeDetailScreen: React.FC = () => {
 
   const stripHtmlTags = (html: any) => {
     if (!html) return '';
-    return html.replace(/<[^>]*>/g, '').trim();
+
+    // First remove HTML tags
+    let text = html.replace(/<[^>]*>/g, '').trim();
+
+    // Then decode HTML entities
+    const htmlEntities: { [key: string]: string } = {
+      '&amp;': '&',
+      '&lt;': '<',
+      '&gt;': '>',
+      '&quot;': '"',
+      '&#39;': "'",
+      '&#8217;': "'", // Right single quotation mark
+      '&#8216;': "'", // Left single quotation mark
+      '&#8220;': '"', // Left double quotation mark
+      '&#8221;': '"', // Right double quotation mark
+      '&#8211;': '–', // En dash
+      '&#8212;': '—', // Em dash
+      '&#8230;': '…', // Horizontal ellipsis
+      '&nbsp;': ' ',
+      '&apos;': "'",
+    };
+
+    // Replace HTML entities
+    Object.keys(htmlEntities).forEach(entity => {
+      text = text.replace(new RegExp(entity, 'g'), htmlEntities[entity]);
+    });
+
+    // Handle numeric character references (like &#8217;)
+    text = text.replace(/&#(\d+);/g, (match: any, num: any) => {
+      return String.fromCharCode(parseInt(num, 10));
+    });
+
+    // Handle hexadecimal character references (like &#x2019;)
+    text = text.replace(/&#x([a-fA-F0-9]+);/g, (match: any, hex: any) => {
+      return String.fromCharCode(parseInt(hex, 16));
+    });
+
+    return text;
   };
 
   // Handle scroll event manually
@@ -724,8 +761,8 @@ const RecipeDetailScreen: React.FC = () => {
 
                   const reviewContent =
                     typeof review.content === 'string'
-                      ? review.content
-                      : review.content?.rendered?.replace(/<[^>]*>/g, '') || '';
+                      ? stripHtmlTags(review.content)
+                      : stripHtmlTags(review.content?.rendered);
 
                   const reviewRating =
                     review.meta?.wprm_comment_rating || review.rating || 0;
