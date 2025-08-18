@@ -603,6 +603,12 @@ const RecipeDetailScreen: React.FC = () => {
 
           {/* Nutrition Info */}
           <Section title="Nutrition Information">
+            {/* Serving Size Information */}
+            <Text style={styles.servingInfo}>
+              Per serving: {selectedRecipe.nutrition.serving_size}{' '}
+              {selectedRecipe.nutrition.serving_unit}
+            </Text>
+
             <View style={styles.macroSection}>
               <MacroDisplay
                 protein={selectedRecipe.nutrition.protein}
@@ -1050,6 +1056,12 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginBottom: spacing.lg,
     lineHeight: 24,
+  },
+  servingInfo: {
+    ...typography.bodyRegular,
+    color: colors.text.secondary,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   macroSection: {
     alignItems: 'center',
