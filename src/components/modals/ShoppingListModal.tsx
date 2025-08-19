@@ -21,6 +21,7 @@ interface ShoppingListModalProps {
 }
 
 interface IngredientItem {
+  uid: number;
   name: string;
   amount: string;
   unit: string;
@@ -42,23 +43,18 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
     const items: IngredientItem[] = [];
 
     recipes.forEach(recipe => {
-      const seen = new Set<string>();
       recipe.ingredients.forEach(group => {
-        group.items.forEach((ingredient, index) => {
-          const key = `${ingredient.name}-${ingredient.name}-${ingredient.amount}-${ingredient.unit}`;
-
-          if (!seen.has(key)) {
-            seen.add(key);
-            items.push({
-              name: ingredient.name,
-              amount: ingredient.amount,
-              unit: ingredient.unit,
-              notes: ingredient.notes,
-              checked: false,
-              recipeId: recipe._id,
-              recipeName: recipe.name,
-            });
-          }
+        group.items.forEach(ingredient => {
+          items.push({
+            uid: ingredient.uid,
+            name: ingredient.name,
+            amount: ingredient.amount,
+            unit: ingredient.unit,
+            notes: ingredient.notes,
+            checked: false,
+            recipeId: recipe._id,
+            recipeName: recipe.name,
+          });
         });
       });
     });
@@ -216,7 +212,8 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
                           i =>
                             i.recipeId === item.recipeId &&
                             i.name === item.name &&
-                            i.amount === item.amount,
+                            i.amount === item.amount &&
+                            i.uid === item.uid,
                         );
                         if (originalIndex !== -1) {
                           toggleIngredient(originalIndex);
@@ -253,7 +250,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
           : // Alphabetical list
             sortedIngredients().map(item => (
               <TouchableOpacity
-                key={`${item.recipeId}-${item.name}-${item.amount}`}
+                key={`${item.recipeId}-${item.name}-${item.amount}-${item.uid}`}
                 style={[
                   styles.ingredientItem,
                   item.checked && styles.ingredientItemChecked,
@@ -263,7 +260,8 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
                     i =>
                       i.recipeId === item.recipeId &&
                       i.name === item.name &&
-                      i.amount === item.amount,
+                      i.amount === item.amount &&
+                      i.uid === item.uid,
                   );
                   if (originalIndex !== -1) toggleIngredient(originalIndex);
                 }}>
