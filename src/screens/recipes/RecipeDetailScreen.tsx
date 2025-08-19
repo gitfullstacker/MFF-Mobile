@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -90,6 +90,9 @@ const RecipeDetailScreen: React.FC = () => {
     content: '',
   });
   const [submittingReview, setSubmittingReview] = useState(false);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [tabContainerY, setTabContainerY] = useState(0);
 
   useEffect(() => {
     if (recipeId && (!selectedRecipe || selectedRecipe.slug !== recipeId)) {
@@ -282,9 +285,25 @@ const RecipeDetailScreen: React.FC = () => {
     setCookModeActive(prev => !prev);
   };
 
-  const scrollToReviews = () => {
+  const scrollToReviews = useCallback(() => {
     setActiveTab('reviews');
-  };
+
+    setTimeout(() => {
+      if (scrollViewRef.current) {
+        // Use the stored Y position or fallback to approximate position
+        const scrollToY = tabContainerY > 0 ? tabContainerY : 600;
+        scrollViewRef.current.scrollTo({
+          y: scrollToY,
+          animated: true,
+        });
+      }
+    }, 100);
+  }, [tabContainerY]);
+
+  // Updated tab press handler for reviews
+  const handleReviewsTabPress = useCallback(() => {
+    scrollToReviews();
+  }, [scrollToReviews]);
 
   // Render ingredient with adjusted amounts
   const renderIngredient = (item: IngredientItem, index: number) => {
@@ -522,9 +541,13 @@ const RecipeDetailScreen: React.FC = () => {
       </Animated.View>
 
       <ScrollView
+        ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={handleScroll}>
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false },
+        )}
+        scrollEventThrottle={16}>
         {/* Hero Image */}
         <View style={styles.heroImageContainer}>
           <Image
@@ -585,7 +608,9 @@ const RecipeDetailScreen: React.FC = () => {
               <Text style={styles.ratingText}>
                 {selectedRecipe.rating?.average?.toFixed(1) || '0.0'} (
                 {selectedRecipe.rating?.count || 0}{' '}
-                <Text style={styles.reviewsLink} onPress={scrollToReviews}>
+                <Text
+                  style={styles.reviewsLink}
+                  onPress={handleReviewsTabPress}>
                   reviews
                 </Text>
                 )
@@ -623,7 +648,12 @@ const RecipeDetailScreen: React.FC = () => {
           </Section>
 
           {/* Tab Navigation */}
-          <View style={styles.tabContainer}>
+          <View
+            style={styles.tabContainer}
+            onLayout={event => {
+              const { y } = event.nativeEvent.layout;
+              setTabContainerY(y);
+            }}>
             <TouchableOpacity
               style={[
                 styles.tab,
@@ -654,7 +684,7 @@ const RecipeDetailScreen: React.FC = () => {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.tab, activeTab === 'reviews' && styles.activeTab]}
-              onPress={() => setActiveTab('reviews')}>
+              onPress={handleReviewsTabPress}>
               <Text
                 style={[
                   styles.tabText,
