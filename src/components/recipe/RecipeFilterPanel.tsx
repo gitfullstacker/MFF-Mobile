@@ -9,6 +9,7 @@ import {
 import { RangeSlider } from 'react-native-product-sliders';
 import Icon from 'react-native-vector-icons/Feather';
 import { Button } from '../forms/Button';
+import { Input } from '../forms/Input';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { RecipeFilters } from '../../types/recipe';
 import { RECIPE_CATEGORIES } from '@/constants';
@@ -24,6 +25,26 @@ const SORT_OPTIONS = [
   { id: 'oldest', name: 'Oldest' },
   { id: 'timeAsc', name: 'Cooking Time (Low to High)' },
   { id: 'timeDesc', name: 'Cooking Time (High to Low)' },
+];
+
+// Generate year options (current year and previous 10 years)
+const currentYear = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: 11 }, (_, i) => currentYear - i);
+
+// Month options
+const MONTH_OPTIONS = [
+  { value: 1, label: 'January' },
+  { value: 2, label: 'February' },
+  { value: 3, label: 'March' },
+  { value: 4, label: 'April' },
+  { value: 5, label: 'May' },
+  { value: 6, label: 'June' },
+  { value: 7, label: 'July' },
+  { value: 8, label: 'August' },
+  { value: 9, label: 'September' },
+  { value: 10, label: 'October' },
+  { value: 11, label: 'November' },
+  { value: 12, label: 'December' },
 ];
 
 interface RecipeFilterPanelProps {
@@ -44,7 +65,7 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
   const handleReset = useCallback(() => {
     setLocalFilters({ sort: 'newest' });
     onApply({ sort: 'newest' });
-  }, []);
+  }, [onApply]);
 
   const handleApply = useCallback(() => {
     const updatedFilters = { ...localFilters };
@@ -207,6 +228,80 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
     [localFilters],
   );
 
+  const renderYearSelector = useCallback(() => {
+    return (
+      <View>
+        <View style={styles.chipContainer}>
+          <TouchableOpacity
+            style={[styles.chip, !localFilters.year && styles.chipSelected]}
+            onPress={() => updateFilter('year', undefined)}>
+            <Text
+              style={[
+                styles.chipText,
+                !localFilters.year && styles.chipTextSelected,
+              ]}>
+              All Years
+            </Text>
+          </TouchableOpacity>
+          {YEAR_OPTIONS.map(year => (
+            <TouchableOpacity
+              key={year}
+              style={[
+                styles.chip,
+                localFilters.year === year && styles.chipSelected,
+              ]}
+              onPress={() => updateFilter('year', year)}>
+              <Text
+                style={[
+                  styles.chipText,
+                  localFilters.year === year && styles.chipTextSelected,
+                ]}>
+                {year}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    );
+  }, [localFilters.year, updateFilter]);
+
+  const renderMonthSelector = useCallback(() => {
+    return (
+      <View>
+        <View style={styles.chipContainer}>
+          <TouchableOpacity
+            style={[styles.chip, !localFilters.month && styles.chipSelected]}
+            onPress={() => updateFilter('month', undefined)}>
+            <Text
+              style={[
+                styles.chipText,
+                !localFilters.month && styles.chipTextSelected,
+              ]}>
+              All Months
+            </Text>
+          </TouchableOpacity>
+          {MONTH_OPTIONS.map(month => (
+            <TouchableOpacity
+              key={month.value}
+              style={[
+                styles.chip,
+                localFilters.month === month.value && styles.chipSelected,
+              ]}
+              onPress={() => updateFilter('month', month.value)}>
+              <Text
+                style={[
+                  styles.chipText,
+                  localFilters.month === month.value && styles.chipTextSelected,
+                ]}>
+                {month.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    );
+  }, [localFilters.month, updateFilter]);
+
   return (
     <View style={styles.container}>
       {/* Action Buttons at the top */}
@@ -233,6 +328,32 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
         style={styles.content}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}>
+        {/* Search by Ingredients */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Search by Ingredients</Text>
+          <Input
+            placeholder="e.g., tomatoes, chicken, onions"
+            value={localFilters.ingredients || ''}
+            onChangeText={text =>
+              updateFilter('ingredients', text || undefined)
+            }
+            leftIcon="search"
+            containerStyle={{ marginBottom: 0 }}
+          />
+        </View>
+
+        {/* Year Filter */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Filter by Year</Text>
+          {renderYearSelector()}
+        </View>
+
+        {/* Month Filter */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Filter by Month</Text>
+          {renderMonthSelector()}
+        </View>
+
         {/* Recipe Categories */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Meal Type</Text>
