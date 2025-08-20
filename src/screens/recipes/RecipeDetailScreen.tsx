@@ -871,6 +871,16 @@ const RecipeDetailScreen: React.FC = () => {
               </View>
             )}
           </View>
+
+          {/* Recipe Notes Section */}
+          {selectedRecipe.notes && (
+            <Section title="Recipe Notes">
+              <View style={styles.divider} />
+              <Text style={styles.notesText}>
+                {stripHtmlTags(selectedRecipe.notes)}
+              </Text>
+            </Section>
+          )}
         </View>
       </ScrollView>
 
@@ -1327,6 +1337,16 @@ const styles = StyleSheet.create({
     ...typography.bodyRegular,
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border.light,
+  },
+  notesText: {
+    ...typography.bodyRegular,
+    color: colors.text.primary,
+    lineHeight: typography.lineHeights.relaxed * typography.fontSizes.xl,
+    textAlign: 'left',
   },
   bottomBar: {
     backgroundColor: colors.white,
