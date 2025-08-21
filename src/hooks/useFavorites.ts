@@ -148,7 +148,7 @@ export const useFavorites = () => {
   );
 
   const fetchFavorites = useCallback(
-    async (appliedFilters?: RecipeFilters, reset = false) => {
+    async (appliedFilters?: RecipeFilters | null, reset = false) => {
       if (loading && !reset && !refreshing) return;
 
       try {

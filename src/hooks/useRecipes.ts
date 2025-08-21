@@ -23,7 +23,7 @@ export const useRecipes = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchRecipes = useCallback(
-    async (appliedFilters?: RecipeFilters, reset = false) => {
+    async (appliedFilters?: RecipeFilters | null, reset = false) => {
       if (loading && !reset && !refreshing) return;
 
       try {

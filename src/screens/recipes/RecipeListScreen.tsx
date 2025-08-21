@@ -79,7 +79,7 @@ const RecipeListScreen: React.FC = () => {
 
   useEffect(() => {
     // Initial load
-    fetchRecipes({}, true);
+    fetchRecipes(null, true);
   }, []);
 
   const handleSearch = useCallback(() => {
@@ -249,7 +249,7 @@ const RecipeListScreen: React.FC = () => {
         onApply={handleApplyFilters}
       />
 
-      {loading && !refreshing  && (
+      {loading && !refreshing && (
         <LoadingOverlay message="Loading recipes..." />
       )}
     </PageContainer>

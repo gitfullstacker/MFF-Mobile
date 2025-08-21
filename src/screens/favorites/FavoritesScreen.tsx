@@ -79,7 +79,7 @@ const FavoritesScreen: React.FC = () => {
 
   useEffect(() => {
     // Initial load
-    fetchFavorites({}, true);
+    fetchFavorites(null, true);
   }, []);
 
   const handleSearch = useCallback(() => {
