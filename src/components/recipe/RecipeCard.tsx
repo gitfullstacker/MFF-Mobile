@@ -22,6 +22,7 @@ import { Recipe } from '../../types/recipe';
 import { useSubscription } from '../../hooks/useSubscription';
 import { RatingImage, StarRating } from 'react-native-product-ratings';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
+import { formatTime } from '@/utils/formatUtils';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -72,18 +73,6 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
   }, [recipe, allowedCategoryIds, subscriptionLoading]);
 
   const isValidRecipe = isRecipeAccessible();
-
-  // Format time in human-readable format
-  const formatTime = (minutes: number) => {
-    if (!minutes) return '0 min';
-    if (minutes < 60) return `${minutes} min`;
-
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-
-    if (mins === 0) return `${hours} hr`;
-    return `${hours} hr ${mins} min`;
-  };
 
   // Handle favorite toggle
   const handleFavoriteClick = async (e: any) => {

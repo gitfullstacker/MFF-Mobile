@@ -43,6 +43,11 @@ import { recipeService } from '../../services/recipe';
 import { useRecentRecipes } from '@/hooks/useRecentRecipes';
 import { useFavorites } from '@/hooks/useFavorites';
 import { RecipeStackParamList } from '@/types';
+import {
+  formatServingLabel,
+  formatServingSize,
+  formatTime,
+} from '@/utils/formatUtils';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -350,50 +355,27 @@ const RecipeDetailScreen: React.FC = () => {
   const renderTimeInfo = () => {
     if (!selectedRecipe) return null;
 
-    const formatServingSize = (servings: number, servingsUnit: string) => {
-      if (!servings) return '1';
-      return `${servings}`;
-    };
-
-    const formatServingLabel = (servings: number, servingsUnit: string) => {
-      if (!servings || servings === 1) {
-        return 'Serve';
-      }
-      return 'Serves';
-    };
-
     return (
       <View style={styles.timeInfoContainer}>
         <View style={styles.timeCard}>
           <Icon name="clock" size={20} color={colors.primary} />
           <Text style={styles.timeLabel}>Prep</Text>
-          <Text style={styles.timeValue}>{selectedRecipe.prep_time || 0}m</Text>
+          <Text style={styles.timeValue}>
+            {formatTime(selectedRecipe.prep_time || 0)}
+          </Text>
         </View>
         <View style={styles.timeCard}>
           <Icon name="zap" size={20} color={colors.primary} />
           <Text style={styles.timeLabel}>Cook</Text>
-          <Text style={styles.timeValue}>{selectedRecipe.cook_time || 0}m</Text>
+          <Text style={styles.timeValue}>
+            {formatTime(selectedRecipe.cook_time || 0)}
+          </Text>
         </View>
         <View style={styles.timeCard}>
           <Icon name="target" size={20} color={colors.primary} />
           <Text style={styles.timeLabel}>Total</Text>
           <Text style={styles.timeValue}>
-            {selectedRecipe.total_time || 0}m
-          </Text>
-        </View>
-        <View style={styles.timeCard}>
-          <Icon name="users" size={20} color={colors.primary} />
-          <Text style={styles.timeLabel}>
-            {formatServingLabel(
-              selectedRecipe.servings,
-              selectedRecipe.servings_unit,
-            )}
-          </Text>
-          <Text style={styles.timeValue}>
-            {formatServingSize(
-              selectedRecipe.servings,
-              selectedRecipe.servings_unit,
-            )}
+            {formatTime(selectedRecipe.total_time || 0)}
           </Text>
         </View>
       </View>
@@ -628,11 +610,22 @@ const RecipeDetailScreen: React.FC = () => {
 
           {/* Nutrition Info */}
           <Section title="Nutrition Information">
-            {/* Serving Size Information */}
-            <Text style={styles.servingInfo}>
-              Per serving: {selectedRecipe.nutrition.serving_size}{' '}
-              {selectedRecipe.nutrition.serving_unit}
-            </Text>
+            {/* Serving Size Information with added servings details */}
+            <View style={styles.servingContainer}>
+              <View style={styles.servingCard}>
+                <Icon name="users" size={20} color={colors.primary} />
+                <Text style={styles.servingLabel}>
+                  {formatServingLabel(selectedRecipe.servings)}
+                </Text>
+                <Text style={styles.servingValue}>
+                  {formatServingSize(selectedRecipe.servings)}
+                </Text>
+              </View>
+              <Text style={styles.servingInfo}>
+                Per serving: {selectedRecipe.nutrition.serving_size}{' '}
+                {selectedRecipe.nutrition.serving_unit}
+              </Text>
+            </View>
 
             <View style={styles.macroSection}>
               <MacroDisplay
@@ -1086,7 +1079,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   timeValue: {
-    ...typography.bodyLarge,
+    ...typography.bodyRegular,
     color: colors.text.primary,
     fontWeight: typography.fontWeights.semibold,
     marginTop: spacing.xs,
@@ -1096,6 +1089,31 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginBottom: spacing.lg,
     lineHeight: 24,
+  },
+  servingContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  servingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    backgroundColor: colors.gray[50],
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  servingLabel: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+  },
+  servingValue: {
+    ...typography.bodyRegular,
+    color: colors.text.primary,
+    fontWeight: typography.fontWeights.semibold,
   },
   servingInfo: {
     ...typography.bodyRegular,
