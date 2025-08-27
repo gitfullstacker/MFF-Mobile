@@ -128,14 +128,6 @@ export const TAB_BAR_CONFIG = {
     [SCREEN_NAMES.MAIN_TAB.FAVORITES]: 'heart',
     [SCREEN_NAMES.MAIN_TAB.ACCOUNT]: 'user',
   },
-  HEIGHT: {
-    IOS: 80,
-    ANDROID: 64,
-  },
-  SAFE_AREA_BOTTOM: {
-    IOS: 24,
-    ANDROID: 8,
-  },
 } as const;
 
 /**

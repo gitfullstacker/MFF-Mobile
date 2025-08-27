@@ -12,6 +12,7 @@ import { colors, typography, spacing, shadows } from '../../theme';
 import { TAB_BAR_CONFIG } from '../../constants/navigation';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
 import { MainTabParamList } from '@/types';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export const TabBar: React.FC<BottomTabBarProps> = ({
   state,
@@ -19,9 +20,24 @@ export const TabBar: React.FC<BottomTabBarProps> = ({
   navigation,
 }) => {
   const { navigateToMainTab } = useNavigationHelpers();
+  const insets = useSafeAreaInsets();
+
+  // Calculate proper bottom padding for Android
+  const height = Platform.select({
+    ios: 80,
+    android: insets.bottom > 30 ? 90 : 70,
+  });
+  const bottomPadding = Platform.select({
+    ios: 24,
+    android: insets.bottom,
+  });
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { height: height, paddingBottom: bottomPadding },
+      ]}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const label =
@@ -88,14 +104,6 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     backgroundColor: colors.white,
-    height:
-      Platform.OS === 'ios'
-        ? TAB_BAR_CONFIG.HEIGHT.IOS
-        : TAB_BAR_CONFIG.HEIGHT.ANDROID,
-    paddingBottom:
-      Platform.OS === 'ios'
-        ? TAB_BAR_CONFIG.SAFE_AREA_BOTTOM.IOS
-        : TAB_BAR_CONFIG.SAFE_AREA_BOTTOM.ANDROID,
     ...shadows.sm,
   },
   tab: {
