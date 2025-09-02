@@ -28,7 +28,7 @@ import {
   fontWeights,
   shadows,
 } from '../../theme';
-import { TicketComment, Attachment } from '../../types/ticket';
+import { TicketComment, Attachment, PlatformType } from '../../types/ticket';
 import { AccountRouteProp } from '@/types';
 
 const TicketDetailScreen: React.FC = () => {
@@ -106,6 +106,78 @@ const TicketDetailScreen: React.FC = () => {
     return type === 'bug' ? colors.semantic.error : colors.semantic.info;
   };
 
+  const getPlatformIcon = (platform: PlatformType) => {
+    switch (platform) {
+      case 'web':
+        return 'globe';
+      case 'ios':
+        return 'smartphone';
+      case 'android':
+        return 'smartphone';
+      default:
+        return 'monitor';
+    }
+  };
+
+  const getPlatformColor = (platform: PlatformType) => {
+    switch (platform) {
+      case 'web':
+        return colors.semantic.info;
+      case 'ios':
+        return '#007AFF'; // iOS blue
+      case 'android':
+        return '#34A853'; // Android green
+      default:
+        return colors.primary;
+    }
+  };
+
+  const getPlatformLabel = (platform: PlatformType) => {
+    switch (platform) {
+      case 'web':
+        return 'Web';
+      case 'ios':
+        return 'iOS';
+      case 'android':
+        return 'Android';
+      default:
+        return platform;
+    }
+  };
+
+  const renderPlatformBadges = (platforms: PlatformType[]) => {
+    if (!platforms || platforms.length === 0) return null;
+
+    return (
+      <View style={styles.platformBadgesContainer}>
+        <Text style={styles.platformBadgesTitle}>Platforms:</Text>
+        <View style={styles.platformBadges}>
+          {platforms.map(platform => (
+            <View
+              key={platform}
+              style={[
+                styles.platformBadge,
+                { backgroundColor: getPlatformColor(platform) + '15' },
+              ]}>
+              <Icon
+                name={getPlatformIcon(platform)}
+                size={14}
+                color={getPlatformColor(platform)}
+              />
+              <Text
+                style={[
+                  styles.platformBadgeText,
+                  { color: getPlatformColor(platform) },
+                ]}>
+                {getPlatformLabel(platform)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
   const renderTicketHeader = () => {
     if (!selectedTicket) return null;
 
@@ -148,6 +220,9 @@ const TicketDetailScreen: React.FC = () => {
                 {format(parseISO(selectedTicket.created_at), 'MMM d, yyyy')}
               </Text>
             </View>
+
+            {/* Platform Badges */}
+            {renderPlatformBadges(selectedTicket.platforms)}
 
             <View style={styles.infoItem}>
               <Icon name="clock" size={16} color={colors.text.secondary} />
@@ -247,7 +322,9 @@ const TicketDetailScreen: React.FC = () => {
           </View>
         </View>
 
-        <Text style={styles.commentContent}>{comment.text}</Text>
+        <View style={styles.commentContent}>
+          <Text style={styles.commentText}>{comment.text}</Text>
+        </View>
       </View>
     );
   };
@@ -426,6 +503,34 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
   },
 
+  // Platform Badges
+  platformBadgesContainer: {
+    marginTop: spacing.sm,
+  },
+  platformBadgesTitle: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    fontWeight: fontWeights.medium,
+    marginBottom: spacing.xs,
+  },
+  platformBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  platformBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.md,
+  },
+  platformBadgeText: {
+    ...typography.bodySmall,
+    fontWeight: fontWeights.medium,
+    marginLeft: spacing.xs,
+  },
+
   // Section
   section: {
     marginBottom: spacing.lg,
@@ -521,9 +626,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   commentContent: {
+    flex: 1,
+  },
+  commentText: {
     ...typography.bodyRegular,
     color: colors.text.primary,
     lineHeight: 22,
+    flexWrap: 'wrap',
   },
 
   // No Comments

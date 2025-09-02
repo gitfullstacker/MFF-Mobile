@@ -1,3 +1,5 @@
+export type PlatformType = 'web' | 'ios' | 'android';
+
 export interface Attachment {
   url: string;
   name?: string;
@@ -18,17 +20,20 @@ export interface Ticket {
   title: string;
   description: string;
   type: string; // Changed from 'bug' | 'feature' to string for flexibility
+  platforms: PlatformType[];
   trello_card_id: string;
   comments: TicketComment[];
   attachments: Attachment[];
   created_at: string;
   updated_at: string;
+  unread_support_comments?: number;
 }
 
 export interface CreateTicketRequest {
   title: string;
   description: string;
   type: string; // Changed from 'bug' | 'feature' to string
+  platforms: PlatformType[];
 }
 
 export interface TicketFilters {

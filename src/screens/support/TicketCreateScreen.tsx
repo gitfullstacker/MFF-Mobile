@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Platform,
 } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -27,9 +26,9 @@ import {
   borderRadius,
   fontWeights,
 } from '../../theme';
-import { CreateTicketRequest } from '../../types/ticket';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
 import { useSafeNavigation } from '@/hooks/useNavigation';
+import { PlatformType } from '../../types/ticket';
 
 // Form validation schema
 const ticketSchema = yup.object({
@@ -41,13 +40,27 @@ const ticketSchema = yup.object({
     .string()
     .required('Description is required')
     .min(20, 'Description must be at least 20 characters'),
-  type: yup.string().oneOf(['bug', 'feature']).required('Type is required'),
+  type: yup
+    .string()
+    .oneOf(['bug', 'feature'] as const)
+    .required('Type is required'),
+  platforms: yup
+    .array()
+    .of(
+      yup
+        .string()
+        .oneOf(['web', 'ios', 'android'] as const)
+        .required(),
+    )
+    .min(1, 'Please select at least one platform')
+    .required('Platform selection is required'),
 });
 
 type TicketFormData = {
   title: string;
   description: string;
   type: 'bug' | 'feature';
+  platforms: PlatformType[];
 };
 
 interface AttachedFile {
@@ -76,10 +89,12 @@ const TicketCreateScreen: React.FC = () => {
       title: '',
       description: '',
       type: 'bug',
+      platforms: [],
     },
   });
 
   const selectedType = watch('type');
+  const selectedPlatforms = watch('platforms');
 
   const onSubmit = async (data: TicketFormData) => {
     try {
@@ -190,6 +205,75 @@ const TicketCreateScreen: React.FC = () => {
     return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const togglePlatform = (platform: PlatformType) => {
+    const currentPlatforms = selectedPlatforms || [];
+    const isSelected = currentPlatforms.includes(platform);
+
+    if (isSelected) {
+      // Remove platform if it's already selected
+      const updatedPlatforms = currentPlatforms.filter(p => p !== platform);
+      setValue('platforms', updatedPlatforms);
+    } else {
+      // Add platform if not selected
+      setValue('platforms', [...currentPlatforms, platform]);
+    }
+  };
+
+  const isPlatformSelected = (platform: PlatformType) => {
+    return selectedPlatforms?.includes(platform) || false;
+  };
+
+  const renderPlatformOption = (platform: PlatformType) => {
+    const isSelected = isPlatformSelected(platform);
+    const platformInfo = {
+      web: { icon: 'globe', title: 'Web', description: 'Website or web app' },
+      ios: { icon: 'smartphone', title: 'iOS', description: 'iPhone/iPad app' },
+      android: {
+        icon: 'smartphone',
+        title: 'Android',
+        description: 'Android app',
+      },
+    };
+
+    const { icon, title, description } = platformInfo[platform];
+
+    return (
+      <TouchableOpacity
+        key={platform}
+        style={[
+          styles.platformOption,
+          isSelected && styles.platformOptionSelected,
+        ]}
+        onPress={() => togglePlatform(platform)}
+        activeOpacity={0.7}>
+        <View style={[styles.checkbox, isSelected && styles.checkboxChecked]}>
+          {isSelected && <Icon name="check" size={14} color={colors.white} />}
+        </View>
+        <View
+          style={[
+            styles.platformIconContainer,
+            isSelected && { backgroundColor: colors.primary + '20' },
+          ]}>
+          <Icon
+            name={icon}
+            size={20}
+            color={isSelected ? colors.primary : colors.text.secondary}
+          />
+        </View>
+        <View style={styles.platformContent}>
+          <Text
+            style={[
+              styles.platformTitle,
+              isSelected && { color: colors.primary },
+            ]}>
+            {title}
+          </Text>
+          <Text style={styles.platformDescription}>{description}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   const renderTypeOption = (type: 'bug' | 'feature') => {
     const isSelected = selectedType === type;
     const iconName = type === 'bug' ? 'alert-circle' : 'star';
@@ -244,6 +328,22 @@ const TicketCreateScreen: React.FC = () => {
             {renderTypeOption('bug')}
             {renderTypeOption('feature')}
           </View>
+        </Section>
+
+        {/* Platform Selection */}
+        <Section title="Platform" style={styles.section}>
+          <Text style={styles.platformHint}>
+            Select the platform(s) where you're experiencing the issue or want
+            the feature:
+          </Text>
+          <View style={styles.platformContainer}>
+            {renderPlatformOption('web')}
+            {renderPlatformOption('ios')}
+            {renderPlatformOption('android')}
+          </View>
+          {errors.platforms && (
+            <Text style={styles.errorText}>{errors.platforms.message}</Text>
+          )}
         </Section>
 
         {/* Title Input */}
@@ -434,6 +534,66 @@ const styles = StyleSheet.create({
   typeDescriptionSelected: {
     color: colors.white,
     opacity: 0.9,
+  },
+
+  // Platform Selection
+  platformHint: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    marginBottom: spacing.md,
+  },
+  platformContainer: {
+    flexDirection: 'column',
+    gap: spacing.sm,
+  },
+  platformOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border.light,
+  },
+  platformOptionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '05',
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: colors.border.default,
+    marginRight: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  platformIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.gray[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  platformContent: {
+    flex: 1,
+  },
+  platformTitle: {
+    ...typography.bodyRegular,
+    color: colors.text.primary,
+    fontWeight: fontWeights.medium,
+    marginBottom: 2,
+  },
+  platformDescription: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
   },
 
   // Description Input
