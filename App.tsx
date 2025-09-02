@@ -1,10 +1,9 @@
 import 'react-native-gesture-handler';
 import React, { Suspense, useEffect, useRef } from 'react';
-import { Platform, StatusBar } from 'react-native';
+import { Alert, Platform, StatusBar } from 'react-native';
 import { Provider, useAtom } from 'jotai';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { ToastContainer } from './src/components/feedback/Toast';
-import { ErrorBoundary } from './src/components/feedback/ErrorBoundary';
 import { LoadingOverlay } from './src/components/feedback/LoadingOverlay';
 import { setupIcons } from '@/utils/iconSetup';
 import { eventBus } from '@/utils/eventBus';
@@ -13,6 +12,7 @@ import { NavigationContainerRef } from '@react-navigation/native';
 import { RootStackParamList } from '@/types';
 import { useSubscriptionStatusChecker } from '@/hooks/useSubscriptionStatusChecker';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AppErrorBoundary } from '@/components/feedback/AppErrorBoundary';
 
 const AppContent: React.FC = () => {
   const [, setIsAuthenticated] = useAtom(isAuthenticatedAtom);
@@ -30,38 +30,71 @@ const AppContent: React.FC = () => {
     });
 
   useEffect(() => {
-    // Handle authentication errors
-    const authErrorListener = (message: string) => {
-      addToast({
-        message: message || 'Session expired. Please log in again.',
-        type: 'error',
-        duration: 5000,
-      });
-      setIsAuthenticated(false);
-    };
+    const authErrorListener = async (message: string) => {
+      try {
+        console.log('🔐 Auth error received:', message);
 
-    // Handle subscription status updates
-    const subscriptionUpdateListener = (status: string) => {
-      if (__DEV__) {
-        console.log('📱 Subscription status updated:', status);
-      }
-
-      // Optionally show toast for subscription changes
-      if (status === 'expired') {
         addToast({
-          message: 'Your subscription has expired. Please renew to continue.',
-          type: 'warning',
-          duration: 8000,
+          message: message || 'Please log in again.',
+          type: 'error',
+          duration: 5000,
         });
+
+        setIsAuthenticated(false);
+      } catch (error) {
+        console.error('Error handling auth error:', error);
+        // Fallback: directly set auth state
+        setIsAuthenticated(false);
       }
     };
 
-    eventBus.on('AUTH_ERROR', authErrorListener);
-    eventBus.on('SUBSCRIPTION_UPDATED', subscriptionUpdateListener);
+    const subscriptionUpdateListener = (status: string) => {
+      try {
+        if (__DEV__) {
+          console.log('📱 Subscription status updated:', status);
+        }
+
+        if (status === 'expired') {
+          addToast({
+            message: 'Your subscription has expired. Please renew to continue.',
+            type: 'warning',
+            duration: 8000,
+          });
+        }
+      } catch (error) {
+        console.error('Error handling subscription update:', error);
+      }
+    };
+
+    const networkErrorListener = (message: string) => {
+      try {
+        addToast({
+          message: message || 'Network connection issue. Please try again.',
+          type: 'error',
+          duration: 4000,
+        });
+      } catch (error) {
+        console.error('Error handling network error:', error);
+      }
+    };
+
+    // Register listeners with error handling
+    try {
+      eventBus.on('AUTH_ERROR', authErrorListener);
+      eventBus.on('SUBSCRIPTION_UPDATED', subscriptionUpdateListener);
+      eventBus.on('NETWORK_ERROR', networkErrorListener);
+    } catch (error) {
+      console.error('Failed to register event bus listeners:', error);
+    }
 
     return () => {
-      eventBus.off('AUTH_ERROR', authErrorListener);
-      eventBus.off('SUBSCRIPTION_UPDATED', subscriptionUpdateListener);
+      try {
+        eventBus.off('AUTH_ERROR', authErrorListener);
+        eventBus.off('SUBSCRIPTION_UPDATED', subscriptionUpdateListener);
+        eventBus.off('NETWORK_ERROR', networkErrorListener);
+      } catch (error) {
+        console.error('Failed to unregister event bus listeners:', error);
+      }
     };
   }, [setIsAuthenticated, addToast]);
 
@@ -115,11 +148,11 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <Provider>
-      <ErrorBoundary>
+      <AppErrorBoundary>
         <Suspense fallback={<LoadingOverlay message="Loading..." />}>
           <AppContent />
         </Suspense>
-      </ErrorBoundary>
+      </AppErrorBoundary>
     </Provider>
   );
 };

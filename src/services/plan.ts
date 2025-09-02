@@ -43,7 +43,7 @@ export const planService = {
 
   async getActivePlan(): Promise<Plan | null> {
     try {
-      return await apiClient.get('/plans/active');
+      return apiClient.get('/plans/active');
     } catch (error: any) {
       // If no active plan is set, the API might return 404 or null
       if (error.response?.status === 404) {
