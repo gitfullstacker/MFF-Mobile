@@ -31,14 +31,6 @@
 				<string>macrofriendlyfood</string>
 			</array>
 		</dict>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>com.macrofriendlyfood.web</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>https</string>
-			</array>
-		</dict>
 	</array>
 
 	<key>CFBundleVersion</key>
@@ -78,10 +70,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-
-	<key>com.apple.developer.associated-domains</key>
-	<array>
-		<string>applinks:macrofriendlyfood.com</string>
-	</array>
 </dict>
 </plist>

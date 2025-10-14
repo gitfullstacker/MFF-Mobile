@@ -150,7 +150,7 @@ export const NAVIGATION_TIMING = {
  */
 export const DEEP_LINK_CONFIG = {
   PREFIX: 'macrofriendlyfood://',
-  PREFIXES: ['macrofriendlyfood://', 'https://macrofriendlyfood.com'],
+  PREFIXES: ['macrofriendlyfood://'],
 
   // URL patterns
   PATTERNS: {
