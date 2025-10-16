@@ -3,12 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  Modal,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { BottomSheet } from './BottomSheet';
 import { Button } from '../forms/Button';
 import {
   colors,
@@ -35,123 +35,99 @@ const AIAdviceModal: React.FC<AIAdviceModalProps> = ({
   recommendations,
 }) => {
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <Icon name="cpu" size={24} color={colors.primary} />
-              <Text style={styles.title}>AI Nutritional Advice</Text>
-            </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Icon name="x" size={24} color={colors.text.secondary} />
-            </TouchableOpacity>
+    <BottomSheet visible={visible} onClose={onClose} height="85%">
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <Icon name="cpu" size={24} color={colors.primary} />
+          <Text style={styles.title}>AI Nutritional Advice</Text>
+        </View>
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Icon name="x" size={24} color={colors.text.secondary} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Content */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}>
+        {loading && !advice ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>
+              Generating personalized advice...
+            </Text>
           </View>
-
-          {/* Content */}
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}>
-            {loading && !advice ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={styles.loadingText}>
-                  Generating personalized advice...
-                </Text>
+        ) : (
+          <>
+            {advice && (
+              <View style={styles.adviceContainer}>
+                <View style={styles.adviceHeader}>
+                  <Icon name="file-text" size={20} color={colors.primary} />
+                  <Text style={styles.adviceHeaderText}>
+                    Personalized Advice
+                  </Text>
+                </View>
+                <Text style={styles.adviceText}>{advice}</Text>
               </View>
-            ) : (
-              <>
-                {advice && (
-                  <View style={styles.adviceContainer}>
-                    <View style={styles.adviceHeader}>
-                      <Icon name="file-text" size={20} color={colors.primary} />
-                      <Text style={styles.adviceHeaderText}>
-                        Personalized Advice
-                      </Text>
-                    </View>
-                    <Text style={styles.adviceText}>{advice}</Text>
-                  </View>
-                )}
+            )}
 
-                {recommendations.length > 0 && (
-                  <View style={styles.recommendationsContainer}>
-                    <View style={styles.recommendationsHeader}>
-                      <Icon name="lightbulb" size={20} color={colors.primary} />
-                      <Text style={styles.recommendationsTitle}>
-                        Key Recommendations
-                      </Text>
+            {recommendations.length > 0 && (
+              <View style={styles.recommendationsContainer}>
+                <View style={styles.recommendationsHeader}>
+                  <Icon name="lightbulb" size={20} color={colors.primary} />
+                  <Text style={styles.recommendationsTitle}>
+                    Key Recommendations
+                  </Text>
+                </View>
+                {recommendations.map((recommendation, index) => (
+                  <View key={index} style={styles.recommendationItem}>
+                    <View style={styles.checkIconContainer}>
+                      <Icon
+                        name="check"
+                        size={16}
+                        color={colors.semantic.success}
+                      />
                     </View>
-                    {recommendations.map((recommendation, index) => (
-                      <View key={index} style={styles.recommendationItem}>
-                        <View style={styles.checkIconContainer}>
-                          <Icon
-                            name="check"
-                            size={16}
-                            color={colors.semantic.success}
-                          />
-                        </View>
-                        <Text style={styles.recommendationText}>
-                          {recommendation}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-
-                {!loading && !advice && (
-                  <View style={styles.emptyContainer}>
-                    <Icon
-                      name="alert-circle"
-                      size={48}
-                      color={colors.text.disabled}
-                    />
-                    <Text style={styles.emptyText}>
-                      No advice available at the moment
+                    <Text style={styles.recommendationText}>
+                      {recommendation}
                     </Text>
                   </View>
-                )}
-              </>
+                ))}
+              </View>
             )}
-          </ScrollView>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Button
-              title="Close"
-              onPress={onClose}
-              variant="primary"
-              fullWidth
-            />
-          </View>
-        </View>
+            {!loading && !advice && (
+              <View style={styles.emptyContainer}>
+                <Icon
+                  name="alert-circle"
+                  size={48}
+                  color={colors.text.disabled}
+                />
+                <Text style={styles.emptyText}>
+                  No advice available at the moment
+                </Text>
+              </View>
+            )}
+          </>
+        )}
+      </ScrollView>
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <Button title="Close" onPress={onClose} variant="primary" fullWidth />
       </View>
-    </Modal>
+    </BottomSheet>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContainer: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: borderRadius.xl,
-    borderTopRightRadius: borderRadius.xl,
-    maxHeight: '85%',
-    ...shadows.lg,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingTop: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.light,
   },
@@ -169,7 +145,7 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   scrollContent: {
-    padding: spacing.lg,
+    paddingVertical: spacing.lg,
   },
   loadingContainer: {
     alignItems: 'center',

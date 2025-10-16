@@ -3,11 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  Modal,
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { BottomSheet } from './BottomSheet';
 import { Input } from '../forms/Input';
 import { Button } from '../forms/Button';
 import { useNutrition } from '../../hooks/useNutrition';
@@ -134,143 +134,117 @@ const UpdateMacrosModal: React.FC<UpdateMacrosModalProps> = ({
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <Icon name="edit-2" size={24} color={colors.primary} />
-              <Text style={styles.title}>Update Target Macros</Text>
-            </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Icon name="x" size={24} color={colors.text.secondary} />
-            </TouchableOpacity>
-          </View>
+    <BottomSheet visible={visible} onClose={onClose} height="90%">
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <Icon name="edit-2" size={24} color={colors.primary} />
+          <Text style={styles.title}>Update Target Macros</Text>
+        </View>
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Icon name="x" size={24} color={colors.text.secondary} />
+        </TouchableOpacity>
+      </View>
 
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}>
-            {/* Calculated Macros Display */}
-            <View style={styles.infoBox}>
-              <Text style={styles.infoTitle}>
-                Calculated Daily Macros (Based on Your Profile)
-              </Text>
-              <Text style={styles.infoText}>
-                Protein:{' '}
-                <Text style={styles.bold}>{calculatedMacros.protein}g</Text> •
-                Carbs:{' '}
-                <Text style={styles.bold}>
-                  {calculatedMacros.carbohydrates}g
-                </Text>{' '}
-                • Fats:{' '}
-                <Text style={styles.bold}>{calculatedMacros.fats}g</Text>
-              </Text>
-            </View>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Calculated Macros Display */}
+        <View style={styles.infoBox}>
+          <Text style={styles.infoTitle}>
+            Calculated Daily Macros (Based on Your Profile)
+          </Text>
+          <Text style={styles.infoText}>
+            Protein:{' '}
+            <Text style={styles.bold}>{calculatedMacros.protein}g</Text> •
+            Carbs:{' '}
+            <Text style={styles.bold}>{calculatedMacros.carbohydrates}g</Text> •
+            Fats: <Text style={styles.bold}>{calculatedMacros.fats}g</Text>
+          </Text>
+        </View>
 
-            {/* Target Macros Input */}
-            <Text style={styles.sectionTitle}>Your Target Macros</Text>
+        {/* Target Macros Input */}
+        <Text style={styles.sectionTitle}>Your Target Macros</Text>
 
-            <Input
-              label="Protein (grams)"
-              placeholder="Enter protein"
-              value={protein}
-              onChangeText={setProtein}
-              error={errors.protein}
-              keyboardType="decimal-pad"
-              leftIcon="zap"
-            />
+        <Input
+          label="Protein (grams)"
+          placeholder="Enter protein"
+          value={protein}
+          onChangeText={setProtein}
+          error={errors.protein}
+          keyboardType="decimal-pad"
+          leftIcon="zap"
+        />
 
-            <Input
-              label="Carbohydrates (grams)"
-              placeholder="Enter carbohydrates"
-              value={carbohydrates}
-              onChangeText={setCarbohydrates}
-              error={errors.carbohydrates}
-              keyboardType="decimal-pad"
-              leftIcon="battery"
-            />
+        <Input
+          label="Carbohydrates (grams)"
+          placeholder="Enter carbohydrates"
+          value={carbohydrates}
+          onChangeText={setCarbohydrates}
+          error={errors.carbohydrates}
+          keyboardType="decimal-pad"
+          leftIcon="battery"
+        />
 
-            <Input
-              label="Fats (grams)"
-              placeholder="Enter fats"
-              value={fats}
-              onChangeText={setFats}
-              error={errors.fats}
-              keyboardType="decimal-pad"
-              leftIcon="droplet"
-            />
+        <Input
+          label="Fats (grams)"
+          placeholder="Enter fats"
+          value={fats}
+          onChangeText={setFats}
+          error={errors.fats}
+          keyboardType="decimal-pad"
+          leftIcon="droplet"
+        />
 
-            {/* Macro Summary Card */}
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>
-                Total Calories from Macros
-              </Text>
-              <Text style={styles.summaryValue}>
-                {calculateCalories().toFixed(0)} calories
-              </Text>
-              <Text style={styles.summaryBreakdown}>
-                Protein: {(parseFloat(protein) || 0) * 4} cal • Carbs:{' '}
-                {(parseFloat(carbohydrates) || 0) * 4} cal • Fats:{' '}
-                {(parseFloat(fats) || 0) * 9} cal
-              </Text>
-            </View>
-          </ScrollView>
+        {/* Macro Summary Card */}
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryLabel}>Total Calories from Macros</Text>
+          <Text style={styles.summaryValue}>
+            {calculateCalories().toFixed(0)} calories
+          </Text>
+          <Text style={styles.summaryBreakdown}>
+            Protein: {(parseFloat(protein) || 0) * 4} cal • Carbs:{' '}
+            {(parseFloat(carbohydrates) || 0) * 4} cal • Fats:{' '}
+            {(parseFloat(fats) || 0) * 9} cal
+          </Text>
+        </View>
+      </ScrollView>
 
-          {/* Action Buttons */}
-          <View style={styles.footer}>
-            <Button
-              title="Reset to Calculated"
-              onPress={handleResetToCalculated}
-              variant="outline"
-              fullWidth
-            />
-            <View style={styles.buttonRow}>
-              <Button
-                title="Cancel"
-                onPress={onClose}
-                variant="outline"
-                style={styles.halfButton}
-                disabled={loading}
-              />
-              <Button
-                title="Save Macros"
-                onPress={handleSave}
-                variant="primary"
-                style={styles.halfButton}
-                loading={loading}
-                disabled={loading}
-              />
-            </View>
-          </View>
+      {/* Action Buttons */}
+      <View style={styles.footer}>
+        <Button
+          title="Reset to Calculated"
+          onPress={handleResetToCalculated}
+          variant="outline"
+          fullWidth
+        />
+        <View style={styles.buttonRow}>
+          <Button
+            title="Cancel"
+            onPress={onClose}
+            variant="outline"
+            style={styles.halfButton}
+            disabled={loading}
+          />
+          <Button
+            title="Save Macros"
+            onPress={handleSave}
+            variant="primary"
+            style={styles.halfButton}
+            loading={loading}
+            disabled={loading}
+          />
         </View>
       </View>
-    </Modal>
+    </BottomSheet>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContainer: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: borderRadius.xl,
-    borderTopRightRadius: borderRadius.xl,
-    maxHeight: '90%',
-    ...shadows.lg,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingTop: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.light,
   },
@@ -288,7 +262,8 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   content: {
-    padding: spacing.lg,
+    flex: 1,
+    paddingVertical: spacing.lg,
   },
   infoBox: {
     backgroundColor: colors.semantic.info + '10',

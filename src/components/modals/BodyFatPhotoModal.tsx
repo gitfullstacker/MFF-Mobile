@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Modal,
   TouchableOpacity,
   ScrollView,
   Image,
@@ -15,6 +14,7 @@ import {
   launchCamera,
   ImagePickerResponse,
 } from 'react-native-image-picker';
+import { BottomSheet } from './BottomSheet';
 import { Button } from '../forms/Button';
 import { useNutrition } from '../../hooks/useNutrition';
 import {
@@ -53,10 +53,12 @@ const BodyFatPhotoModal: React.FC<BodyFatPhotoModalProps> = ({
   } | null>(null);
 
   // Reset state when modal opens
-  const handleModalOpen = () => {
-    setSelectedImage(null);
-    setAnalysisResult(null);
-  };
+  React.useEffect(() => {
+    if (visible) {
+      setSelectedImage(null);
+      setAnalysisResult(null);
+    }
+  }, [visible]);
 
   // Handle image selection
   const handleSelectImage = () => {
@@ -183,217 +185,182 @@ const BodyFatPhotoModal: React.FC<BodyFatPhotoModalProps> = ({
   const handleUseEstimate = () => {
     if (analysisResult) {
       onBodyFatEstimated(analysisResult.estimatedBodyFat);
-      handleClose();
+      onClose();
     }
   };
 
-  // Close modal
-  const handleClose = () => {
-    setSelectedImage(null);
-    setAnalysisResult(null);
-    onClose();
-  };
-
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={handleClose}
-      onShow={handleModalOpen}>
-      <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <Icon name="cpu" size={24} color={colors.primary} />
-              <Text style={styles.title}>AI Body Fat Analysis</Text>
-            </View>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <Icon name="x" size={24} color={colors.text.secondary} />
+    <BottomSheet visible={visible} onClose={onClose} height="90%">
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <Icon name="cpu" size={24} color={colors.primary} />
+          <Text style={styles.title}>AI Body Fat Analysis</Text>
+        </View>
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Icon name="x" size={24} color={colors.text.secondary} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Info Alert */}
+        <View style={styles.infoBox}>
+          <Icon name="info" size={16} color={colors.semantic.info} />
+          <Text style={styles.infoText}>
+            Upload a clear, front-facing photo for AI-powered body fat
+            estimation. This is an approximation and should not replace
+            professional measurements.
+          </Text>
+        </View>
+
+        {/* File Upload Section */}
+        {!selectedImage ? (
+          <TouchableOpacity
+            style={styles.uploadBox}
+            onPress={handleSelectImage}
+            activeOpacity={0.7}>
+            <Icon name="upload-cloud" size={48} color={colors.gray[400]} />
+            <Text style={styles.uploadTitle}>Upload a Photo</Text>
+            <Text style={styles.uploadSubtitle}>
+              Tap to select from camera or gallery
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.imagePreviewContainer}>
+            <Image
+              source={{ uri: selectedImage.uri }}
+              style={styles.imagePreview}
+              resizeMode="contain"
+            />
+            <TouchableOpacity
+              style={styles.changeImageButton}
+              onPress={handleSelectImage}>
+              <Icon name="refresh-cw" size={16} color={colors.primary} />
+              <Text style={styles.changeImageText}>Change Photo</Text>
             </TouchableOpacity>
           </View>
+        )}
 
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}>
-            {/* Info Alert */}
-            <View style={styles.infoBox}>
-              <Icon name="info" size={16} color={colors.semantic.info} />
-              <Text style={styles.infoText}>
-                Upload a clear, front-facing photo for AI-powered body fat
-                estimation. This is an approximation and should not replace
-                professional measurements.
-              </Text>
+        {/* Analysis Results */}
+        {analysisResult && (
+          <View style={styles.resultsContainer}>
+            <Text style={styles.resultsTitle}>Analysis Results</Text>
+
+            <View style={styles.resultsGrid}>
+              <View style={styles.resultCard}>
+                <Text style={styles.resultLabel}>Estimated Body Fat</Text>
+                <Text style={styles.resultValue}>
+                  {analysisResult.estimatedBodyFat}%
+                </Text>
+              </View>
+              <View style={styles.resultCard}>
+                <Text style={styles.resultLabel}>Category</Text>
+                <Text style={styles.resultValue}>
+                  {analysisResult.category}
+                </Text>
+              </View>
             </View>
 
-            {/* File Upload Section */}
-            {!selectedImage ? (
-              <TouchableOpacity
-                style={styles.uploadBox}
-                onPress={handleSelectImage}
-                activeOpacity={0.7}>
-                <Icon name="upload-cloud" size={48} color={colors.gray[400]} />
-                <Text style={styles.uploadTitle}>Upload a Photo</Text>
-                <Text style={styles.uploadSubtitle}>
-                  Tap to select from camera or gallery
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.imagePreviewContainer}>
-                <Image
-                  source={{ uri: selectedImage.uri }}
-                  style={styles.imagePreview}
-                  resizeMode="contain"
+            {/* Confidence Score */}
+            <View style={styles.confidenceContainer}>
+              <Text style={styles.confidenceLabel}>Confidence Level</Text>
+              <View style={styles.confidenceBar}>
+                <View
+                  style={[
+                    styles.confidenceFill,
+                    { width: `${analysisResult.confidence}%` },
+                  ]}
                 />
-                <TouchableOpacity
-                  style={styles.changeImageButton}
-                  onPress={handleSelectImage}>
-                  <Icon name="refresh-cw" size={16} color={colors.primary} />
-                  <Text style={styles.changeImageText}>Change Photo</Text>
-                </TouchableOpacity>
               </View>
-            )}
-
-            {/* Analysis Results */}
-            {analysisResult && (
-              <View style={styles.resultsContainer}>
-                <Text style={styles.resultsTitle}>Analysis Results</Text>
-
-                <View style={styles.resultsGrid}>
-                  <View style={styles.resultCard}>
-                    <Text style={styles.resultLabel}>Estimated Body Fat</Text>
-                    <Text style={styles.resultValue}>
-                      {analysisResult.estimatedBodyFat.toFixed(1)}%
-                    </Text>
-                  </View>
-
-                  <View style={styles.resultCard}>
-                    <Text style={styles.resultLabel}>Category</Text>
-                    <Text style={styles.resultValue}>
-                      {analysisResult.category}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.confidenceContainer}>
-                  <Text style={styles.confidenceLabel}>
-                    AI Confidence Level
-                  </Text>
-                  <View style={styles.confidenceBar}>
-                    <View
-                      style={[
-                        styles.confidenceFill,
-                        { width: `${analysisResult.confidence}%` },
-                      ]}
-                    />
-                  </View>
-                  <Text style={styles.confidenceValue}>
-                    {analysisResult.confidence.toFixed(0)}%
-                  </Text>
-                </View>
-
-                {analysisResult.recommendations && (
-                  <View style={styles.recommendationsBox}>
-                    <Icon
-                      name="lightbulb"
-                      size={16}
-                      color={colors.semantic.info}
-                    />
-                    <View style={styles.recommendationsContent}>
-                      <Text style={styles.recommendationsTitle}>
-                        Recommendations
-                      </Text>
-                      <Text style={styles.recommendationsText}>
-                        {analysisResult.recommendations}
-                      </Text>
-                    </View>
-                  </View>
-                )}
-              </View>
-            )}
-
-            {/* Guidelines */}
-            <View style={styles.guidelinesBox}>
-              <Text style={styles.guidelinesTitle}>Photo Guidelines:</Text>
-              <View style={styles.guidelineItem}>
-                <Text style={styles.bullet}>•</Text>
-                <Text style={styles.guidelineText}>
-                  Take photo in good lighting
-                </Text>
-              </View>
-              <View style={styles.guidelineItem}>
-                <Text style={styles.bullet}>•</Text>
-                <Text style={styles.guidelineText}>
-                  Stand straight, facing camera
-                </Text>
-              </View>
-              <View style={styles.guidelineItem}>
-                <Text style={styles.bullet}>•</Text>
-                <Text style={styles.guidelineText}>
-                  Wear minimal, form-fitting clothing
-                </Text>
-              </View>
-              <View style={styles.guidelineItem}>
-                <Text style={styles.bullet}>•</Text>
-                <Text style={styles.guidelineText}>
-                  Keep arms at your sides
-                </Text>
-              </View>
-              <Text style={styles.disclaimer}>
-                Disclaimer: This AI estimation is for informational purposes
-                only and may not be medically accurate. Consult healthcare
-                professionals for precise measurements.
+              <Text style={styles.confidenceValue}>
+                {analysisResult.confidence}%
               </Text>
             </View>
-          </ScrollView>
 
-          {/* Action Buttons */}
-          <View style={styles.footer}>
-            {!analysisResult ? (
-              <Button
-                title={analyzing ? 'Analyzing...' : 'Analyze Photo'}
-                onPress={handleAnalyzePhoto}
-                variant="primary"
-                fullWidth
-                loading={analyzing}
-                disabled={!selectedImage || analyzing}
-                icon={<Icon name="cpu" size={16} color={colors.white} />}
+            {/* Recommendations */}
+            <View style={styles.recommendationsBox}>
+              <Icon
+                name="message-circle"
+                size={16}
+                color={colors.semantic.info}
               />
-            ) : (
-              <Button
-                title="Use This Estimate"
-                onPress={handleUseEstimate}
-                variant="primary"
-                fullWidth
-                icon={<Icon name="check" size={16} color={colors.white} />}
-              />
-            )}
+              <View style={styles.recommendationsContent}>
+                <Text style={styles.recommendationsTitle}>AI Insights</Text>
+                <Text style={styles.recommendationsText}>
+                  {analysisResult.recommendations}
+                </Text>
+              </View>
+            </View>
           </View>
+        )}
+
+        {/* Guidelines */}
+        <View style={styles.guidelinesBox}>
+          <Text style={styles.guidelinesTitle}>For Best Results:</Text>
+          <View style={styles.guidelineItem}>
+            <Text style={styles.bullet}>•</Text>
+            <Text style={styles.guidelineText}>
+              Use a well-lit, front-facing photo
+            </Text>
+          </View>
+          <View style={styles.guidelineItem}>
+            <Text style={styles.bullet}>•</Text>
+            <Text style={styles.guidelineText}>
+              Wear minimal, form-fitting clothing
+            </Text>
+          </View>
+          <View style={styles.guidelineItem}>
+            <Text style={styles.bullet}>•</Text>
+            <Text style={styles.guidelineText}>
+              Stand straight with arms at your sides
+            </Text>
+          </View>
+          <View style={styles.guidelineItem}>
+            <Text style={styles.bullet}>•</Text>
+            <Text style={styles.guidelineText}>
+              Include full torso in the frame
+            </Text>
+          </View>
+          <Text style={styles.disclaimer}>
+            Note: This AI estimation is for reference only. Consult healthcare
+            professionals for precise measurements.
+          </Text>
         </View>
+      </ScrollView>
+
+      {/* Action Buttons */}
+      <View style={styles.footer}>
+        {!analysisResult ? (
+          <Button
+            title={analyzing ? 'Analyzing...' : 'Analyze Photo'}
+            onPress={handleAnalyzePhoto}
+            variant="primary"
+            fullWidth
+            loading={analyzing}
+            disabled={!selectedImage || analyzing}
+            icon={<Icon name="cpu" size={16} color={colors.white} />}
+          />
+        ) : (
+          <Button
+            title="Use This Estimate"
+            onPress={handleUseEstimate}
+            variant="primary"
+            fullWidth
+            icon={<Icon name="check" size={16} color={colors.white} />}
+          />
+        )}
       </View>
-    </Modal>
+    </BottomSheet>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContainer: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: borderRadius.xl,
-    borderTopRightRadius: borderRadius.xl,
-    maxHeight: '90%',
-    ...shadows.lg,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingTop: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.light,
   },
@@ -411,7 +378,8 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   content: {
-    padding: spacing.lg,
+    flex: 1,
+    paddingVertical: spacing.lg,
   },
   infoBox: {
     flexDirection: 'row',
