@@ -12,6 +12,7 @@ import AboutScreen from '../screens/account/AboutScreen';
 import PrivacyScreen from '@/screens/account/PrivacyScreen';
 import TermsScreen from '@/screens/account/TermsScreen';
 import TicketDetailScreen from '@/screens/support/TicketDetailScreen';
+import NutritionScreen from '@/screens/account/NutritionScreen';
 
 const Stack = createStackNavigator<AccountStackParamList>();
 
@@ -20,6 +21,7 @@ export const AccountNavigator = () => {
     <Stack.Navigator screenOptions={NAVIGATION_OPTIONS.DEFAULT_SCREEN_OPTIONS}>
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.MAIN} component={AccountScreen} />
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.PROFILE} component={ProfileScreen} />
+      <Stack.Screen name={SCREEN_NAMES.ACCOUNT.NUTRITION} component={NutritionScreen} />
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.PREFERENCES} component={PreferencesScreen} />
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.DOWNLOADS} component={DownloadsScreen} />
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.TICKETS} component={TicketListScreen} />

@@ -39,6 +39,7 @@ export const SCREEN_NAMES = {
   ACCOUNT: {
     MAIN: 'AccountMain',
     PROFILE: 'Profile',
+    NUTRITION: 'Nutrition',
     PREFERENCES: 'Preferences',
     DOWNLOADS: 'Downloads',
     TICKETS: 'Tickets',
@@ -143,41 +144,4 @@ export const NAVIGATION_TIMING = {
 
   // Timeout for navigation completion
   NAVIGATION_TIMEOUT: 5000,
-} as const;
-
-/**
- * Deep Link Prefixes
- */
-export const DEEP_LINK_CONFIG = {
-  PREFIX: 'macrofriendlyfood://',
-  PREFIXES: ['macrofriendlyfood://'],
-
-  // URL patterns
-  PATTERNS: {
-    RECIPE_DETAIL: '/recipe/:recipeId',
-    MEAL_PLAN_DETAIL: '/meal-plan/:planId',
-    ACCOUNT_PROFILE: '/profile',
-    AUTH_LOGIN: '/login',
-    AUTH_RESET_PASSWORD: '/reset-password/:token',
-  },
-} as const;
-
-/**
- * Navigation State Keys
- */
-export const NAVIGATION_STATE_KEYS = {
-  IS_READY: 'navigationReady',
-  CURRENT_ROUTE: 'currentRoute',
-  PREVIOUS_ROUTE: 'previousRoute',
-  NAVIGATION_HISTORY: 'navigationHistory',
-} as const;
-
-/**
- * Error Messages
- */
-export const NAVIGATION_ERRORS = {
-  NAVIGATION_NOT_READY: 'Navigation is not ready',
-  INVALID_ROUTE: 'Invalid route provided',
-  NAVIGATION_TIMEOUT: 'Navigation timeout exceeded',
-  DEEP_LINK_ERROR: 'Failed to handle deep link',
 } as const;

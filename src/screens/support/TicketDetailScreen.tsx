@@ -221,9 +221,6 @@ const TicketDetailScreen: React.FC = () => {
               </Text>
             </View>
 
-            {/* Platform Badges */}
-            {renderPlatformBadges(selectedTicket.platforms)}
-
             <View style={styles.infoItem}>
               <Icon name="clock" size={16} color={colors.text.secondary} />
               <Text style={styles.infoText}>
@@ -231,6 +228,9 @@ const TicketDetailScreen: React.FC = () => {
                 {format(parseISO(selectedTicket.updated_at), 'MMM d, yyyy')}
               </Text>
             </View>
+
+            {/* Platform Badges */}
+            {renderPlatformBadges(selectedTicket.platforms)}
           </View>
         </View>
       </Section>
@@ -506,6 +506,9 @@ const styles = StyleSheet.create({
   // Platform Badges
   platformBadgesContainer: {
     marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.sm
   },
   platformBadgesTitle: {
     ...typography.bodySmall,

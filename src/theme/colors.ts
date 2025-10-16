@@ -20,6 +20,7 @@ export const colors = {
     dark: '#EDEDED',
   },
 
+  // Gray scale
   gray: {
     50: '#F5F5F5',
     100: '#E5E5E5',
@@ -33,11 +34,52 @@ export const colors = {
     900: '#0A0A0A',
   },
 
+  // Blue colors
+  blue: {
+    50: '#EFF6FF',
+    100: '#DBEAFE',
+    200: '#BFDBFE',
+    500: '#3B82F6',
+    600: '#2563EB',
+    700: '#1D4ED8',
+    800: '#1E40AF',
+  },
+
+  // Purple colors
+  purple: {
+    50: '#FAF5FF',
+    100: '#F3E8FF',
+    200: '#E9D5FF',
+    600: '#9333EA',
+    700: '#7C3AED',
+    800: '#6B21A8',
+  },
+
+  // Orange colors
+  orange: {
+    50: '#FFF7ED',
+    100: '#FFEDD5',
+    200: '#FED7AA',
+    600: '#EA580C',
+    700: '#C2410C',
+    800: '#9A3412',
+  },
+
+  // Green colors
+  green: {
+    50: '#F0FDF4',
+    100: '#DCFCE7',
+    200: '#BBF7D0',
+    700: '#15803D',
+    800: '#166534',
+  },
+
   text: {
     primary: '#171717',
     secondary: '#737373',
     inverse: '#FFFFFF',
     light: '#A3A3A3',
+    disabled: '#D4D4D4',
   },
 
   macros: {

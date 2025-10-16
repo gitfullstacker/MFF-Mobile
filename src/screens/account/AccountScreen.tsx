@@ -34,6 +34,7 @@ interface MenuItem {
 const AccountScreen: React.FC = () => {
   const {
     navigateToProfile,
+    navigateToNutrition,
     navigateToPreferences,
     navigateToDownloads,
     navigateToTickets,
@@ -106,6 +107,13 @@ const AccountScreen: React.FC = () => {
       title: 'Profile',
       subtitle: 'Manage your personal information',
       onPress: () => navigateToProfile(),
+      showArrow: true,
+    },
+    {
+      icon: 'activity',
+      title: 'Nutrition Profile',
+      subtitle: 'Set up your nutrition goals and preferences',
+      onPress: () => navigateToNutrition(),
       showArrow: true,
     },
     {
