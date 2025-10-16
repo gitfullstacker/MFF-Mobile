@@ -7,7 +7,7 @@ import {
   addToastAtom,
   favoriteRecipeIdsAtom,
 } from '../store';
-import { planService } from '../services/plan';
+import { planService } from '../services/planService';
 import {
   Plan,
   CreatePlanRequest,

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useAtom } from 'jotai';
 import { nutritionProfileAtom, addToastAtom } from '../store';
-import { nutritionService } from '../services/nutrition';
+import { nutritionService } from '../services/nutritionService';
 import {
   CreateNutritionProfileRequest,
   UpdateNutritionProfileRequest,

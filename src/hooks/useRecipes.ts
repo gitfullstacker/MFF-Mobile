@@ -7,7 +7,7 @@ import {
   addToastAtom,
   recipeFiltersAtom,
 } from '../store';
-import { recipeService } from '../services/recipe';
+import { recipeService } from '../services/recipeService';
 import { Recipe, RecipeFilters } from '../types/recipe';
 
 export const useRecipes = () => {

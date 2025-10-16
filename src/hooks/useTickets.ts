@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useAtom } from 'jotai';
 import { addToastAtom } from '../store';
-import { ticketService } from '../services/ticket';
+import { ticketService } from '../services/ticketService';
 import { Ticket, CreateTicketRequest, TicketFilters } from '../types/ticket';
 
 export const useTickets = () => {

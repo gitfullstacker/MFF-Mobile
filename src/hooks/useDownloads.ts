@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { downloadService } from '../services/download';
+import { downloadService } from '../services/downloadService';
 import { Download, DownloadFilters } from '../types/download';
 import { useAtom } from 'jotai';
 import { addToastAtom } from '@/store';

@@ -12,7 +12,7 @@ import {
   selectedPlanAtom,
   recipeFiltersAtom,
 } from '../store';
-import { favoriteService } from '../services/favorite';
+import { favoriteService } from '../services/favoriteService';
 import { Recipe, RecipeFilters } from '../types/recipe';
 import { PlanSchedule } from '@/types/plan';
 

@@ -12,11 +12,11 @@ import {
   activePlanAtom,
   tokenExpirationAtom,
 } from '../store';
-import { authService } from '../services/auth';
-import { userService } from '../services/user';
-import { subscriptionService } from '../services/subscription';
-import { favoriteService } from '../services/favorite';
-import { planService } from '../services/plan';
+import { authService } from '../services/authService';
+import { userService } from '../services/userService';
+import { subscriptionService } from '../services/subscriptionService';
+import { favoriteService } from '../services/favoriteService';
+import { planService } from '../services/planService';
 import {
   ChangePasswordRequest,
   ForgotPasswordRequest,

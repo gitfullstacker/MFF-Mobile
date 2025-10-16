@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useAtom } from 'jotai';
 import { subscriptionStatsAtom, addToastAtom } from '../store';
-import { subscriptionService } from '../services/subscription';
+import { subscriptionService } from '../services/subscriptionService';
 import { SubscriptionStats } from '../types/subscription';
 
 export const useSubscription = () => {

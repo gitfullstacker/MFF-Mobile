@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useAtom } from 'jotai';
 import { activePlanAtom, addToastAtom } from '../store';
-import { planService } from '@/services/plan';
+import { planService } from '@/services/planService';
 
 export const useActivePlan = () => {
   const [, addToast] = useAtom(addToastAtom);

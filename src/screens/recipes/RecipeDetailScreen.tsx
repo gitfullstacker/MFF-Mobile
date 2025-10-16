@@ -39,7 +39,7 @@ import {
   shadows,
 } from '../../theme';
 import { IngredientItem, RecipeComment } from '@/types/recipe';
-import { recipeService } from '../../services/recipe';
+import { recipeService } from '../../services/recipeService';
 import { useRecentRecipes } from '@/hooks/useRecentRecipes';
 import { useFavorites } from '@/hooks/useFavorites';
 import { RecipeStackParamList } from '@/types';
