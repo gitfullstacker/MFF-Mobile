@@ -9,7 +9,6 @@ import {
   Image,
   Animated,
   Dimensions,
-  Alert,
   Platform,
   StatusBar,
 } from 'react-native';
@@ -34,15 +33,11 @@ import { PlanSchedule } from '../../types/plan';
 import { RECIPE_CATEGORIES, SCREEN_NAMES } from '@/constants';
 import { useActivePlan } from '../../hooks/useActivePlan';
 import { SwipeIndicator } from '@/components/ui/SwipeIndicator';
-import { MacroDisplayWithGoals } from '@/components/dashboard/MacroDisplayWithGoals';
-import { useAtom } from 'jotai';
-import { userPreferencesAtom } from '@/store/atoms/userPreferences';
 import { SuggestedMealPlanSection } from '@/components/dashboard/SuggestedMealPlanSection';
 import { useRecentRecipes } from '@/hooks/useRecentRecipes';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
 import { useRecipes } from '@/hooks/useRecipes';
-import { Header } from '@/components/navigation/Header';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -59,7 +54,6 @@ const DashboardScreen: React.FC = () => {
   const { toggleFavorite } = useFavorites();
   const { recentRecipes, loading: recentRecipesLoading } = useRecentRecipes();
   const { activePlan, loading: activePlanLoading } = useActivePlan();
-  const [userPreferences] = useAtom(userPreferencesAtom);
   const [isTodayPlanExpanded, setIsTodayPlanExpanded] = useState(false);
   const [todaysMeals, setTodaysMeals] = useState<Recipe[]>([]);
   const [dailyMacros, setDailyMacros] = useState({
@@ -343,20 +337,6 @@ const DashboardScreen: React.FC = () => {
                     No meals planned for today
                   </Text>
                 )}
-
-                <MacroDisplayWithGoals
-                  protein={dailyMacros.protein}
-                  carbs={dailyMacros.carbs}
-                  fat={dailyMacros.fat}
-                  calories={dailyMacros.calories}
-                  goals={{
-                    protein: userPreferences.proteinTarget,
-                    carbs: userPreferences.carbsTarget,
-                    fat: userPreferences.fatTarget,
-                    calories: userPreferences.calorieTarget,
-                  }}
-                  title="Today's Nutrition"
-                />
               </>
             ) : (
               <EmptyState

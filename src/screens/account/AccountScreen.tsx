@@ -35,7 +35,6 @@ const AccountScreen: React.FC = () => {
   const {
     navigateToProfile,
     navigateToNutrition,
-    navigateToPreferences,
     navigateToDownloads,
     navigateToTickets,
     navigateToAbout,
@@ -112,7 +111,7 @@ const AccountScreen: React.FC = () => {
     {
       icon: 'activity',
       title: 'Nutrition Profile',
-      subtitle: 'Set up your nutrition goals and preferences',
+      subtitle: 'Set up your nutrition goals',
       onPress: () => navigateToNutrition(),
       showArrow: true,
     },
@@ -121,13 +120,6 @@ const AccountScreen: React.FC = () => {
       title: 'Downloads',
       subtitle: 'Access your downloaded content',
       onPress: () => navigateToDownloads(),
-      showArrow: true,
-    },
-    {
-      icon: 'settings',
-      title: 'Preferences',
-      subtitle: 'Macro targets & notifications',
-      onPress: () => navigateToPreferences(),
       showArrow: true,
     },
   ];

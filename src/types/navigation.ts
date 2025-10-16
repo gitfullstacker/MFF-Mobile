@@ -41,7 +41,6 @@ export type MealPlanStackParamList = {
 export type AccountStackParamList = {
   AccountMain: undefined;
   Profile: undefined;
-  Preferences: undefined;
   Nutrition: undefined;
   Downloads: undefined;
   Support: undefined;

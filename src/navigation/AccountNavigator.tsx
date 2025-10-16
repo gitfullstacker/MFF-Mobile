@@ -4,7 +4,6 @@ import { AccountStackParamList } from '../types/navigation';
 import { SCREEN_NAMES, NAVIGATION_OPTIONS } from '../constants/navigation';
 import AccountScreen from '../screens/account/AccountScreen';
 import ProfileScreen from '../screens/account/ProfileScreen';
-import PreferencesScreen from '../screens/account/PreferencesScreen';
 import DownloadsScreen from '../screens/account/DownloadsScreen';
 import TicketListScreen from '../screens/support/TicketListScreen';
 import TicketCreateScreen from '../screens/support/TicketCreateScreen';
@@ -22,7 +21,6 @@ export const AccountNavigator = () => {
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.MAIN} component={AccountScreen} />
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.PROFILE} component={ProfileScreen} />
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.NUTRITION} component={NutritionScreen} />
-      <Stack.Screen name={SCREEN_NAMES.ACCOUNT.PREFERENCES} component={PreferencesScreen} />
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.DOWNLOADS} component={DownloadsScreen} />
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.TICKETS} component={TicketListScreen} />
       <Stack.Screen name={SCREEN_NAMES.ACCOUNT.CREATE_TICKET} component={TicketCreateScreen} />

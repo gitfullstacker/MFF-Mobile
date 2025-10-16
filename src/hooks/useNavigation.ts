@@ -213,12 +213,6 @@ export const useNavigationHelpers = () => {
     });
   }, [navigation]);
 
-  const navigateToPreferences = useCallback(() => {
-    navigation.navigate(SCREEN_NAMES.ROOT.ACCOUNT_STACK, {
-      screen: SCREEN_NAMES.ACCOUNT.PREFERENCES,
-    });
-  }, [navigation]);
-
   const navigateToDownloads = useCallback(() => {
     navigation.navigate(SCREEN_NAMES.ROOT.ACCOUNT_STACK, {
       screen: SCREEN_NAMES.ACCOUNT.DOWNLOADS,
@@ -274,7 +268,6 @@ export const useNavigationHelpers = () => {
     navigateToEditMealPlan,
     navigateToProfile,
     navigateToNutrition,
-    navigateToPreferences,
     navigateToDownloads,
     navigateToTickets,
     navigateToCreateTicket,
