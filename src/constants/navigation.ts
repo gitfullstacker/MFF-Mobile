@@ -40,6 +40,7 @@ export const SCREEN_NAMES = {
     MAIN: 'AccountMain',
     PROFILE: 'Profile',
     NUTRITION: 'Nutrition',
+    DIETARY_PREFERENCES: 'DietaryPreferences',
     DOWNLOADS: 'Downloads',
     TICKETS: 'Tickets',
     CREATE_TICKET: 'CreateTicket',

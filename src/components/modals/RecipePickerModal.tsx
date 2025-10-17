@@ -14,6 +14,7 @@ import { RecipeFilterPanel } from '../recipe/RecipeFilterPanel';
 import { colors, typography, spacing } from '../../theme';
 import { Recipe, RecipeFilters } from '../../types/recipe';
 import { useRecipes } from '../../hooks/useRecipes';
+import { getFilterCount } from '@/utils/recipeUtils';
 
 interface RecipePickerModalProps {
   visible: boolean;
@@ -68,26 +69,11 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
     setShowFilters(!showFilters);
   };
 
-  const getFilterCount = () => {
-    let count = 0;
-    Object.entries(filters).forEach(([key, value]) => {
-      if (
-        key !== 'search' &&
-        value !== undefined &&
-        value !== null &&
-        value !== ''
-      ) {
-        count++;
-      }
-    });
-    return count;
-  };
-
   const isSelected = (recipe: Recipe) => {
     return selectedRecipes.some(r => r._id === recipe._id);
   };
 
-  const filterCount = getFilterCount();
+  const filterCount = getFilterCount(filters);
 
   if (showFilters) {
     return (

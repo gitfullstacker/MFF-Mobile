@@ -42,6 +42,7 @@ export type AccountStackParamList = {
   AccountMain: undefined;
   Profile: undefined;
   Nutrition: undefined;
+  DietaryPreferences: undefined;
   Downloads: undefined;
   Support: undefined;
   Tickets: undefined;

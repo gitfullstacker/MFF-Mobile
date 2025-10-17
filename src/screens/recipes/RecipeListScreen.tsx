@@ -28,6 +28,7 @@ import { Recipe, RecipeFilters } from '../../types/recipe';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
 import { LoadingOverlay } from '@/components/feedback/LoadingOverlay';
+import { getFilterCount } from '@/utils/recipeUtils';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -108,22 +109,6 @@ const RecipeListScreen: React.FC = () => {
     [applyFilters],
   );
 
-  const getFilterCount = () => {
-    let count = 0;
-    Object.entries(filters).forEach(([key, value]) => {
-      if (
-        key !== 'search' &&
-        value !== undefined &&
-        value !== null &&
-        value !== '' &&
-        value !== 'newest'
-      ) {
-        count++;
-      }
-    });
-    return count;
-  };
-
   const renderRecipe = ({ item, index }: { item: Recipe; index: number }) => {
     const isMultiColumn = numColumns > 1;
     const cardStyle = isMultiColumn
@@ -179,7 +164,7 @@ const RecipeListScreen: React.FC = () => {
     );
   };
 
-  const filterCount = getFilterCount();
+  const filterCount = getFilterCount(filters);
 
   return (
     <PageContainer>

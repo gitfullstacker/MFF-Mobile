@@ -96,6 +96,7 @@ export interface RecipeFilters {
   sort?: 'newest' | 'oldest' | 'timeAsc' | 'timeDesc';
   page?: number;
   pageSize?: number;
+  useDietaryPreferences?: boolean;
 }
 
 export interface RecipeComment {

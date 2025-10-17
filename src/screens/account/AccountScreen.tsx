@@ -35,6 +35,7 @@ const AccountScreen: React.FC = () => {
   const {
     navigateToProfile,
     navigateToNutrition,
+    navigateToDietaryPreferences,
     navigateToDownloads,
     navigateToTickets,
     navigateToAbout,
@@ -113,6 +114,13 @@ const AccountScreen: React.FC = () => {
       title: 'Nutrition Profile',
       subtitle: 'Set up your nutrition goals',
       onPress: () => navigateToNutrition(),
+      showArrow: true,
+    },
+    {
+      icon: 'shield',
+      title: 'Dietary Preferences',
+      subtitle: 'Manage ingredients you avoid or dislike',
+      onPress: () => navigateToDietaryPreferences(),
       showArrow: true,
     },
     {

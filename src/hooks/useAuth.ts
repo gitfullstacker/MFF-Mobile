@@ -11,10 +11,12 @@ import {
   favoriteRecipeIdsAtom,
   activePlanAtom,
   tokenExpirationAtom,
+  nutritionProfileAtom,
 } from '../store';
 import { authService } from '../services/authService';
 import { userService } from '../services/userService';
 import { subscriptionService } from '../services/subscriptionService';
+import { nutritionService } from '../services/nutritionService';
 import { favoriteService } from '../services/favoriteService';
 import { planService } from '../services/planService';
 import {
@@ -32,6 +34,7 @@ export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useAtom(isAuthenticatedAtom);
   const [savedCredentials, setSavedCredentials] = useAtom(savedCredentialsAtom);
   const [, setSubscriptionStats] = useAtom(subscriptionStatsAtom);
+  const [, setNutritionProfile] = useAtom(nutritionProfileAtom);
   const [, setFavoriteIds] = useAtom(favoriteRecipeIdsAtom);
   const [, setActivePlan] = useAtom(activePlanAtom);
   const [, addToast] = useAtom(addToastAtom);
@@ -59,6 +62,21 @@ export const useAuth = () => {
       return null;
     }
   }, [setSubscriptionStats]);
+
+  const fetchAndSetNutritionProfile = useCallback(async () => {
+    try {
+      const profile = await nutritionService.getProfile();
+      setNutritionProfile(profile);
+      return profile;
+    } catch (error) {
+      if (__DEV__) {
+        console.error('Error fetching nutrition profile:', error);
+      }
+      // Set default profile on error
+      setNutritionProfile(null);
+      return null;
+    }
+  }, [setNutritionProfile]);
 
   const fetchAndSetFavoriteIds = useCallback(async () => {
     try {
@@ -121,6 +139,7 @@ export const useAuth = () => {
         // Fetch user-specific data after successful login
         await Promise.all([
           fetchAndSetSubscriptionStats(),
+          fetchAndSetNutritionProfile(),
           fetchAndSetFavoriteIds(),
           fetchAndSetActivePlan(),
         ]);
@@ -158,6 +177,7 @@ export const useAuth = () => {
       setSavedCredentials,
       addToast,
       fetchAndSetSubscriptionStats,
+      fetchAndSetNutritionProfile,
       fetchAndSetFavoriteIds,
       fetchAndSetActivePlan,
     ],
@@ -393,6 +413,7 @@ export const useAuth = () => {
           // Fetch user-specific data for authenticated users
           await Promise.all([
             fetchAndSetSubscriptionStats(),
+            fetchAndSetNutritionProfile(),
             fetchAndSetFavoriteIds(),
             fetchAndSetActivePlan(),
           ]);
@@ -421,6 +442,7 @@ export const useAuth = () => {
     setIsAuthenticated,
     logout,
     fetchAndSetSubscriptionStats,
+    fetchAndSetNutritionProfile,
     fetchAndSetFavoriteIds,
     fetchAndSetActivePlan,
   ]);

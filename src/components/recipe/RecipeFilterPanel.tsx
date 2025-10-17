@@ -5,11 +5,13 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Switch,
+  Alert,
 } from 'react-native';
 import { RangeSlider } from 'react-native-product-sliders';
 import Icon from 'react-native-vector-icons/Feather';
 import { Button } from '../forms/Button';
-import { Input } from '../forms/Input';
+import { useNutrition } from '../../hooks/useNutrition';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { RecipeFilters } from '../../types/recipe';
 import { RECIPE_CATEGORIES } from '@/constants';
@@ -56,6 +58,7 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
   filters,
   onApply,
 }) => {
+  const { nutritionProfile } = useNutrition();
   const [localFilters, setLocalFilters] = useState<RecipeFilters>(filters);
 
   useEffect(() => {
@@ -68,8 +71,7 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
   }, [onApply]);
 
   const handleApply = useCallback(() => {
-    const updatedFilters = { ...localFilters };
-    onApply(updatedFilters);
+    onApply(localFilters);
   }, [localFilters, onApply]);
 
   const updateFilter = useCallback(
@@ -82,6 +84,54 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
     },
     [localFilters],
   );
+
+  const handleUseProfileMacros = useCallback(() => {
+    if (!nutritionProfile) {
+      Alert.alert(
+        'No Nutrition Profile',
+        'Please create a nutrition profile first to use this feature.',
+        [{ text: 'OK' }],
+      );
+      return;
+    }
+
+    // Check if target macros exist
+    const targetMacros = nutritionProfile.targetMacros;
+
+    if (!targetMacros) {
+      Alert.alert(
+        'No Macros Available',
+        'Your nutrition profile does not have macro targets set.',
+        [{ text: 'OK' }],
+      );
+      return;
+    }
+
+    // Get meals per day from activity goals, default to 3 if not set
+    const mealsPerDay = nutritionProfile.activityGoals?.mealsPerDay || 3;
+
+    // Calculate per-meal targets by dividing daily macros by meals per day
+    const proteinPerMeal = Math.ceil(targetMacros.protein / mealsPerDay);
+    const carbsPerMeal = Math.ceil(targetMacros.carbohydrates / mealsPerDay);
+    const fatPerMeal = Math.ceil(targetMacros.fats / mealsPerDay);
+
+    // Set only max values to per-meal targets, keep min at undefined (defaults to 0)
+    setLocalFilters(prev => ({
+      ...prev,
+      proteinMin: undefined,
+      proteinMax: proteinPerMeal,
+      carbsMin: undefined,
+      carbsMax: carbsPerMeal,
+      fatMin: undefined,
+      fatMax: fatPerMeal,
+    }));
+
+    Alert.alert(
+      'Profile Macros Applied',
+      `Per-meal targets (${mealsPerDay} meals/day):\nProtein: ${proteinPerMeal}g\nCarbs: ${carbsPerMeal}g\nFat: ${fatPerMeal}g`,
+      [{ text: 'OK' }],
+    );
+  }, [nutritionProfile]);
 
   const toggleCategorySelection = useCallback(
     (category: string) => {
@@ -304,45 +354,25 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Action Buttons at the top */}
+      {/* Header with action buttons */}
       <View style={styles.header}>
         <Button
           title="Reset"
           onPress={handleReset}
           variant="outline"
-          size="small"
           style={styles.resetButton}
-          icon={<Icon name="refresh-cw" size={16} color={colors.primary} />}
+          icon={<Icon name="rotate-ccw" size={16} color={colors.primary} />}
         />
         <Button
           title="Apply Filters"
           onPress={handleApply}
-          size="small"
-          variant="primary"
           style={styles.applyButton}
           icon={<Icon name="check" size={16} color={colors.white} />}
         />
       </View>
 
-      <ScrollView
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}>
-        {/* Search by Ingredients */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Search by Ingredients</Text>
-          <Input
-            placeholder="e.g., tomatoes, chicken, onions"
-            value={localFilters.ingredients || ''}
-            onChangeText={text =>
-              updateFilter('ingredients', text || undefined)
-            }
-            leftIcon="search"
-            containerStyle={{ marginBottom: 0 }}
-          />
-        </View>
-
-        {/* Year Filter */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Filter by Year */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Filter by Year</Text>
           {renderYearSelector()}
@@ -362,10 +392,69 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
 
         {/* Nutrition Ranges */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Nutrition</Text>
-          {renderSlider('Protein', 'proteinMin', 'proteinMax', [0, 50])}
-          {renderSlider('Carbs', 'carbsMin', 'carbsMax', [0, 70])}
-          {renderSlider('Fat', 'fatMin', 'fatMax', [0, 50])}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Nutrition</Text>
+            <TouchableOpacity
+              style={styles.profileMacrosButton}
+              onPress={handleUseProfileMacros}
+              disabled={!nutritionProfile}>
+              <Icon
+                name="activity"
+                size={16}
+                color={nutritionProfile ? colors.primary : colors.gray[400]}
+              />
+              <Text
+                style={[
+                  styles.profileMacrosText,
+                  !nutritionProfile && styles.profileMacrosTextDisabled,
+                ]}>
+                Use Profile Macros
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {renderSlider('Protein', 'proteinMin', 'proteinMax', [0, 100])}
+          {renderSlider('Carbs', 'carbsMin', 'carbsMax', [0, 150])}
+          {renderSlider('Fat', 'fatMin', 'fatMax', [0, 100])}
+        </View>
+
+        {/* Dietary Preferences Toggle */}
+        <View style={styles.section}>
+          <View style={styles.dietaryPreferencesContainer}>
+            <View style={styles.dietaryPreferencesContent}>
+              <Icon
+                name="shield"
+                size={20}
+                color={
+                  localFilters.useDietaryPreferences
+                    ? colors.primary
+                    : colors.text.secondary
+                }
+              />
+              <View style={styles.dietaryPreferencesTextContainer}>
+                <Text style={styles.dietaryPreferencesTitle}>
+                  Use Dietary Preferences
+                </Text>
+                <Text style={styles.dietaryPreferencesSubtitle}>
+                  Filter recipes based on your dietary preferences
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={localFilters.useDietaryPreferences || false}
+              onValueChange={value =>
+                updateFilter('useDietaryPreferences', value ? true : undefined)
+              }
+              trackColor={{
+                false: colors.gray[300],
+                true: colors.primary + '60',
+              }}
+              thumbColor={
+                localFilters.useDietaryPreferences
+                  ? colors.primary
+                  : colors.gray[50]
+              }
+            />
+          </View>
         </View>
 
         {/* Time Range */}
@@ -407,11 +496,65 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border.light,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
   sectionTitle: {
     ...typography.h6,
     color: colors.text.primary,
     marginBottom: spacing.md,
     fontWeight: typography.fontWeights.semibold,
+  },
+  profileMacrosButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary + '10',
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+  },
+  profileMacrosText: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontWeight: typography.fontWeights.medium,
+    marginLeft: spacing.xs,
+  },
+  profileMacrosTextDisabled: {
+    color: colors.gray[400],
+  },
+  dietaryPreferencesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.gray[50],
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border.light,
+  },
+  dietaryPreferencesContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  dietaryPreferencesTextContainer: {
+    marginLeft: spacing.sm,
+    flex: 1,
+  },
+  dietaryPreferencesTitle: {
+    ...typography.bodyRegular,
+    fontWeight: typography.fontWeights.semibold,
+    color: colors.text.primary,
+    marginBottom: 2,
+  },
+  dietaryPreferencesSubtitle: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
   },
   chipContainer: {
     flexDirection: 'row',

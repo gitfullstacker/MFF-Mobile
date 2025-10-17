@@ -213,6 +213,12 @@ export const useNavigationHelpers = () => {
     });
   }, [navigation]);
 
+  const navigateToDietaryPreferences = useCallback(() => {
+  navigation.navigate(SCREEN_NAMES.ROOT.ACCOUNT_STACK, {
+    screen: SCREEN_NAMES.ACCOUNT.DIETARY_PREFERENCES,
+  });
+}, [navigation]);
+
   const navigateToDownloads = useCallback(() => {
     navigation.navigate(SCREEN_NAMES.ROOT.ACCOUNT_STACK, {
       screen: SCREEN_NAMES.ACCOUNT.DOWNLOADS,
@@ -268,6 +274,7 @@ export const useNavigationHelpers = () => {
     navigateToEditMealPlan,
     navigateToProfile,
     navigateToNutrition,
+    navigateToDietaryPreferences,
     navigateToDownloads,
     navigateToTickets,
     navigateToCreateTicket,
