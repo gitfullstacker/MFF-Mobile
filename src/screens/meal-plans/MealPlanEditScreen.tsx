@@ -29,6 +29,7 @@ import {
 import { MealPlanStackParamList } from '@/types';
 import { useFavorites } from '@/hooks/useFavorites';
 import { spacing } from '../../theme';
+import { NutritionAnalysis } from '@/components/meal-plan/NutritionAnalysis';
 
 type EditMealPlanNavigationProp = StackNavigationProp<
   MealPlanStackParamList,
@@ -493,6 +494,11 @@ const MealPlanEditScreen: React.FC = () => {
           <MealPlanFormHeader
             selectedDayLabel={getSelectedDayLabel()}
             onAddRecipe={handleAddRecipe}
+          />
+
+          <NutritionAnalysis
+            recipes={getCurrentDayRecipes()}
+            dayLabel={getSelectedDayLabel()}
           />
 
           <RecipeListDisplay
