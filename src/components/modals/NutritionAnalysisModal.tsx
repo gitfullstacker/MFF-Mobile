@@ -8,8 +8,10 @@ import {
   StyleSheet,
   StatusBar,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Feather';
 import { BottomSheet } from './BottomSheet';
-import { colors, spacing } from '@/theme';
+import { Button } from '../forms/Button';
+import { colors, spacing, typography, borderRadius } from '@/theme';
 
 interface CategoryMacros {
   calories: number;
@@ -75,13 +77,11 @@ export default function NutritionAnalysisModal({
 
   return (
     <BottomSheet visible={visible} onClose={onClose} height="90%">
-      <StatusBar barStyle="dark-content" />
-
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Nutrition Analysis - {dayLabel}</Text>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Text style={styles.closeButtonText}>✕</Text>
+          <Icon name="x" size={24} color={colors.text.primary} />
         </TouchableOpacity>
       </View>
 
@@ -197,13 +197,13 @@ export default function NutritionAnalysisModal({
 
             <View style={styles.divider} />
 
-            {/* Macros by Category */}
+            {/* Breakdown by Category */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Macros by Category</Text>
+              <Text style={styles.sectionTitle}>Breakdown by Category</Text>
               {Object.keys(macrosByCategory).length === 0 ? (
-                <View style={styles.infoBox}>
-                  <Text style={styles.infoText}>
-                    No recipes scheduled for this day yet.
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>
+                    No recipes with nutrition information for this day
                   </Text>
                 </View>
               ) : (
@@ -218,7 +218,7 @@ export default function NutritionAnalysisModal({
                           <View style={styles.categoryBadge}>
                             <Text style={styles.categoryBadgeText}>
                               {macros.count} recipe
-                              {macros.count > 1 ? 's' : ''}
+                              {macros.count !== 1 ? 's' : ''}
                             </Text>
                           </View>
                         </View>
@@ -268,9 +268,7 @@ export default function NutritionAnalysisModal({
 
       {/* Footer */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.closeFooterButton} onPress={onClose}>
-          <Text style={styles.closeFooterButtonText}>Close</Text>
-        </TouchableOpacity>
+        <Button title="Close" onPress={onClose} variant="primary" fullWidth />
       </View>
     </BottomSheet>
   );
@@ -286,164 +284,156 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border.light,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000',
+    ...typography.h5,
+    color: colors.text.primary,
+    fontWeight: typography.fontWeights.semibold,
     flex: 1,
   },
   closeButton: {
-    padding: 4,
-  },
-  closeButtonText: {
-    fontSize: 24,
-    color: '#666',
+    padding: spacing.xs,
   },
   scrollView: {
     flex: 1,
   },
   content: {
-    padding: 16,
+    paddingVertical: spacing.lg,
   },
   infoBox: {
-    backgroundColor: '#E3F2FD',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: colors.blue[50],
+    padding: spacing.lg,
+    borderRadius: borderRadius.md,
     borderLeftWidth: 4,
-    borderLeftColor: '#2196F3',
+    borderLeftColor: colors.blue[500],
   },
   infoText: {
-    color: '#1976D2',
-    fontSize: 14,
+    ...typography.bodyRegular,
+    color: colors.blue[700],
   },
   section: {
-    marginBottom: 24,
+    marginBottom: spacing.lg,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: '#000',
+    ...typography.h5,
+    color: colors.text.primary,
+    fontWeight: typography.fontWeights.semibold,
+    marginBottom: spacing.md,
   },
   macroGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: spacing.sm,
   },
   macroCard: {
     width: '48%',
-    padding: 16,
-    borderRadius: 8,
+    padding: spacing.lg,
+    borderRadius: borderRadius.md,
     borderWidth: 2,
     alignItems: 'center',
   },
   caloriesCard: {
-    backgroundColor: '#FFF3E0',
-    borderColor: '#FF9800',
+    backgroundColor: colors.orange[50],
+    borderColor: colors.orange[600],
   },
   proteinCard: {
-    backgroundColor: '#E3F2FD',
-    borderColor: '#2196F3',
+    backgroundColor: colors.blue[50],
+    borderColor: colors.blue[500],
   },
   carbsCard: {
-    backgroundColor: '#F3E5F5',
-    borderColor: '#9C27B0',
+    backgroundColor: colors.purple[50],
+    borderColor: colors.purple[600],
   },
   fatCard: {
-    backgroundColor: '#FFF9C4',
-    borderColor: '#FBC02D',
+    backgroundColor: colors.orange[100],
+    borderColor: colors.orange[700],
   },
   totalCard: {
-    backgroundColor: '#FAFAFA',
-    borderColor: '#E0E0E0',
+    backgroundColor: colors.gray[50],
+    borderColor: colors.border.dark,
     borderWidth: 1,
   },
   macroValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
+    ...typography.h2,
+    fontWeight: typography.fontWeights.bold,
+    color: colors.text.primary,
   },
   macroLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
   },
   percentageText: {
-    fontSize: 10,
-    color: '#666',
-    marginTop: 4,
+    ...typography.caption,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
   },
   divider: {
     height: 1,
-    backgroundColor: '#E0E0E0',
-    marginVertical: 24,
+    backgroundColor: colors.border.light,
+    marginVertical: spacing.lg,
   },
   categoryContainer: {
-    gap: 12,
+    gap: spacing.md,
   },
   categoryCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: colors.white,
+    padding: spacing.lg,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: colors.border.dark,
   },
   categoryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   categoryName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000',
+    ...typography.h6,
+    fontWeight: typography.fontWeights.semibold,
+    color: colors.text.primary,
   },
   categoryBadge: {
-    backgroundColor: '#2196F3',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    backgroundColor: colors.blue[500],
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
   },
   categoryBadgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    ...typography.caption,
+    color: colors.white,
+    fontWeight: typography.fontWeights.semibold,
   },
   categoryMacrosGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
   },
   categoryMacroItem: {
     width: '48%',
   },
   categoryMacroLabel: {
-    fontSize: 12,
-    color: '#666',
+    ...typography.bodySmall,
+    color: colors.text.secondary,
   },
   categoryMacroValue: {
-    fontWeight: 'bold',
-    color: '#000',
+    ...typography.bodySmall,
+    fontWeight: typography.fontWeights.semibold,
+    color: colors.text.primary,
   },
-  footer: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-  },
-  closeFooterButton: {
-    backgroundColor: '#2196F3',
-    padding: 16,
-    borderRadius: 8,
+  emptyState: {
+    backgroundColor: colors.gray[50],
+    padding: spacing.xl,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
   },
-  closeFooterButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  emptyStateText: {
+    ...typography.bodyRegular,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  footer: {
+    padding: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.light,
   },
 });
