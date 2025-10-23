@@ -101,7 +101,7 @@ export const NutritionAnalysis: React.FC<NutritionAnalysisProps> = ({
         onPress={() => setShowModal(true)}
         variant="secondary"
         size="small"
-        icon={<Icon name="pie-chart" size={16} color={colors.white} />}
+        icon={<Icon name="bar-chart-2" size={16} color={colors.white} />}
         style={styles.button}
       />
 

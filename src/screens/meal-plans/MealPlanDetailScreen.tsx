@@ -6,7 +6,6 @@ import { PageContainer } from '../../components/layout/PageContainer';
 import { Header } from '../../components/navigation/Header';
 import { Section } from '../../components/layout/Section';
 import { Button } from '../../components/forms/Button';
-import { MacroDisplay } from '../../components/recipe/MacroDisplay';
 import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
 import { DaySelector } from '../../components/meal-plan/DaySelector';
 import { RecipeListDisplay } from '../../components/meal-plan/RecipeListDisplay';
@@ -22,6 +21,8 @@ import {
   useSafeNavigation,
 } from '@/hooks/useNavigation';
 import { useFavorites } from '@/hooks/useFavorites';
+import { WeeklyNutritionAnalysisModal } from '@/components/modals/WeeklyNutritionAnalysisModal';
+import { useNutrition } from '@/hooks/useNutrition';
 
 // Days of the week for DaySelector
 const DAYS = [
@@ -39,6 +40,7 @@ const MealPlanDetailScreen: React.FC = () => {
   const { safeGoBack } = useSafeNavigation();
   const { navigateToEditMealPlan } = useNavigationHelpers();
   const { toggleFavorite } = useFavorites();
+  const { nutritionProfile } = useNutrition();
   const {
     loading: planLoading,
     selectedPlan,
@@ -53,18 +55,7 @@ const MealPlanDetailScreen: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState<string>('su');
   const [loading, setLoading] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
-  const [dailyMacros, setDailyMacros] = useState({
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-    calories: 0,
-  });
-  const [weeklyMacros, setWeeklyMacros] = useState({
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-    calories: 0,
-  });
+  const [showNutritionAnalysis, setShowNutritionAnalysis] = useState(false);
   const [showShoppingList, setShowShoppingList] = useState(false);
   const [dayRecipes, setDayRecipes] = useState<Recipe[]>([]);
   const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
@@ -80,7 +71,6 @@ const MealPlanDetailScreen: React.FC = () => {
   // Calculate macros and extract recipes when meal plan changes
   useEffect(() => {
     if (selectedPlan) {
-      calculateMacros();
       extractRecipes();
     }
   }, [selectedPlan]);
@@ -88,7 +78,6 @@ const MealPlanDetailScreen: React.FC = () => {
   // Recalculate daily macros and extract day recipes when selected day changes
   useEffect(() => {
     if (selectedPlan) {
-      calculateDailyMacros();
       extractDayRecipes();
     }
   }, [selectedDay, selectedPlan]);
@@ -150,91 +139,6 @@ const MealPlanDetailScreen: React.FC = () => {
     });
 
     setDayRecipes(recipes);
-  };
-
-  // Calculate macros for the selected day and the whole week
-  const calculateMacros = () => {
-    if (!selectedPlan) return;
-
-    calculateWeeklyMacros();
-  };
-
-  // Calculate daily macros
-  const calculateDailyMacros = () => {
-    if (!selectedPlan) return;
-
-    const daySchedule =
-      selectedPlan.schedule[selectedDay as keyof PlanSchedule];
-
-    // Check if it's actually an array
-    if (!Array.isArray(daySchedule)) {
-      setDailyMacros({
-        protein: 0,
-        carbs: 0,
-        fat: 0,
-        calories: 0,
-      });
-      return;
-    }
-
-    let proteinTotal = 0;
-    let carbsTotal = 0;
-    let fatTotal = 0;
-    let caloriesTotal = 0;
-
-    daySchedule.forEach((item: ScheduledRecipe) => {
-      const recipe = getRecipeObject(item);
-      if (recipe && recipe.nutrition) {
-        proteinTotal += recipe.nutrition.protein;
-        carbsTotal += recipe.nutrition.carbohydrates;
-        fatTotal += recipe.nutrition.fat;
-        caloriesTotal += recipe.nutrition.calories;
-      }
-    });
-
-    setDailyMacros({
-      protein: proteinTotal,
-      carbs: carbsTotal,
-      fat: fatTotal,
-      calories: caloriesTotal,
-    });
-  };
-
-  // Calculate weekly macros
-  const calculateWeeklyMacros = () => {
-    if (!selectedPlan) return;
-
-    let weeklyProtein = 0;
-    let weeklyCarbs = 0;
-    let weeklyFat = 0;
-    let weeklyCalories = 0;
-
-    // Filter valid day keys to avoid non-array values like _id
-    const validDayKeys = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
-
-    validDayKeys.forEach(dayKey => {
-      const daySchedule = selectedPlan.schedule[dayKey as keyof PlanSchedule];
-
-      // Skip if not an array or undefined
-      if (!Array.isArray(daySchedule)) return;
-
-      daySchedule.forEach((item: ScheduledRecipe) => {
-        const recipe = getRecipeObject(item);
-        if (recipe && recipe.nutrition) {
-          weeklyProtein += recipe.nutrition.protein;
-          weeklyCarbs += recipe.nutrition.carbohydrates;
-          weeklyFat += recipe.nutrition.fat;
-          weeklyCalories += recipe.nutrition.calories;
-        }
-      });
-    });
-
-    setWeeklyMacros({
-      protein: weeklyProtein,
-      carbs: weeklyCarbs,
-      fat: weeklyFat,
-      calories: weeklyCalories,
-    });
   };
 
   // Get recipe counts by day
@@ -363,26 +267,22 @@ const MealPlanDetailScreen: React.FC = () => {
 
         {/* Weekly Summary */}
         <Section title="Weekly Summary">
-          <View style={styles.macroSummary}>
-            <MacroDisplay
-              protein={weeklyMacros.protein}
-              carbs={weeklyMacros.carbs}
-              fat={weeklyMacros.fat}
-              calories={weeklyMacros.calories}
-              variant="circle"
-              size="medium"
-              precision={0}
-            />
-          </View>
-
           <View style={styles.actionButtonsContainer}>
+            <Button
+              title="Nutrition Analysis"
+              onPress={() => setShowNutritionAnalysis(true)}
+              variant="secondary"
+              size="small"
+              icon={<Icon name="bar-chart-2" size={18} color={colors.white} />}
+              style={styles.actionButton}
+            />
             <Button
               title="Shopping List"
               onPress={handleGenerateShoppingList}
-              variant="outline"
+              variant="primary"
               size="small"
               icon={
-                <Icon name="shopping-cart" size={18} color={colors.primary} />
+                <Icon name="shopping-cart" size={18} color={colors.white} />
               }
               style={styles.actionButton}
             />
@@ -400,23 +300,7 @@ const MealPlanDetailScreen: React.FC = () => {
         </Section>
 
         {/* Selected Day Meals */}
-        <Section
-          title={`${getSelectedDayLabel()} Meals`}
-          action={{
-            label: 'Macros',
-            onPress: () => {
-              Alert.alert(
-                'Daily Macros',
-                `Protein: ${dailyMacros.protein.toFixed(
-                  2,
-                )}g\nCarbs: ${dailyMacros.carbs.toFixed(
-                  2,
-                )}g\nFat: ${dailyMacros.fat.toFixed(2)}g\nCalories: ${
-                  dailyMacros.calories
-                }`,
-              );
-            },
-          }}>
+        <Section title={`${getSelectedDayLabel()} Meals`}>
           <RecipeListDisplay
             recipes={dayRecipes}
             selectedDayLabel={getSelectedDayLabel()}
@@ -426,6 +310,13 @@ const MealPlanDetailScreen: React.FC = () => {
           />
         </Section>
       </ScrollView>
+
+      <WeeklyNutritionAnalysisModal
+        visible={showNutritionAnalysis}
+        onClose={() => setShowNutritionAnalysis(false)}
+        plan={selectedPlan}
+        nutritionProfile={nutritionProfile}
+      />
 
       <ShoppingListModal
         visible={showShoppingList}
@@ -471,10 +362,6 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     borderColor: colors.semantic.error,
-  },
-  macroSummary: {
-    alignItems: 'center',
-    marginBottom: spacing.md,
   },
   actionButtonsContainer: {
     flexDirection: 'row',
