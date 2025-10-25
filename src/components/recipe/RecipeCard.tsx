@@ -23,6 +23,7 @@ import { useSubscription } from '../../hooks/useSubscription';
 import { RatingImage, StarRating } from 'react-native-product-ratings';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
 import { formatTime } from '@/utils/formatUtils';
+import { RECIPE_CATEGORIES } from '@/constants/recipe';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -73,6 +74,36 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
   }, [recipe, allowedCategoryIds, subscriptionLoading]);
 
   const isValidRecipe = isRecipeAccessible();
+
+  // Get all recipe categories for badge display
+  const getRecipeCategories = useCallback(() => {
+    if (!recipe.tags?.course || recipe.tags.course.length === 0) {
+      return [];
+    }
+
+    // Map all course tags to categories
+    return recipe.tags.course.map(courseTag => {
+      const category = RECIPE_CATEGORIES.find(
+        cat => cat.id === courseTag.term_id || cat.slug === courseTag.slug,
+      );
+      return category || { name: courseTag.name, slug: courseTag.slug };
+    });
+  }, [recipe]);
+
+  const recipeCategories = getRecipeCategories();
+
+  // Get color for category badge
+  const getCategoryColor = (slug: string) => {
+    const colorMap: { [key: string]: string } = {
+      breakfast: '#FF6B6B', // Red
+      lunch: '#4ECDC4', // Teal
+      dinner: '#45B7D1', // Blue
+      snack: '#FFA07A', // Light Salmon
+      dessert: '#DDA15E', // Brown/Gold
+      'side-dish': '#95E1D3', // Mint
+    };
+    return colorMap[slug] || colors.primary; // Default to primary color
+  };
 
   // Handle favorite toggle
   const handleFavoriteClick = async (e: any) => {
@@ -142,6 +173,22 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
               {name}
             </Text>
           </TouchableOpacity>
+
+          {/* Category Badges - displayed below recipe name */}
+          {recipeCategories.length > 0 && (
+            <View style={styles.categoryBadgesContainer}>
+              {recipeCategories.map((category, index) => (
+                <View
+                  key={`${category.slug}-${index}`}
+                  style={[
+                    styles.categoryBadge,
+                    { backgroundColor: getCategoryColor(category.slug) },
+                  ]}>
+                  <Text style={styles.categoryBadgeText}>{category.name}</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           {/* Recipe Rating */}
           <View style={styles.ratingContainer}>
@@ -253,8 +300,8 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     borderWidth: 1,
     borderColor: '#dedede',
-    height: 200,
-    maxHeight: 200,
+    height: 220,
+    maxHeight: 220,
     overflow: 'hidden',
     ...shadows.sm,
   },
@@ -277,6 +324,23 @@ const styles = StyleSheet.create({
     height: 36,
     marginBottom: 4,
   },
+  categoryBadgesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginBottom: spacing.xs,
+  },
+  categoryBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
+  categoryBadgeText: {
+    ...typography.caption,
+    color: colors.white,
+    fontWeight: '600',
+    fontSize: 10,
+  },
   ratingContainer: {
     alignItems: 'flex-start',
     marginBottom: spacing.xs,
@@ -290,7 +354,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   imageSection: {
-    width: 130,
+    width: 155,
     position: 'relative',
   },
   imageContainer: {
