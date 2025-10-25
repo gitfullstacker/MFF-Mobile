@@ -38,11 +38,14 @@ import { useRecentRecipes } from '@/hooks/useRecentRecipes';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
 import { useRecipes } from '@/hooks/useRecipes';
+import { useNutrition } from '@/hooks/useNutrition';
+import { DailyNutritionTargets } from '@/components/dashboard/DailyNutritionTargets';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 const DashboardScreen: React.FC = () => {
   const { user } = useAuth();
+  const { nutritionProfile } = useNutrition();
   const {
     navigateToMainTab,
     navigateToRecipeDetail,
@@ -204,6 +207,10 @@ const DashboardScreen: React.FC = () => {
     navigateToMainTab(SCREEN_NAMES.MAIN_TAB.RECIPES);
   };
 
+  const navigateToNutrition = () => {
+    navigateToMainTab(SCREEN_NAMES.MAIN_TAB.ACCOUNT);
+  };
+
   // Calculate item dimensions for indicators
   const mealCardWidth = screenWidth - spacing.md * 2 - spacing.sm * 2; // Approximate width of meal card
   const recipeCardWidth = screenWidth - spacing.md * 2 - spacing.sm * 2; // Approximate width of recipe card
@@ -353,6 +360,12 @@ const DashboardScreen: React.FC = () => {
 
         {/* Suggested Meal Plan Section */}
         <SuggestedMealPlanSection />
+
+        {/* Daily Nutrition Targets Section - ADD THIS */}
+        <DailyNutritionTargets
+          nutritionProfile={nutritionProfile}
+          onNavigateToNutrition={navigateToNutrition}
+        />
 
         {/* Quick Actions */}
         <Section title="Quick Actions">
