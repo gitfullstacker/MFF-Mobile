@@ -52,6 +52,7 @@ const DashboardScreen: React.FC = () => {
     navigateToCreateMealPlan,
     navigateToMealPlanDetail,
     navigateToDownloads,
+    navigateToNutrition,
   } = useNavigationHelpers();
   const { applyFilters } = useRecipes();
   const { toggleFavorite } = useFavorites();
@@ -207,10 +208,6 @@ const DashboardScreen: React.FC = () => {
     navigateToMainTab(SCREEN_NAMES.MAIN_TAB.RECIPES);
   };
 
-  const navigateToNutrition = () => {
-    navigateToMainTab(SCREEN_NAMES.MAIN_TAB.ACCOUNT);
-  };
-
   // Calculate item dimensions for indicators
   const mealCardWidth = screenWidth - spacing.md * 2 - spacing.sm * 2; // Approximate width of meal card
   const recipeCardWidth = screenWidth - spacing.md * 2 - spacing.sm * 2; // Approximate width of recipe card
@@ -364,7 +361,7 @@ const DashboardScreen: React.FC = () => {
         {/* Daily Nutrition Targets Section - ADD THIS */}
         <DailyNutritionTargets
           nutritionProfile={nutritionProfile}
-          onNavigateToNutrition={navigateToNutrition}
+          onNavigateToNutrition={() => navigateToNutrition()}
         />
 
         {/* Quick Actions */}
