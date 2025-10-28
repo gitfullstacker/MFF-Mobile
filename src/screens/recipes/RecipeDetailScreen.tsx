@@ -9,8 +9,6 @@ import {
   Dimensions,
   StatusBar,
   Animated,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
   Platform,
   Alert,
   TextInput,
@@ -48,6 +46,7 @@ import {
   formatServingSize,
   formatTime,
 } from '@/utils/formatUtils';
+import { RecipeChatModal } from '@/components/modals/RecipeChatModal';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -98,6 +97,8 @@ const RecipeDetailScreen: React.FC = () => {
 
   const scrollViewRef = useRef<ScrollView>(null);
   const [tabContainerY, setTabContainerY] = useState(0);
+
+  const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
     if (recipeId && (!selectedRecipe || selectedRecipe.slug !== recipeId)) {
@@ -173,15 +174,6 @@ const RecipeDetailScreen: React.FC = () => {
 
     return text;
   };
-
-  // Handle scroll event manually
-  const handleScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const offsetY = event.nativeEvent.contentOffset.y;
-      scrollY.setValue(offsetY);
-    },
-    [scrollY],
-  );
 
   // Header opacity animation
   const headerOpacity = scrollY.interpolate({
@@ -309,6 +301,9 @@ const RecipeDetailScreen: React.FC = () => {
   const handleReviewsTabPress = useCallback(() => {
     scrollToReviews();
   }, [scrollToReviews]);
+
+  const handleOpenChat = () => setShowChat(true);
+  const handleCloseChat = () => setShowChat(false);
 
   // Render ingredient with adjusted amounts
   const renderIngredient = (item: IngredientItem, index: number) => {
@@ -880,10 +875,16 @@ const RecipeDetailScreen: React.FC = () => {
       {/* Bottom Bar with CTA Button */}
       <View style={styles.bottomBar}>
         <Button
+          style={styles.addMealPlanButton}
           title="Add to Meal Plan"
           onPress={handleAddToMealPlan}
-          fullWidth
           icon={<Icon name="calendar" size={18} color={colors.white} />}
+        />
+        <Button
+          title="Chat AI"
+          onPress={handleOpenChat}
+          variant="secondary"
+          icon={<Icon name="message-circle" size={18} color={colors.white} />}
         />
       </View>
 
@@ -894,6 +895,15 @@ const RecipeDetailScreen: React.FC = () => {
         recipe={selectedRecipe}
         onSuccess={handleMealPlanSuccess}
       />
+
+      {selectedRecipe && (
+        <RecipeChatModal
+          isVisible={showChat}
+          recipeId={selectedRecipe._id}
+          recipeName={selectedRecipe.name}
+          onClose={handleCloseChat}
+        />
+      )}
     </PageContainer>
   );
 };
@@ -1367,6 +1377,9 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   bottomBar: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: 4,
     backgroundColor: colors.white,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -1374,6 +1387,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border.light,
     ...shadows.sm,
+  },
+  addMealPlanButton: {
+    flex: 1,
   },
   errorContainer: {
     flex: 1,
