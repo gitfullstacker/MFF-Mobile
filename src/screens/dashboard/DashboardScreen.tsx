@@ -40,6 +40,7 @@ import { useNavigationHelpers } from '@/hooks/useNavigation';
 import { useRecipes } from '@/hooks/useRecipes';
 import { useNutrition } from '@/hooks/useNutrition';
 import { DailyNutritionTargets } from '@/components/dashboard/DailyNutritionTargets';
+import NotificationIcon from '@/components/notification/NotificationIcon';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -218,11 +219,15 @@ const DashboardScreen: React.FC = () => {
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
+          <View style={styles.headerLeft} />
           <Image
             source={require('../../../assets/images/logo.png')}
             style={styles.logo}
             resizeMode="contain"
           />
+          <View style={styles.headerRight}>
+            <NotificationIcon />
+          </View>
         </View>
 
         {/* Welcome Section */}
@@ -484,16 +489,22 @@ const styles = StyleSheet.create({
   // Header
   header: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop:
       Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 20,
     paddingBottom: spacing.md,
   },
+  headerLeft: {
+    width: 40, // Same width as notification icon for balance
+  },
   logo: {
     height: 43,
     width: 144,
     tintColor: colors.primary,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
   },
 
   // Welcome Section
