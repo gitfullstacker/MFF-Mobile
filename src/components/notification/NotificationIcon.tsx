@@ -7,16 +7,17 @@ import {
   Modal,
   FlatList,
   ActivityIndicator,
-  Alert,
+  Linking,
+  RefreshControl,
+  Platform,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import { format } from 'date-fns';
-import { useNavigationHelpers } from '@/hooks/useNavigation';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Notification } from '@/types/notification';
-import { borderRadius, colors, shadows, spacing, typography } from '@/theme';
+import { colors, shadows, spacing, typography } from '@/theme';
+import { WEB_URL } from '@env';
 
 interface NotificationIconProps {
   style?: any;
@@ -25,22 +26,21 @@ interface NotificationIconProps {
 export const NotificationIcon: React.FC<NotificationIconProps> = ({
   style,
 }) => {
-  const navigation = useNavigation();
-  const { navigateToMainTab } = useNavigationHelpers();
   const {
     notifications,
     unreadCount,
     loading,
+    refreshing,
+    hasMore,
     fetchNotifications,
     fetchUnreadCount,
     markAsRead,
     markAllAsRead,
+    loadMoreNotifications,
+    refreshNotifications,
   } = useNotifications();
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [recentNotifications, setRecentNotifications] = useState<
-    Notification[]
-  >([]);
 
   // Fetch unread count on mount and set up periodic refresh
   useEffect(() => {
@@ -54,34 +54,17 @@ export const NotificationIcon: React.FC<NotificationIconProps> = ({
     return () => clearInterval(interval);
   }, [fetchUnreadCount]);
 
-  // Fetch recent notifications when modal opens
+  // Fetch notifications when modal opens
   useEffect(() => {
-    if (modalVisible) {
-      fetchRecentNotifications();
+    if (modalVisible && notifications.length === 0) {
+      fetchNotifications({}, true);
     }
   }, [modalVisible]);
-
-  const fetchRecentNotifications = useCallback(async () => {
-    try {
-      const response = await fetchNotifications({
-        page: 0,
-        pageSize: 5,
-        unreadOnly: false,
-      });
-
-      if (response?.data) {
-        console.log(response.data)
-        setRecentNotifications(response.data);
-      }
-    } catch (error) {
-      console.error('Error fetching recent notifications:', error);
-    }
-  }, [fetchNotifications]);
 
   const handleNotificationPress = useCallback(
     async (notification: Notification) => {
       try {
-        // Mark as read if unread
+        // Mark as read
         if (!notification.is_read) {
           await markAsRead(notification._id);
         }
@@ -89,50 +72,71 @@ export const NotificationIcon: React.FC<NotificationIconProps> = ({
         // Close modal
         setModalVisible(false);
 
-        // Handle navigation based on link
-        if (notification.link) {
-          // Check if it's a component link (numeric string)
-          if (/^\d+$/.test(notification.link)) {
-            // For component links, you might want to show a specific modal or navigate to a feature
-            // For now, we'll just show an alert
-            Alert.alert('Feature Notification', notification.title, [
-              { text: 'OK' },
-            ]);
+        // Build the full URL
+        let fullUrl = '';
+
+        if (notification.mobile_link) {
+          // Concatenate WEB_URL with mobile_link
+          const mobileLinkPath = notification.mobile_link.trim();
+
+          // Remove leading slash if present to avoid double slashes
+          const cleanPath = mobileLinkPath.startsWith('/')
+            ? mobileLinkPath.slice(1)
+            : mobileLinkPath;
+
+          // Ensure WEB_URL doesn't have trailing slash
+          const baseUrl = WEB_URL.endsWith('/')
+            ? WEB_URL.slice(0, -1)
+            : WEB_URL;
+
+          fullUrl = `${baseUrl}/${cleanPath}`;
+        } else if (notification.link) {
+          // Fallback to regular link if mobile_link is not available
+          fullUrl = notification.link.trim();
+        }
+
+        if (fullUrl) {
+          console.log('Opening URL:', fullUrl);
+
+          // Check if URL can be opened
+          const canOpen = await Linking.canOpenURL(fullUrl);
+
+          if (canOpen) {
+            await Linking.openURL(fullUrl);
           } else {
-            // For regular links, navigate within the app
-            // You can extend this to handle different link patterns
-            if (notification.link.startsWith('/')) {
-              // Internal app routes
-              // navigation.navigate(notification.link.substring(1) as any);
-            } else {
-              // External links could be handled with Linking.openURL
-              console.log('External link:', notification.link);
-            }
+            console.error('Cannot open URL:', fullUrl);
+            // Optionally show a toast message to the user
           }
+        } else {
+          console.warn('No link available for notification:', notification._id);
         }
       } catch (error) {
         console.error('Error handling notification press:', error);
       }
     },
-    [markAsRead, navigation],
+    [markAsRead, WEB_URL],
   );
 
-  const handleMarkAllRead = useCallback(async () => {
+  const handleMarkAllAsRead = useCallback(async () => {
     try {
       await markAllAsRead();
-      // Refresh recent notifications to show updated read status
-      await fetchRecentNotifications();
+      // Optionally refresh the list to show updated state
+      await fetchUnreadCount();
     } catch (error) {
       console.error('Error marking all as read:', error);
     }
-  }, [markAllAsRead, fetchRecentNotifications]);
+  }, [markAllAsRead, fetchUnreadCount]);
 
-  const handleSeeAllNotifications = useCallback(() => {
-    setModalVisible(false);
-    // Navigate to a dedicated notifications screen if you have one
-    // For now, we'll just log this
-    console.log('Navigate to all notifications');
-  }, []);
+  const handleRefresh = useCallback(async () => {
+    await refreshNotifications();
+    await fetchUnreadCount();
+  }, [refreshNotifications, fetchUnreadCount]);
+
+  const handleLoadMore = useCallback(() => {
+    if (!loading && hasMore) {
+      loadMoreNotifications();
+    }
+  }, [loading, hasMore, loadMoreNotifications]);
 
   const formatNotificationTime = useCallback((date: Date) => {
     try {
@@ -164,7 +168,11 @@ export const NotificationIcon: React.FC<NotificationIconProps> = ({
         onPress={() => handleNotificationPress(item)}
         activeOpacity={0.7}>
         <View style={styles.notificationIcon}>
-          <MaterialIcon name="campaign" size={20} color={colors.primary} />
+          <MaterialIcon
+            name="campaign"
+            size={20}
+            color={!item.is_read ? colors.primary : colors.text.secondary}
+          />
         </View>
 
         <View style={styles.notificationContent}>
@@ -194,34 +202,52 @@ export const NotificationIcon: React.FC<NotificationIconProps> = ({
     [handleNotificationPress, formatNotificationTime],
   );
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <Icon
-        name="bell"
-        size={48}
-        color={colors.text.disabled}
-        style={styles.emptyIcon}
-      />
-      <Text style={styles.emptyTitle}>No notifications yet</Text>
-      <Text style={styles.emptyDescription}>
-        You'll see notifications here when they arrive
-      </Text>
-    </View>
-  );
+  const renderFooter = useCallback(() => {
+    if (!loading) return null;
+
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color={colors.primary} />
+        <Text style={styles.footerLoaderText}>Loading more...</Text>
+      </View>
+    );
+  }, [loading]);
+
+  const renderEmpty = useCallback(() => {
+    if (loading && notifications.length === 0) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading notifications...</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyState}>
+        <View style={styles.emptyIcon}>
+          <Icon name="bell-off" size={64} color={colors.text.disabled} />
+        </View>
+        <Text style={styles.emptyTitle}>No Notifications</Text>
+        <Text style={styles.emptyDescription}>
+          You're all caught up! New notifications will appear here.
+        </Text>
+      </View>
+    );
+  }, [loading, notifications.length]);
 
   return (
     <>
-      {/* Notification Icon Button */}
+      {/* Notification Bell Icon */}
       <TouchableOpacity
         style={[styles.iconButton, style]}
         onPress={() => setModalVisible(true)}
         activeOpacity={0.7}>
         <Icon name="bell" size={24} color={colors.text.primary} />
-
         {unreadCount > 0 && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>
-              {unreadCount > 99 ? '99+' : unreadCount.toString()}
+              {unreadCount > 99 ? '99+' : unreadCount}
             </Text>
           </View>
         )}
@@ -231,10 +257,10 @@ export const NotificationIcon: React.FC<NotificationIconProps> = ({
       <Modal
         visible={modalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent={false}
         onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalContainer}>
-          {/* Modal Header */}
+          {/* Header */}
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Notifications</Text>
 
@@ -242,50 +268,50 @@ export const NotificationIcon: React.FC<NotificationIconProps> = ({
               {unreadCount > 0 && (
                 <TouchableOpacity
                   style={styles.markAllButton}
-                  onPress={handleMarkAllRead}>
-                  <Text style={styles.markAllText}>Mark all read</Text>
+                  onPress={handleMarkAllAsRead}
+                  activeOpacity={0.7}>
+                  <Text style={styles.markAllText}>Mark all as read</Text>
                 </TouchableOpacity>
               )}
 
               <TouchableOpacity
                 style={styles.closeButton}
-                onPress={() => setModalVisible(false)}>
+                onPress={() => setModalVisible(false)}
+                activeOpacity={0.7}>
                 <Icon name="x" size={24} color={colors.text.primary} />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Loading State */}
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>Loading notifications...</Text>
-            </View>
-          ) : (
-            <View style={styles.contentContainer}>
-              {/* Notifications List */}
-              {recentNotifications.length > 0 ? (
-                <FlatList
-                  data={recentNotifications}
-                  renderItem={renderNotificationItem}
-                  keyExtractor={item => item._id}
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={styles.listContainer}
-                />
-              ) : (
-                renderEmptyState()
-              )}
-
-              {/* See All Button */}
-              {recentNotifications.length > 0 && (
-                <TouchableOpacity
-                  style={styles.seeAllButton}
-                  onPress={handleSeeAllNotifications}>
-                  <Text style={styles.seeAllText}>See all notifications</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+          {/* Notifications List */}
+          <FlatList
+            data={notifications}
+            renderItem={renderNotificationItem}
+            keyExtractor={item => item._id}
+            contentContainerStyle={
+              notifications.length === 0
+                ? styles.emptyContainer
+                : styles.listContainer
+            }
+            ListEmptyComponent={renderEmpty}
+            ListFooterComponent={renderFooter}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={colors.primary}
+                colors={[colors.primary]}
+              />
+            }
+            showsVerticalScrollIndicator={true}
+            removeClippedSubviews={Platform.OS === 'android'}
+            maxToRenderPerBatch={10}
+            updateCellsBatchingPeriod={50}
+            initialNumToRender={15}
+            windowSize={10}
+          />
         </View>
       </Modal>
     </>
@@ -293,35 +319,34 @@ export const NotificationIcon: React.FC<NotificationIconProps> = ({
 };
 
 const styles = StyleSheet.create({
+  // Icon Button Styles
   iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    position: 'relative',
+    padding: spacing.sm,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background.light,
-    ...shadows.sm,
   },
   badge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
-    backgroundColor: colors.semantic.error,
+    top: 1,
+    right: 1,
+    backgroundColor: colors.red[500],
     borderRadius: 10,
     minWidth: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
+    ...shadows.sm,
   },
   badgeText: {
     color: colors.white,
-    fontSize: 12,
-    fontWeight: '600',
-    lineHeight: 16,
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 12,
   },
 
-  // Modal Styles
+  // Modal Container Styles
   modalContainer: {
     flex: 1,
     backgroundColor: colors.background.light,
@@ -332,12 +357,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    paddingTop: Platform.OS === 'ios' ? spacing.xl + spacing.md : spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.dark,
+    borderBottomColor: colors.border.light,
+    backgroundColor: colors.background.light,
   },
   modalTitle: {
     fontSize: typography.fontSizes.xl,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text.primary,
   },
   headerActions: {
@@ -352,18 +379,21 @@ const styles = StyleSheet.create({
   markAllText: {
     fontSize: typography.fontSizes.sm,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   // Content Styles
-  contentContainer: {
+  listContainer: {
+    flexGrow: 1,
+  },
+  emptyContainer: {
     flex: 1,
   },
   loadingContainer: {
@@ -375,9 +405,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: typography.fontSizes.md,
     color: colors.text.secondary,
-  },
-  listContainer: {
-    paddingVertical: spacing.sm,
+    marginTop: spacing.sm,
   },
 
   // Notification Item Styles
@@ -388,7 +416,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     backgroundColor: colors.background.light,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.dark,
+    borderBottomColor: colors.border.light,
   },
   unreadNotification: {
     backgroundColor: colors.background.light,
@@ -397,7 +425,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.background.light,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.md,
@@ -412,7 +440,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   unreadTitle: {
-    fontWeight: '600',
+    fontWeight: '700',
   },
   notificationMessage: {
     fontSize: typography.fontSizes.sm,
@@ -433,6 +461,19 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
 
+  // Footer Loader
+  footerLoader: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: spacing.lg,
+    gap: spacing.sm,
+  },
+  footerLoaderText: {
+    fontSize: typography.fontSizes.sm,
+    color: colors.text.secondary,
+  },
+
   // Empty State Styles
   emptyState: {
     flex: 1,
@@ -444,8 +485,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   emptyTitle: {
-    fontSize: typography.fontSizes.lg,
-    fontWeight: '600',
+    fontSize: typography.fontSizes.xl,
+    fontWeight: '700',
     color: colors.text.primary,
     marginBottom: spacing.sm,
     textAlign: 'center',
@@ -455,23 +496,6 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
-  },
-
-  // See All Button
-  seeAllButton: {
-    margin: spacing.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.background.light,
-    borderWidth: 1,
-    borderColor: colors.border.dark,
-    alignItems: 'center',
-  },
-  seeAllText: {
-    fontSize: typography.fontSizes.md,
-    color: colors.primary,
-    fontWeight: '500',
   },
 });
 
