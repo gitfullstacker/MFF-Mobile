@@ -70,5 +70,10 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to your photo library to allow you to select photos for body fat analysis and track your fitness progress.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs access to your camera to take photos for body fat analysis and track your fitness progress.</string>
 </dict>
 </plist>
