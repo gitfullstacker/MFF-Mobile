@@ -15,6 +15,7 @@ import { useNutrition } from '../../hooks/useNutrition';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { RecipeFilters } from '../../types/recipe';
 import { RECIPE_CATEGORIES } from '@/constants';
+import { Input } from '../forms/Input';
 
 interface CategoryOption {
   id: number;
@@ -372,6 +373,20 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Search by Ingredients */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Search by Ingredients</Text>
+          <Input
+            placeholder="e.g., tomatoes, chicken, onions"
+            value={localFilters.ingredients || ''}
+            onChangeText={text =>
+              updateFilter('ingredients', text || undefined)
+            }
+            leftIcon="search"
+            containerStyle={{ marginBottom: 0 }}
+          />
+        </View>
+
         {/* Filter by Year */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Filter by Year</Text>
