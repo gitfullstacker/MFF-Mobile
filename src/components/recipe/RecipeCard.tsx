@@ -225,52 +225,47 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
       {/* Right Side - Recipe Image */}
       <View style={styles.imageSection}>
+        {/* Selection Icon (if enabled) */}
+        {showSelectionIcon && (
+          <TouchableOpacity
+            style={styles.selectionButton}
+            onPress={handleSelectionAction}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            {isAdded ? (
+              <MaterialIcon
+                name="remove-circle"
+                size={30}
+                color={colors.primary}
+              />
+            ) : (
+              <Icon name="plus" size={20} color={colors.primary} />
+            )}
+          </TouchableOpacity>
+        )}
+
+        {/* Favorite Button */}
+        <TouchableOpacity
+          style={styles.favoriteButton}
+          onPress={handleFavoriteClick}
+          disabled={isSaving}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          {isSaving ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : is_favorite ? (
+            <MaterialIcon name="favorite" size={18} color={colors.primary} />
+          ) : (
+            <MaterialIcon
+              name="favorite-border"
+              size={18}
+              color={colors.primary}
+            />
+          )}
+        </TouchableOpacity>
         {isValidRecipe ? (
           <TouchableOpacity
             style={styles.imageContainer}
             onPress={onPress}
             activeOpacity={0.9}>
-            {/* Selection Icon (if enabled) */}
-            {showSelectionIcon && (
-              <TouchableOpacity
-                style={styles.selectionButton}
-                onPress={handleSelectionAction}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                {isAdded ? (
-                  <MaterialIcon
-                    name="remove-circle"
-                    size={30}
-                    color={colors.primary}
-                  />
-                ) : (
-                  <Icon name="plus" size={20} color={colors.primary} />
-                )}
-              </TouchableOpacity>
-            )}
-
-            {/* Favorite Button */}
-            <TouchableOpacity
-              style={styles.favoriteButton}
-              onPress={handleFavoriteClick}
-              disabled={isSaving}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              {isSaving ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : is_favorite ? (
-                <MaterialIcon
-                  name="favorite"
-                  size={18}
-                  color={colors.primary}
-                />
-              ) : (
-                <MaterialIcon
-                  name="favorite-border"
-                  size={18}
-                  color={colors.primary}
-                />
-              )}
-            </TouchableOpacity>
-
             {/* Recipe Image */}
             <Image
               source={{ uri: thumb_image_url || undefined }}
