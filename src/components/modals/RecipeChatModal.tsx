@@ -22,6 +22,7 @@ import {
   shadows,
   fontWeights,
 } from '@/theme';
+import MarkdownText from '../recipe/MarkdownText';
 
 interface RecipeChatModalProps {
   isVisible: boolean;
@@ -104,7 +105,11 @@ export const RecipeChatModal: React.FC<RecipeChatModalProps> = ({
               styles.messageText,
               isUser ? styles.userText : styles.assistantText,
             ]}>
-            {message.content}
+            {isUser ? (
+              message.content
+            ) : (
+              <MarkdownText>{message.content}</MarkdownText>
+            )}
           </Text>
           <Text
             style={[
