@@ -47,6 +47,8 @@ import {
   formatTime,
 } from '@/utils/formatUtils';
 import { RecipeChatModal } from '@/components/modals/RecipeChatModal';
+import { RecipeNoteForm } from '@/components/recipe/RecipeNoteForm';
+import { RecipeNote } from '@/types/recipeNote';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -867,6 +869,9 @@ const RecipeDetailScreen: React.FC = () => {
               <Text style={styles.notesText}>
                 {stripHtmlTags(selectedRecipe.notes)}
               </Text>
+
+              {/* Recipe Note Form */}
+              <RecipeNoteForm recipeId={selectedRecipe._id} />
             </Section>
           )}
         </View>
@@ -1375,6 +1380,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     lineHeight: typography.lineHeights.relaxed * typography.fontSizes.xl,
     textAlign: 'left',
+    marginBottom: spacing.md,
   },
   bottomBar: {
     display: 'flex',
