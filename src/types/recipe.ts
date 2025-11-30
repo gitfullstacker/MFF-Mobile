@@ -93,7 +93,13 @@ export interface RecipeFilters {
   month?: number;
   search?: string;
   ingredients?: string;
-  sort?: 'newest' | 'oldest' | 'timeAsc' | 'timeDesc';
+  sort?:
+    | 'newest'
+    | 'oldest'
+    | 'timeAsc'
+    | 'timeDesc'
+    | 'ratingAsc'
+    | 'ratingDesc';
   page?: number;
   pageSize?: number;
   useDietaryPreferences?: boolean;

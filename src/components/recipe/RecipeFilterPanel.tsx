@@ -28,6 +28,8 @@ const SORT_OPTIONS = [
   { id: 'oldest', name: 'Oldest' },
   { id: 'timeAsc', name: 'Cooking Time (Low to High)' },
   { id: 'timeDesc', name: 'Cooking Time (High to Low)' },
+  { id: 'ratingAsc', name: 'Rating (Low to High)' },
+  { id: 'ratingDesc', name: 'Rating (High to Low)' },
 ];
 
 // Generate year options (current year and previous 10 years)
