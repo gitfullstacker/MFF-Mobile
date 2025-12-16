@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  TextInput,
 } from 'react-native';
 import { RangeSlider } from 'react-native-product-sliders';
 import Icon from 'react-native-vector-icons/Feather';
@@ -15,7 +16,6 @@ import { useNutrition } from '../../hooks/useNutrition';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { RecipeFilters } from '../../types/recipe';
 import { RECIPE_CATEGORIES } from '@/constants';
-import { Input } from '../forms/Input';
 
 interface CategoryOption {
   id: number;
@@ -63,6 +63,7 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
 }) => {
   const { nutritionProfile } = useNutrition();
   const [localFilters, setLocalFilters] = useState<RecipeFilters>(filters);
+  const [ingredientInput, setIngredientInput] = useState('');
 
   useEffect(() => {
     setLocalFilters(filters);
@@ -86,6 +87,42 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
       setLocalFilters(newFilters);
     },
     [localFilters],
+  );
+
+  const handleAddIngredient = useCallback(() => {
+    const trimmedIngredient = ingredientInput.trim();
+    if (!trimmedIngredient) return;
+
+    const currentIngredients = localFilters.ingredients || [];
+
+    // Check if ingredient already exists (case-insensitive)
+    const exists = currentIngredients.some(
+      ing => ing.toLowerCase() === trimmedIngredient.toLowerCase(),
+    );
+
+    if (exists) {
+      Alert.alert('Duplicate', 'This ingredient is already in the list');
+      return;
+    }
+
+    const newIngredients = [...currentIngredients, trimmedIngredient];
+    updateFilter('ingredients', newIngredients);
+    setIngredientInput('');
+  }, [ingredientInput, localFilters.ingredients, updateFilter]);
+
+  // Remove ingredient from the list
+  const handleRemoveIngredient = useCallback(
+    (ingredientToRemove: string) => {
+      const currentIngredients = localFilters.ingredients || [];
+      const newIngredients = currentIngredients.filter(
+        ing => ing !== ingredientToRemove,
+      );
+      updateFilter(
+        'ingredients',
+        newIngredients.length > 0 ? newIngredients : undefined,
+      );
+    },
+    [localFilters.ingredients, updateFilter],
   );
 
   const handleUseProfileMacros = useCallback(() => {
@@ -378,15 +415,48 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
         {/* Search by Ingredients */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Search by Ingredients</Text>
-          <Input
-            placeholder="e.g., tomatoes, chicken, onions"
-            value={localFilters.ingredients || ''}
-            onChangeText={text =>
-              updateFilter('ingredients', text || undefined)
-            }
-            leftIcon="search"
-            containerStyle={{ marginBottom: 0 }}
-          />
+          <View style={styles.ingredientInputContainer}>
+            <TextInput
+              style={styles.ingredientInput}
+              placeholder="e.g., chicken, tomatoes, garlic"
+              value={ingredientInput}
+              onChangeText={setIngredientInput}
+              onSubmitEditing={handleAddIngredient}
+              returnKeyType="done"
+            />
+            <TouchableOpacity
+              style={styles.addIngredientButton}
+              onPress={handleAddIngredient}
+              disabled={!ingredientInput.trim()}>
+              <Icon
+                name="plus"
+                size={20}
+                color={
+                  ingredientInput.trim() ? colors.primary : colors.gray[400]
+                }
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Display ingredient chips */}
+          {localFilters.ingredients && localFilters.ingredients.length > 0 && (
+            <View style={styles.ingredientChipsContainer}>
+              {localFilters.ingredients.map((ingredient, index) => (
+                <View key={index} style={styles.ingredientChip}>
+                  <Text style={styles.ingredientChipText}>{ingredient}</Text>
+                  <TouchableOpacity
+                    onPress={() => handleRemoveIngredient(ingredient)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Icon name="x" size={16} color={colors.white} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <Text style={styles.ingredientHint}>
+            Add multiple ingredients to find recipes that contain all of them
+          </Text>
         </View>
 
         {/* Filter by Year */}
@@ -682,5 +752,52 @@ const styles = StyleSheet.create({
   },
   applyButton: {
     flex: 2,
+  },
+  ingredientInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.gray[50],
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    paddingHorizontal: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  ingredientInput: {
+    flex: 1,
+    ...typography.bodyRegular,
+    color: colors.text.primary,
+    paddingVertical: spacing.sm,
+  },
+  addIngredientButton: {
+    padding: spacing.xs,
+  },
+  ingredientChipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+    gap: spacing.xs,
+  },
+  ingredientChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.xs,
+    paddingLeft: spacing.sm,
+    paddingRight: spacing.xs,
+    gap: spacing.xs,
+  },
+  ingredientChipText: {
+    ...typography.bodySmall,
+    color: colors.white,
+    fontWeight: typography.fontWeights.medium,
+  },
+  ingredientHint: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+    fontStyle: 'italic',
   },
 });

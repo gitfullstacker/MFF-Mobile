@@ -13,7 +13,6 @@ import {
 import Icon from 'react-native-vector-icons/Feather';
 import { BottomSheet } from './BottomSheet';
 import { Button } from '../forms/Button';
-import { Input } from '../forms/Input';
 import {
   colors,
   typography,
@@ -21,6 +20,7 @@ import {
   borderRadius,
   fontWeights,
 } from '../../theme';
+import { COMMON_INGREDIENTS } from '@/constants';
 
 interface AddDietaryPreferenceModalProps {
   visible: boolean;
@@ -31,86 +31,6 @@ interface AddDietaryPreferenceModalProps {
     reason?: string,
   ) => Promise<void>;
 }
-
-// Common ingredients for suggestions
-const COMMON_INGREDIENTS = [
-  // Allergens
-  'Peanuts',
-  'Tree nuts',
-  'Milk',
-  'Eggs',
-  'Fish',
-  'Shellfish',
-  'Soy',
-  'Wheat',
-  'Gluten',
-  // Meat/Protein
-  'Beef',
-  'Pork',
-  'Chicken',
-  'Turkey',
-  'Lamb',
-  'Duck',
-  'Bacon',
-  'Ham',
-  'Sausage',
-  // Seafood
-  'Salmon',
-  'Tuna',
-  'Shrimp',
-  'Crab',
-  'Lobster',
-  'Scallops',
-  'Mussels',
-  'Clams',
-  // Dairy
-  'Cheese',
-  'Butter',
-  'Cream',
-  'Yogurt',
-  'Ice cream',
-  'Cottage cheese',
-  // Vegetables
-  'Onions',
-  'Garlic',
-  'Mushrooms',
-  'Broccoli',
-  'Cauliflower',
-  'Bell peppers',
-  'Tomatoes',
-  'Spinach',
-  // Fruits
-  'Avocado',
-  'Coconut',
-  'Mango',
-  'Pineapple',
-  'Strawberries',
-  'Bananas',
-  'Citrus fruits',
-  // Grains/Carbs
-  'Rice',
-  'Quinoa',
-  'Oats',
-  'Pasta',
-  'Bread',
-  'Potatoes',
-  'Sweet potatoes',
-  // Spices/Seasonings
-  'Cilantro',
-  'Ginger',
-  'Curry',
-  'Chili peppers',
-  'Black pepper',
-  'Paprika',
-  'Turmeric',
-  // Others
-  'Alcohol',
-  'Caffeine',
-  'Artificial sweeteners',
-  'MSG',
-  'Food coloring',
-  'Preservatives',
-];
 
 export const AddDietaryPreferenceModal: React.FC<
   AddDietaryPreferenceModalProps

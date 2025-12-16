@@ -92,7 +92,7 @@ export interface RecipeFilters {
   year?: number;
   month?: number;
   search?: string;
-  ingredients?: string;
+  ingredients?: string[];
   sort?:
     | 'newest'
     | 'oldest'

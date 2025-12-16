@@ -11,7 +11,13 @@ export const recipeService = {
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          params.append(key, value.toString());
+          // Handle array values (like ingredients) - convert to comma-separated string
+          if (key === 'ingredients' && Array.isArray(value)) {
+            // Join array items with comma
+            params.append(key, value.join(','));
+          } else {
+            params.append(key, value.toString());
+          }
         }
       });
     }

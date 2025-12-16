@@ -70,9 +70,14 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
 
   const sortedIngredients = () => {
     if (groupByRecipe) {
-      // Group by recipe
+      // Group by recipe, with checked items at the bottom
       return [...ingredients].sort((a, b) => {
-        // First by recipe name
+        // First sort by checked status (unchecked first)
+        if (a.checked !== b.checked) {
+          return a.checked ? 1 : -1;
+        }
+
+        // Then by recipe name
         if (a.recipeName < b.recipeName) return -1;
         if (a.recipeName > b.recipeName) return 1;
 
@@ -80,8 +85,16 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
         return a.name.localeCompare(b.name);
       });
     } else {
-      // Just alphabetically by ingredient name
-      return [...ingredients].sort((a, b) => a.name.localeCompare(b.name));
+      // Alphabetically by ingredient name, with checked items at the bottom
+      return [...ingredients].sort((a, b) => {
+        // First sort by checked status (unchecked first)
+        if (a.checked !== b.checked) {
+          return a.checked ? 1 : -1;
+        }
+
+        // Then alphabetically by ingredient name
+        return a.name.localeCompare(b.name);
+      });
     }
   };
 
