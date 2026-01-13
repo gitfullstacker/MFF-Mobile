@@ -100,17 +100,15 @@ export const RecipeChatModal: React.FC<RecipeChatModalProps> = ({
             styles.messageBubble,
             isUser ? styles.userBubble : styles.assistantBubble,
           ]}>
-          <Text
-            style={[
-              styles.messageText,
-              isUser ? styles.userText : styles.assistantText,
-            ]}>
-            {isUser ? (
-              message.content
-            ) : (
-              <MarkdownText>{message.content}</MarkdownText>
-            )}
-          </Text>
+          {isUser ? (
+            <Text style={[styles.messageText, styles.userText]}>
+              {message.content}
+            </Text>
+          ) : (
+            <MarkdownText style={styles.assistantText}>
+              {message.content}
+            </MarkdownText>
+          )}
           <Text
             style={[
               styles.timestamp,
