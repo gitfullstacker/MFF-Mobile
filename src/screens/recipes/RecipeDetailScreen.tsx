@@ -6,7 +6,6 @@ import {
   Image,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
   StatusBar,
   Animated,
   Platform,
@@ -48,9 +47,7 @@ import {
 } from '@/utils/formatUtils';
 import { RecipeChatModal } from '@/components/modals/RecipeChatModal';
 import { RecipeNoteForm } from '@/components/recipe/RecipeNoteForm';
-import { RecipeNote } from '@/types/recipeNote';
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+import { PrintModal } from '@/components/modals/PrintModal';
 
 type RecipeDetailNavigationProps = StackNavigationProp<
   RecipeStackParamList,
@@ -73,6 +70,7 @@ const RecipeDetailScreen: React.FC = () => {
   const { toggleFavorite } = useFavorites();
   const { addToRecentRecipes } = useRecentRecipes();
   const { fetchRecipe, selectedRecipe, loading: recipeLoading } = useRecipes();
+
   const [activeTab, setActiveTab] = useState<
     'ingredients' | 'instructions' | 'reviews'
   >('ingredients');
@@ -101,6 +99,7 @@ const RecipeDetailScreen: React.FC = () => {
   const [tabContainerY, setTabContainerY] = useState(0);
 
   const [showChat, setShowChat] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   useEffect(() => {
     if (recipeId && (!selectedRecipe || selectedRecipe.slug !== recipeId)) {
@@ -637,6 +636,13 @@ const RecipeDetailScreen: React.FC = () => {
             </View>
           </Section>
 
+          {/* Print Button - ADDED BELOW NUTRITION INFORMATION */}
+          <Button
+            title="Print Recipe"
+            onPress={() => setShowPrintModal(true)}
+            icon={<Icon name="printer" size={18} color={colors.white} />}
+          />
+
           {/* Tab Navigation */}
           <View
             style={styles.tabContainer}
@@ -901,6 +907,14 @@ const RecipeDetailScreen: React.FC = () => {
         onSuccess={handleMealPlanSuccess}
       />
 
+      {/* Print Modal */}
+      <PrintModal
+        visible={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        recipeId={selectedRecipe.recipe_id}
+        recipeName={selectedRecipe.name}
+      />
+
       {selectedRecipe && (
         <RecipeChatModal
           isVisible={showChat}
@@ -1139,6 +1153,43 @@ const styles = StyleSheet.create({
   macroSection: {
     alignItems: 'center',
     paddingVertical: spacing.md,
+  },
+  printSection: {
+    padding: 16,
+    paddingTop: 24,
+    paddingBottom: 24,
+  },
+  printButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  printButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  printButtonIcon: {
+    fontSize: 28,
+    marginRight: 16,
+  },
+  printButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  printButtonSubtext: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    opacity: 0.9,
   },
   tabContainer: {
     flexDirection: 'row',
