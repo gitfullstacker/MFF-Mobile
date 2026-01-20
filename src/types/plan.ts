@@ -47,8 +47,18 @@ export const DAYS_OF_WEEK: {
   { value: 'sa', label: 'Sat', fullName: 'Saturday' },
 ];
 
+export interface GetPlansRequest {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+}
+
 export interface CreatePlanRequest {
   name: string;
   schedule: PlanSchedule;
   removed_ingredient_ids: string[];
+}
+
+export interface PlanFilters {
+  search?: string;
 }

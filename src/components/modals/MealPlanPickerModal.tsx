@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  TextInput,
+  FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { BottomSheet } from './BottomSheet';
-import { Button } from '../forms/Button';
 import { LoadingOverlay } from '../feedback/LoadingOverlay';
 import { usePlans } from '../../hooks/usePlans';
 import { colors, typography, spacing, borderRadius } from '../../theme';
@@ -29,7 +31,7 @@ interface MealPlanPickerModalProps {
   onSuccess?: () => void;
 }
 
-type ViewMode = 'plans' | 'days' | 'options';
+type ViewMode = 'plans' | 'days' | 'options' | 'createPlan';
 
 export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
   visible,
@@ -37,22 +39,25 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
   recipe,
   onSuccess,
 }) => {
-  const { plans, loading, fetchPlans, updatePlan, createPlan } = usePlans();
+  const { plans, loading, hasMore, fetchPlans, updatePlan, createPlan } =
+    usePlans();
+  const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('plans');
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [selectedDay, setSelectedDay] = useState<DayOfWeek | null>(null);
   const [existingDays, setExistingDays] = useState<DayOfWeek[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [newPlanName, setNewPlanName] = useState('');
 
   useEffect(() => {
     if (visible) {
-      fetchPlans();
+      fetchPlans({}, true);
       setViewMode('plans');
       setSelectedPlan(null);
       setSelectedDay(null);
       setExistingDays([]);
     }
-  }, [visible, fetchPlans]);
+  }, [visible]);
 
   // Check if recipe exists in the selected plan and on which days
   const checkRecipeInPlan = (plan: Plan): DayOfWeek[] => {
@@ -93,6 +98,18 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
       return recipeId === recipe._id;
     });
   };
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchPlans({}, true);
+    setRefreshing(false);
+  }, [fetchPlans]);
+
+  const handleLoadMore = useCallback(() => {
+    if (!loading && hasMore) {
+      fetchPlans();
+    }
+  }, [loading, hasMore, fetchPlans]);
 
   // Handle plan selection
   const handlePlanSelect = (plan: Plan) => {
@@ -192,7 +209,9 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
         [{ text: 'OK', onPress: handleSuccess }],
       );
     } catch (error) {
-      console.error('Error adding recipe to plan:', error);
+      if (__DEV__) {
+        console.error('Error adding recipe to plan:', error);
+      }
       Alert.alert(
         'Error',
         'Failed to add recipe to meal plan. Please try again.',
@@ -266,7 +285,9 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
         [{ text: 'OK', onPress: handleSuccess }],
       );
     } catch (error) {
-      console.error('Error adding recipe to plan:', error);
+      if (__DEV__) {
+        console.error('Error adding recipe to plan:', error);
+      }
       Alert.alert(
         'Error',
         'Failed to add recipe to meal plan. Please try again.',
@@ -284,42 +305,44 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
 
   // Create new meal plan
   const handleCreateNewPlan = () => {
-    Alert.alert('Create New Plan', 'Enter a name for your new meal plan:', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Create',
-        onPress: async () => {
-          try {
-            setIsUpdating(true);
+    setNewPlanName(''); // Reset the name
+    setViewMode('createPlan');
+  };
 
-            // Create clean schedule without any _id fields
-            const cleanSchedule: PlanSchedule = {
-              su: [],
-              mo: [],
-              tu: [],
-              we: [],
-              th: [],
-              fr: [],
-              sa: [],
-            };
+  const handleConfirmNewPlan = async () => {
+    if (!newPlanName || newPlanName.trim() === '') {
+      Alert.alert('Error', 'Please enter a valid plan name.');
+      return;
+    }
 
-            const newPlan = await createPlan({
-              name: `New Plan - ${new Date().toLocaleDateString()}`,
-              schedule: cleanSchedule,
-              removed_ingredient_ids: [],
-            });
+    try {
+      setIsUpdating(true);
 
-            setSelectedPlan(newPlan);
-            setExistingDays([]);
-            setViewMode('days');
-          } catch (error) {
-            Alert.alert('Error', 'Failed to create new meal plan.');
-          } finally {
-            setIsUpdating(false);
-          }
-        },
-      },
-    ]);
+      // Create clean schedule
+      const cleanSchedule: PlanSchedule = {
+        su: [],
+        mo: [],
+        tu: [],
+        we: [],
+        th: [],
+        fr: [],
+        sa: [],
+      };
+
+      const newPlan = await createPlan({
+        name: newPlanName,
+        schedule: cleanSchedule,
+        removed_ingredient_ids: [],
+      });
+
+      setSelectedPlan(newPlan);
+      setExistingDays([]);
+      setViewMode('days');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to create new meal plan.');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   // Get total recipe count for a plan
@@ -343,31 +366,14 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
-        {/* Create New Plan Option */}
-        <TouchableOpacity
-          style={styles.createPlanCard}
-          onPress={handleCreateNewPlan}>
-          <View style={styles.createPlanIcon}>
-            <Icon name="plus" size={24} color={colors.primary} />
-          </View>
-          <View style={styles.planInfo}>
-            <Text style={styles.planName}>Create New Meal Plan</Text>
-            <Text style={styles.planSubtitle}>
-              Start a new plan with this recipe
-            </Text>
-          </View>
-          <Icon name="chevron-right" size={20} color={colors.text.secondary} />
-        </TouchableOpacity>
-
-        {/* Existing Plans */}
-        {plans.map(plan => {
+      <FlatList
+        data={plans}
+        renderItem={({ item: plan }) => {
           const recipeCount = getTotalRecipeCount(plan);
           const existingRecipeDays = checkRecipeInPlan(plan);
 
           return (
             <TouchableOpacity
-              key={plan._id}
               style={styles.planCard}
               onPress={() => handlePlanSelect(plan)}>
               <View style={styles.planInfo}>
@@ -389,16 +395,48 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
               />
             </TouchableOpacity>
           );
-        })}
-
-        {plans.length === 0 && !loading && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>
-              No meal plans found. Create your first plan to get started.
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+        }}
+        keyExtractor={plan => plan._id}
+        ListHeaderComponent={
+          <TouchableOpacity
+            style={styles.createPlanCard}
+            onPress={handleCreateNewPlan}>
+            <View style={styles.createPlanIcon}>
+              <Icon name="plus" size={24} color={colors.primary} />
+            </View>
+            <View style={styles.planInfo}>
+              <Text style={styles.planName}>Create New Meal Plan</Text>
+              <Text style={styles.planSubtitle}>
+                Start a new plan with this recipe
+              </Text>
+            </View>
+            <Icon
+              name="chevron-right"
+              size={20}
+              color={colors.text.secondary}
+            />
+          </TouchableOpacity>
+        }
+        ListEmptyComponent={
+          !loading ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>
+                No meal plans found. Create your first plan to get started.
+              </Text>
+            </View>
+          ) : null
+        }
+        ListFooterComponent={
+          loading && !refreshing ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : null
+        }
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.3}
+        contentContainerStyle={styles.listContent}
+      />
     </>
   );
 
@@ -557,6 +595,42 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
     </>
   );
 
+  const renderCreatePlanView = () => (
+    <>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => setViewMode('plans')}
+          style={styles.backButton}>
+          <Icon name="arrow-left" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={styles.title}>Create New Plan</Text>
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Icon name="x" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.content}>
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Plan Name</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Enter plan name"
+            value={newPlanName}
+            onChangeText={setNewPlanName}
+            autoFocus={true}
+          />
+        </View>
+
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={handleConfirmNewPlan}
+          disabled={!newPlanName.trim()}>
+          <Text style={styles.createButtonText}>Create Plan</Text>
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+
   // Render current view based on mode
   const renderCurrentView = () => {
     switch (viewMode) {
@@ -566,6 +640,8 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
         return renderDaySelection();
       case 'options':
         return renderOptionsView();
+      case 'createPlan':
+        return renderCreatePlanView();
       default:
         return renderPlanSelection();
     }
@@ -577,10 +653,11 @@ export const MealPlanPickerModal: React.FC<MealPlanPickerModalProps> = ({
         {renderCurrentView()}
       </BottomSheet>
 
-      <LoadingOverlay
-        visible={loading || isUpdating}
-        message={isUpdating ? 'Adding recipe...' : 'Loading plans...'}
-      />
+      {(loading || isUpdating) && (
+        <LoadingOverlay
+          message={isUpdating ? 'Adding recipe...' : 'Loading plans...'}
+        />
+      )}
     </>
   );
 };
@@ -666,6 +743,10 @@ const styles = StyleSheet.create({
     ...typography.bodyRegular,
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  listContent: {
+    flexGrow: 1,
+    paddingBottom: spacing.md,
   },
 
   // Day selection styles
@@ -862,6 +943,33 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.white,
     marginTop: spacing.xs,
+    fontWeight: typography.fontWeights.semibold,
+  },
+  inputContainer: {
+    marginBottom: spacing.lg,
+  },
+  inputLabel: {
+    ...typography.bodyRegular,
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    ...typography.bodyRegular,
+  },
+  createButton: {
+    backgroundColor: colors.primary,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  createButtonText: {
+    ...typography.bodyLarge,
+    color: colors.white,
     fontWeight: typography.fontWeights.semibold,
   },
 });

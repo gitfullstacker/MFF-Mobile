@@ -1,7 +1,7 @@
 import { atom } from 'jotai';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { atomWithStorage, createJSONStorage } from 'jotai/utils';
-import { User } from '../../types/auth';
+import { User } from '@/types';
 
 // Create a custom storage for React Native
 const storage = createJSONStorage<any>(() => ({
@@ -17,27 +17,45 @@ const storage = createJSONStorage<any>(() => ({
       }
       return item ? JSON.parse(item) : null;
     } catch (error) {
-      console.error(`Error getting ${key} from storage:`, error);
+      if (__DEV__) {
+        console.error(`Error getting ${key} from storage:`, error);
+      }
       return null;
     }
   },
   setItem: async (key: string, value: any) => {
     try {
+      // Handle null/undefined values by removing the item instead
+      if (value === null || value === undefined) {
+        await AsyncStorage.removeItem(key);
+        return;
+      }
+
       // For authToken, store as plain string
       if (key === 'authToken') {
-        await AsyncStorage.setItem(key, JSON.parse(value));
+        const actualValue =
+          typeof value === 'string' &&
+          value.startsWith('"') &&
+          value.endsWith('"')
+            ? JSON.parse(value)
+            : value;
+        await AsyncStorage.setItem(key, actualValue);
       } else {
         await AsyncStorage.setItem(key, JSON.stringify(value));
       }
     } catch (error) {
-      console.error(`Error setting ${key} in storage:`, error);
+      if (__DEV__) {
+        console.error(`Error setting ${key} in storage:`, error);
+      }
     }
   },
   removeItem: async (key: string) => {
     try {
       await AsyncStorage.removeItem(key);
     } catch (error) {
-      console.error(`Error removing ${key} from storage:`, error);
+      if (__DEV__) {
+        console.error(`Error removing ${key} from storage:`, error);
+      }
     }
   },
 }));
@@ -50,6 +68,12 @@ export const authTokenAtom = atomWithStorage<string | null>(
 );
 
 export const userAtom = atomWithStorage<User | null>('user', null, storage);
+
+// NEW: Store token expiration data from backend response
+export const tokenExpirationAtom = atomWithStorage<{
+  expires_at: string;
+  expires_in: number;
+} | null>('tokenExpiration', null, storage);
 
 // Save username/password for "Remember Me" functionality
 export const savedCredentialsAtom = atomWithStorage<{

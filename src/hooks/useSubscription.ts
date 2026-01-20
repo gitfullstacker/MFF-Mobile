@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useAtom } from 'jotai';
 import { subscriptionStatsAtom, addToastAtom } from '../store';
-import { subscriptionService } from '../services/subscription';
+import { subscriptionService } from '../services/subscriptionService';
 import { SubscriptionStats } from '../types/subscription';
 
 export const useSubscription = () => {
@@ -10,10 +10,8 @@ export const useSubscription = () => {
   );
   const [, addToast] = useAtom(addToastAtom);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Default empty subscription stats with empty allowed categories
-  const defaultStats: SubscriptionStats = {
+  const DEFAULT_STATS: SubscriptionStats = {
     status: null,
     name: null,
     expire_date: null,
@@ -24,13 +22,9 @@ export const useSubscription = () => {
     allowed_category_ids: [],
   };
 
-  // Fetch subscription stats
   const fetchSubscriptionStats = useCallback(
     async (showToast = false) => {
-      if (loading) return;
-
       setLoading(true);
-      setError(null);
 
       try {
         const stats = await subscriptionService.getSubscriptionStats();
@@ -46,13 +40,10 @@ export const useSubscription = () => {
 
         return stats;
       } catch (error: any) {
-        console.error('Error fetching subscription stats:', error);
-        setError(
-          error.response?.data?.message ||
-            'Failed to fetch subscription information',
-        );
-
-        setSubscriptionStats(defaultStats);
+        if (__DEV__) {
+          console.error('Error fetching subscription stats:', error);
+        }
+        setSubscriptionStats(DEFAULT_STATS);
 
         if (showToast) {
           addToast({
@@ -62,7 +53,7 @@ export const useSubscription = () => {
           });
         }
 
-        return defaultStats;
+        return DEFAULT_STATS;
       } finally {
         setLoading(false);
       }
@@ -70,7 +61,6 @@ export const useSubscription = () => {
     [setSubscriptionStats, addToast],
   );
 
-  // Check if a specific category ID is allowed by the subscription
   const isCategoryAllowed = useCallback(
     (categoryId: number) => {
       if (!subscriptionStats) return false;
@@ -79,64 +69,41 @@ export const useSubscription = () => {
     [subscriptionStats],
   );
 
-  // Check if subscription is active
   const isSubscriptionActive = useCallback(() => {
-    if (!subscriptionStats) return false;
-    return subscriptionStats.status === 'active';
+    return subscriptionStats?.status === 'active';
   }, [subscriptionStats]);
 
-  // Format expiry date
   const formatExpiryDate = useCallback(() => {
-    if (!subscriptionStats?.expire_date) return 'No expiration date';
-
-    try {
-      const expireDate = new Date(subscriptionStats.expire_date);
-      return expireDate.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    } catch (error) {
-      return 'Invalid date';
-    }
+    if (!subscriptionStats?.expire_date) return null;
+    return new Date(subscriptionStats.expire_date).toLocaleDateString();
   }, [subscriptionStats]);
 
-  // Get time left in subscription
   const getTimeLeftInSubscription = useCallback(() => {
     if (!subscriptionStats?.expire_date) return null;
 
-    try {
-      const expireDate = new Date(subscriptionStats.expire_date);
-      const now = new Date();
-      const diffTime = expireDate.getTime() - now.getTime();
+    const expireDate = new Date(subscriptionStats.expire_date);
+    const now = new Date();
+    const diffTime = expireDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      // If expired
-      if (diffTime <= 0) return 'Expired';
-
-      // Calculate days left
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays > 30) {
-        const diffMonths = Math.floor(diffDays / 30);
-        return `${diffMonths} month${diffMonths > 1 ? 's' : ''} left`;
-      }
-
-      return `${diffDays} day${diffDays > 1 ? 's' : ''} left`;
-    } catch (error) {
-      return null;
-    }
+    if (diffDays <= 0) return 'Expired';
+    if (diffDays === 1) return '1 day left';
+    return `${diffDays} days left`;
   }, [subscriptionStats]);
 
-  // Cancel subscription
   const cancelSubscription = useCallback(
     async (subscriptionId: number) => {
       setLoading(true);
-      setError(null);
 
       try {
         await subscriptionService.cancelSubscription(subscriptionId);
-        // Refresh subscription stats after cancellation
-        await fetchSubscriptionStats();
+
+        if (subscriptionStats) {
+          setSubscriptionStats({
+            ...subscriptionStats,
+            status: 'cancelled',
+          });
+        }
 
         addToast({
           message: 'Subscription cancelled successfully',
@@ -146,36 +113,33 @@ export const useSubscription = () => {
 
         return true;
       } catch (error: any) {
-        console.error('Error cancelling subscription:', error);
-        setError(
-          error.response?.data?.message || 'Failed to cancel subscription',
-        );
-
         addToast({
           message:
             error.response?.data?.message || 'Failed to cancel subscription',
           type: 'error',
           duration: 5000,
         });
-
         return false;
       } finally {
         setLoading(false);
       }
     },
-    [fetchSubscriptionStats, addToast],
+    [subscriptionStats, setSubscriptionStats, addToast],
   );
 
-  // Resume subscription
   const resumeSubscription = useCallback(
     async (subscriptionId: number) => {
       setLoading(true);
-      setError(null);
 
       try {
         await subscriptionService.resumeSubscription(subscriptionId);
-        // Refresh subscription stats after resuming
-        await fetchSubscriptionStats();
+
+        if (subscriptionStats) {
+          setSubscriptionStats({
+            ...subscriptionStats,
+            status: 'active',
+          });
+        }
 
         addToast({
           message: 'Subscription resumed successfully',
@@ -185,47 +149,33 @@ export const useSubscription = () => {
 
         return true;
       } catch (error: any) {
-        console.error('Error resuming subscription:', error);
-        setError(
-          error.response?.data?.message || 'Failed to resume subscription',
-        );
-
         addToast({
           message:
             error.response?.data?.message || 'Failed to resume subscription',
           type: 'error',
           duration: 5000,
         });
-
         return false;
       } finally {
         setLoading(false);
       }
     },
-    [fetchSubscriptionStats, addToast],
+    [subscriptionStats, setSubscriptionStats, addToast],
   );
 
-  // Get all subscriptions
   const getSubscriptions = useCallback(async () => {
     setLoading(true);
-    setError(null);
 
     try {
       const subscriptions = await subscriptionService.getSubscriptions();
       return subscriptions;
     } catch (error: any) {
-      console.error('Error fetching subscriptions:', error);
-      setError(
-        error.response?.data?.message || 'Failed to fetch subscriptions',
-      );
-
       addToast({
         message:
           error.response?.data?.message || 'Failed to fetch subscriptions',
         type: 'error',
         duration: 5000,
       });
-
       return [];
     } finally {
       setLoading(false);
@@ -233,10 +183,9 @@ export const useSubscription = () => {
   }, [addToast]);
 
   return {
-    subscriptionStats: subscriptionStats || defaultStats,
+    subscriptionStats: subscriptionStats || DEFAULT_STATS,
     allowedCategoryIds: subscriptionStats?.allowed_category_ids || [],
     loading,
-    error,
     isSubscriptionActive,
     isCategoryAllowed,
     formatExpiryDate,

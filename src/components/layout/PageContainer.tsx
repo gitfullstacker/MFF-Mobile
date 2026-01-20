@@ -1,18 +1,12 @@
 import React from 'react';
-import {
-  View,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  ViewStyle,
-} from 'react-native';
+import { View, StyleSheet, StatusBar, ViewStyle, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing } from '../../theme';
 
 interface PageContainerProps {
   children: React.ReactNode;
   backgroundColor?: string;
   padding?: boolean;
-  safeArea?: boolean;
   statusBarStyle?: 'light-content' | 'dark-content';
   style?: ViewStyle;
 }
@@ -21,11 +15,10 @@ export const PageContainer: React.FC<PageContainerProps> = ({
   children,
   backgroundColor = colors.background.light,
   padding = true,
-  safeArea = true,
   statusBarStyle = 'dark-content',
   style,
 }) => {
-  const Container = safeArea ? SafeAreaView : View;
+  const Container = Platform.OS === 'android' ? SafeAreaView : View;
 
   return (
     <>

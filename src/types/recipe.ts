@@ -52,6 +52,7 @@ export interface Recipe {
   slug: string;
   name: string;
   image_url: string;
+  thumb_image_url: string;
   description: string;
   prep_time: number;
   cook_time: number;
@@ -91,11 +92,17 @@ export interface RecipeFilters {
   year?: number;
   month?: number;
   search?: string;
-  ingredients?: string;
-  favorites?: boolean;
-  sort?: 'newest' | 'oldest' | 'timeAsc' | 'timeDesc';
+  ingredients?: string[];
+  sort?:
+    | 'newest'
+    | 'oldest'
+    | 'timeAsc'
+    | 'timeDesc'
+    | 'ratingAsc'
+    | 'ratingDesc';
   page?: number;
   pageSize?: number;
+  useDietaryPreferences?: boolean;
 }
 
 export interface RecipeComment {

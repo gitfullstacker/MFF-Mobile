@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ interface ShoppingListModalProps {
 }
 
 interface IngredientItem {
+  uid: number;
   name: string;
   amount: string;
   unit: string;
@@ -45,6 +46,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
       recipe.ingredients.forEach(group => {
         group.items.forEach(ingredient => {
           items.push({
+            uid: ingredient.uid,
             name: ingredient.name,
             amount: ingredient.amount,
             unit: ingredient.unit,
@@ -68,9 +70,14 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
 
   const sortedIngredients = () => {
     if (groupByRecipe) {
-      // Group by recipe
+      // Group by recipe, with checked items at the bottom
       return [...ingredients].sort((a, b) => {
-        // First by recipe name
+        // First sort by checked status (unchecked first)
+        if (a.checked !== b.checked) {
+          return a.checked ? 1 : -1;
+        }
+
+        // Then by recipe name
         if (a.recipeName < b.recipeName) return -1;
         if (a.recipeName > b.recipeName) return 1;
 
@@ -78,8 +85,16 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
         return a.name.localeCompare(b.name);
       });
     } else {
-      // Just alphabetically by ingredient name
-      return [...ingredients].sort((a, b) => a.name.localeCompare(b.name));
+      // Alphabetically by ingredient name, with checked items at the bottom
+      return [...ingredients].sort((a, b) => {
+        // First sort by checked status (unchecked first)
+        if (a.checked !== b.checked) {
+          return a.checked ? 1 : -1;
+        }
+
+        // Then alphabetically by ingredient name
+        return a.name.localeCompare(b.name);
+      });
     }
   };
 
@@ -94,11 +109,14 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
   const generateShoppingListText = () => {
     let text = 'Shopping List\n\n';
 
+    // Filter out checked (crossed-off) ingredients
+    const uncheckedIngredients = ingredients.filter(item => !item.checked);
+
     if (groupByRecipe) {
       const recipeGroups = getRecipeGroups();
       const groupedByRecipe: { [key: string]: IngredientItem[] } = {};
 
-      ingredients.forEach(item => {
+      uncheckedIngredients.forEach(item => {
         if (!groupedByRecipe[item.recipeId]) {
           groupedByRecipe[item.recipeId] = [];
         }
@@ -115,7 +133,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
         text += '\n';
       });
     } else {
-      ingredients
+      uncheckedIngredients
         .sort((a, b) => a.name.localeCompare(b.name))
         .forEach(item => {
           text += `- ${item.amount} ${item.unit} ${item.name}`;
@@ -135,7 +153,9 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
         title: 'Shopping List',
       });
     } catch (error) {
-      console.error('Error sharing shopping list:', error);
+      if (__DEV__) {
+        console.error('Error sharing shopping list:', error);
+      }
     }
   };
 
@@ -205,7 +225,8 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
                           i =>
                             i.recipeId === item.recipeId &&
                             i.name === item.name &&
-                            i.amount === item.amount,
+                            i.amount === item.amount &&
+                            i.uid === item.uid,
                         );
                         if (originalIndex !== -1) {
                           toggleIngredient(originalIndex);
@@ -242,7 +263,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
           : // Alphabetical list
             sortedIngredients().map(item => (
               <TouchableOpacity
-                key={`${item.recipeId}-${item.name}-${item.amount}`}
+                key={`${item.recipeId}-${item.name}-${item.amount}-${item.uid}`}
                 style={[
                   styles.ingredientItem,
                   item.checked && styles.ingredientItemChecked,
@@ -252,7 +273,8 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
                     i =>
                       i.recipeId === item.recipeId &&
                       i.name === item.name &&
-                      i.amount === item.amount,
+                      i.amount === item.amount &&
+                      i.uid === item.uid,
                   );
                   if (originalIndex !== -1) toggleIngredient(originalIndex);
                 }}>

@@ -9,8 +9,6 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -20,20 +18,9 @@ import { Input } from '../../components/forms/Input';
 import { Button } from '../../components/forms/Button';
 import { LoadingOverlay } from '../../components/feedback/LoadingOverlay';
 import { useAuth } from '../../hooks/useAuth';
-import {
-  colors,
-  typography,
-  spacing,
-  fontWeights,
-  borderRadius,
-} from '../../theme';
-import { AuthStackParamList } from '../../navigation/types';
+import { colors, typography, spacing, borderRadius } from '../../theme';
 import Icon from 'react-native-vector-icons/Feather';
-
-type LoginScreenNavigationProp = StackNavigationProp<
-  AuthStackParamList,
-  'Login'
->;
+import { useNavigationHelpers } from '@/hooks/useNavigation';
 
 // Strictly define the form data structure
 type LoginFormData = {
@@ -52,7 +39,7 @@ const loginSchema = yup
   .required();
 
 const LoginScreen: React.FC = () => {
-  const navigation = useNavigation<LoginScreenNavigationProp>();
+  const { navigateToForgotPassword } = useNavigationHelpers();
   const { login, savedCredentials } = useAuth();
   const [loading, setLoading] = useState(false);
 
@@ -185,7 +172,7 @@ const LoginScreen: React.FC = () => {
 
               <TouchableOpacity
                 style={styles.forgotPassword}
-                onPress={() => navigation.navigate('ForgotPassword')}>
+                onPress={navigateToForgotPassword}>
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
             </View>
@@ -199,17 +186,11 @@ const LoginScreen: React.FC = () => {
               loading={loading}
               disabled={loading}
             />
-
-            <View style={styles.signUpContainer}>
-              <Text style={styles.signUpText}>Don't have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-                <Text style={styles.signUpLink}>Sign Up</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </ScrollContainer>
       </KeyboardAvoidingView>
-      <LoadingOverlay visible={loading} message="Signing in..." />
+
+      {loading && <LoadingOverlay message="Signing in..." />}
     </PageContainer>
   );
 };
@@ -286,20 +267,6 @@ const styles = StyleSheet.create({
   },
   signInButton: {
     marginBottom: spacing.lg,
-  },
-  signUpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  signUpText: {
-    ...typography.bodyRegular,
-    color: colors.text.secondary,
-  },
-  signUpLink: {
-    ...typography.bodyRegular,
-    color: colors.primary,
-    fontWeight: fontWeights.semibold,
   },
 });
 

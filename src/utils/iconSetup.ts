@@ -8,6 +8,8 @@ export const setupIcons = async () => {
     await MaterialIcon.loadFont();
     console.log('Icons loaded successfully');
   } catch (error) {
-    console.error('Error loading icon fonts:', error);
+    if (__DEV__) {
+      console.error('Error loading icon fonts:', error);
+    }
   }
 };

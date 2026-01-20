@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Dimensions,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
@@ -20,6 +21,9 @@ import {
 import { Recipe } from '../../types/recipe';
 import { useSubscription } from '../../hooks/useSubscription';
 import { RatingImage, StarRating } from 'react-native-product-ratings';
+import { useNavigationHelpers } from '@/hooks/useNavigation';
+import { formatTime } from '@/utils/formatUtils';
+import { RECIPE_CATEGORIES } from '@/constants/recipe';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -30,7 +34,7 @@ interface RecipeCardProps {
   showSelectionIcon?: boolean;
   onAddClick?: (recipe: Recipe) => void;
   onRemoveClick?: (recipe: Recipe) => void;
-  onFavoriteToggle?: (recipeId: string, isFavorite: boolean) => void;
+  onFavoriteToggle?: (recipe: Recipe) => void;
 }
 
 export const RecipeCard: React.FC<RecipeCardProps> = ({
@@ -44,7 +48,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 }) => {
   const {
     name,
-    image_url,
+    thumb_image_url,
     total_time,
     nutrition,
     is_favorite,
@@ -52,8 +56,8 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
     _id,
     rating,
   } = recipe;
-  const [favorite, setFavorite] = useState(is_favorite);
   const [isSaving, setIsSaving] = useState(false);
+  const { navigateToCreateTicket } = useNavigationHelpers();
   const { allowedCategoryIds, loading: subscriptionLoading } =
     useSubscription();
 
@@ -71,16 +75,34 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
   const isValidRecipe = isRecipeAccessible();
 
-  // Format time in human-readable format
-  const formatTime = (minutes: number) => {
-    if (!minutes) return '0 min';
-    if (minutes < 60) return `${minutes} min`;
+  // Get all recipe categories for badge display
+  const getRecipeCategories = useCallback(() => {
+    if (!recipe.tags?.course || recipe.tags.course.length === 0) {
+      return [];
+    }
 
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+    // Map all course tags to categories
+    return recipe.tags.course.map(courseTag => {
+      const category = RECIPE_CATEGORIES.find(
+        cat => cat.id === courseTag.term_id || cat.slug === courseTag.slug,
+      );
+      return category || { name: courseTag.name, slug: courseTag.slug };
+    });
+  }, [recipe]);
 
-    if (mins === 0) return `${hours} hr`;
-    return `${hours} hr ${mins} min`;
+  const recipeCategories = getRecipeCategories();
+
+  // Get color for category badge
+  const getCategoryColor = (slug: string) => {
+    const colorMap: { [key: string]: string } = {
+      breakfast: '#FF6B6B', // Red
+      lunch: '#4ECDC4', // Teal
+      dinner: '#45B7D1', // Blue
+      snack: '#FFA07A', // Light Salmon
+      dessert: '#DDA15E', // Brown/Gold
+      'side-dish': '#95E1D3', // Mint
+    };
+    return colorMap[slug] || colors.primary; // Default to primary color
   };
 
   // Handle favorite toggle
@@ -91,19 +113,16 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
     if (isSaving) return; // Prevent double taps
 
     setIsSaving(true);
-    const newFavoriteStatus = !favorite;
 
     try {
-      // Update UI optimistically
-      setFavorite(newFavoriteStatus);
-
       // Notify parent component if needed
       if (onFavoriteToggle) {
-        onFavoriteToggle(_id, newFavoriteStatus);
+        onFavoriteToggle(recipe);
       }
     } catch (error) {
-      console.error('Error toggling favorite:', error);
-      setFavorite(favorite); // Revert on error
+      if (__DEV__) {
+        console.error('Error toggling favorite:', error);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -125,6 +144,21 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
     }
   };
 
+  const handleContactPress = async () => {
+    try {
+      navigateToCreateTicket();
+    } catch (error) {
+      if (__DEV__) {
+        console.error('Error navigating to create ticket:', error);
+      }
+      Alert.alert(
+        'Error',
+        'Unable to open support ticket form. Please try again.',
+        [{ text: 'OK' }],
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Left Side - Recipe Details */}
@@ -139,6 +173,22 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
               {name}
             </Text>
           </TouchableOpacity>
+
+          {/* Category Badges - displayed below recipe name */}
+          {recipeCategories.length > 0 && (
+            <View style={styles.categoryBadgesContainer}>
+              {recipeCategories.map((category, index) => (
+                <View
+                  key={`${category.slug}-${index}`}
+                  style={[
+                    styles.categoryBadge,
+                    { backgroundColor: getCategoryColor(category.slug) },
+                  ]}>
+                  <Text style={styles.categoryBadgeText}>{category.name}</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           {/* Recipe Rating */}
           <View style={styles.ratingContainer}>
@@ -175,69 +225,61 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
       {/* Right Side - Recipe Image */}
       <View style={styles.imageSection}>
+        {/* Selection Icon (if enabled) */}
+        {showSelectionIcon && (
+          <TouchableOpacity
+            style={styles.selectionButton}
+            onPress={handleSelectionAction}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            {isAdded ? (
+              <MaterialIcon
+                name="remove-circle"
+                size={30}
+                color={colors.primary}
+              />
+            ) : (
+              <Icon name="plus" size={20} color={colors.primary} />
+            )}
+          </TouchableOpacity>
+        )}
+
+        {/* Favorite Button */}
+        <TouchableOpacity
+          style={styles.favoriteButton}
+          onPress={handleFavoriteClick}
+          disabled={isSaving}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          {isSaving ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : is_favorite ? (
+            <MaterialIcon name="favorite" size={18} color={colors.primary} />
+          ) : (
+            <MaterialIcon
+              name="favorite-border"
+              size={18}
+              color={colors.primary}
+            />
+          )}
+        </TouchableOpacity>
         {isValidRecipe ? (
           <TouchableOpacity
             style={styles.imageContainer}
             onPress={onPress}
             activeOpacity={0.9}>
-            {/* Selection Icon (if enabled) */}
-            {showSelectionIcon && (
-              <TouchableOpacity
-                style={styles.selectionButton}
-                onPress={handleSelectionAction}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                {isAdded ? (
-                  <MaterialIcon
-                    name="remove-circle"
-                    size={30}
-                    color={colors.primary}
-                  />
-                ) : (
-                  <Icon name="plus" size={20} color={colors.primary} />
-                )}
-              </TouchableOpacity>
-            )}
-
-            {/* Favorite Button */}
-            <TouchableOpacity
-              style={styles.favoriteButton}
-              onPress={handleFavoriteClick}
-              disabled={isSaving}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              {isSaving ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : favorite ? (
-                <MaterialIcon
-                  name="favorite"
-                  size={18}
-                  color={colors.primary}
-                />
-              ) : (
-                <MaterialIcon
-                  name="favorite-border"
-                  size={18}
-                  color={colors.primary}
-                />
-              )}
-            </TouchableOpacity>
-
             {/* Recipe Image */}
             <Image
-              source={{ uri: image_url || undefined }}
+              source={{ uri: thumb_image_url || undefined }}
               defaultSource={require('../../../assets/images/recipe-placeholder.jpg')}
               style={styles.recipeImage}
               resizeMode="cover"
             />
           </TouchableOpacity>
         ) : (
-          // Locked Recipe Overlay
-          <View style={styles.lockedOverlay}>
-            <MaterialIcon name="lock-outline" size={24} color={colors.white} />
-            <Text style={styles.lockedText}>
-              <Text style={styles.lockedTextBold}>Upgrade</Text> to access
-            </Text>
-            <TouchableOpacity style={styles.upgradeButton}>
-              <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
+          <View style={styles.errorOverlay}>
+            <TouchableOpacity
+              style={styles.contactButton}
+              onPress={handleContactPress}>
+              <Text style={styles.contactButtonText}>Contact Us</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -253,8 +295,8 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     borderWidth: 1,
     borderColor: '#dedede',
-    height: 200,
-    maxHeight: 200,
+    height: 220,
+    maxHeight: 220,
     overflow: 'hidden',
     ...shadows.sm,
   },
@@ -277,6 +319,23 @@ const styles = StyleSheet.create({
     height: 36,
     marginBottom: 4,
   },
+  categoryBadgesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginBottom: spacing.xs,
+  },
+  categoryBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
+  categoryBadgeText: {
+    ...typography.caption,
+    color: colors.white,
+    fontWeight: '600',
+    fontSize: 10,
+  },
   ratingContainer: {
     alignItems: 'flex-start',
     marginBottom: spacing.xs,
@@ -290,7 +349,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   imageSection: {
-    width: 130,
+    width: 155,
     position: 'relative',
   },
   imageContainer: {
@@ -327,8 +386,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 20,
   },
-  // Locked recipe styles
-  lockedOverlay: {
+  // Valid recipe styles
+  errorOverlay: {
     width: '100%',
     height: '100%',
     backgroundColor: '#4caf50',
@@ -336,24 +395,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.sm,
   },
-  lockedText: {
-    ...typography.bodySmall,
-    color: colors.white,
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  lockedTextBold: {
-    fontWeight: 'bold',
-  },
-  upgradeButton: {
+  contactButton: {
     backgroundColor: colors.white,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
     borderRadius: borderRadius.sm,
     marginTop: spacing.xs,
   },
-  upgradeButtonText: {
+  contactButtonText: {
     ...typography.bodySmall,
     color: '#4caf50',
     fontWeight: 'bold',

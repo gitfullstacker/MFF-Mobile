@@ -1,38 +1,127 @@
-import { useAtom } from 'jotai';
 import { useCallback } from 'react';
+import { useAtom } from 'jotai';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   authTokenAtom,
   userAtom,
   isAuthenticatedAtom,
   addToastAtom,
   savedCredentialsAtom,
+  subscriptionStatsAtom,
+  favoriteRecipeIdsAtom,
+  activePlanAtom,
+  tokenExpirationAtom,
+  nutritionProfileAtom,
 } from '../store';
-import { authService } from '../services/auth';
-import { LoginRequest } from '../types/auth';
-import { isTokenExpired } from '../utils/tokenUtils';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useSubscription } from './useSubscription';
-import { userService } from '@/services/user';
+import { authService } from '../services/authService';
+import { userService } from '../services/userService';
+import { subscriptionService } from '../services/subscriptionService';
+import { nutritionService } from '../services/nutritionService';
+import { favoriteService } from '../services/favoriteService';
+import { planService } from '../services/planService';
+import {
+  ChangePasswordRequest,
+  ForgotPasswordRequest,
+  LoginRequest,
+  ResetPasswordRequest,
+} from '../types/auth';
+import { isTokenExpiredCombined } from '../utils/tokenUtils';
 
 export const useAuth = () => {
   const [authToken, setAuthToken] = useAtom(authTokenAtom);
   const [user, setUser] = useAtom(userAtom);
+  const [tokenExpiration, setTokenExpiration] = useAtom(tokenExpirationAtom);
   const [isAuthenticated, setIsAuthenticated] = useAtom(isAuthenticatedAtom);
-  const [, addToast] = useAtom(addToastAtom);
   const [savedCredentials, setSavedCredentials] = useAtom(savedCredentialsAtom);
-  const { fetchSubscriptionStats } = useSubscription();
+  const [, setSubscriptionStats] = useAtom(subscriptionStatsAtom);
+  const [, setNutritionProfile] = useAtom(nutritionProfileAtom);
+  const [, setFavoriteIds] = useAtom(favoriteRecipeIdsAtom);
+  const [, setActivePlan] = useAtom(activePlanAtom);
+  const [, addToast] = useAtom(addToastAtom);
+
+  const fetchAndSetSubscriptionStats = useCallback(async () => {
+    try {
+      const stats = await subscriptionService.getSubscriptionStats();
+      setSubscriptionStats(stats);
+      return stats;
+    } catch (error) {
+      if (__DEV__) {
+        console.error('Error fetching subscription stats:', error);
+      }
+      // Set default stats on error
+      setSubscriptionStats({
+        status: null,
+        name: null,
+        expire_date: null,
+        paid_date: null,
+        total_price: null,
+        subscription_id: null,
+        product_id: null,
+        allowed_category_ids: [],
+      });
+      return null;
+    }
+  }, [setSubscriptionStats]);
+
+  const fetchAndSetNutritionProfile = useCallback(async () => {
+    try {
+      const profile = await nutritionService.getProfile();
+      setNutritionProfile(profile);
+      return profile;
+    } catch (error) {
+      if (__DEV__) {
+        console.error('Error fetching nutrition profile:', error);
+      }
+      // Set default profile on error
+      setNutritionProfile(null);
+      return null;
+    }
+  }, [setNutritionProfile]);
+
+  const fetchAndSetFavoriteIds = useCallback(async () => {
+    try {
+      const favoriteIds = await favoriteService.getFavoriteIds();
+      const favoriteRecipeIds = favoriteIds.ids;
+      setFavoriteIds(favoriteRecipeIds);
+      return favoriteRecipeIds;
+    } catch (error) {
+      if (__DEV__) {
+        console.error('Error fetching favorite recipe IDs:', error);
+      }
+      setFavoriteIds([]);
+      return [];
+    }
+  }, [setFavoriteIds]);
+
+  const fetchAndSetActivePlan = useCallback(async () => {
+    try {
+      const plan = await planService.getActivePlan();
+      setActivePlan(plan);
+      return plan;
+    } catch (error) {
+      if (__DEV__) {
+        console.error('Error fetching active plan:', error);
+      }
+      setActivePlan(null);
+      return null;
+    }
+  }, [setActivePlan]);
 
   const login = useCallback(
     async (credentials: LoginRequest, rememberMe: boolean = false) => {
       try {
-        // Call login endpoint
+        console.log('🔐 Attempting login...');
         const response = await authService.login(credentials);
 
-        // Store token
-        const token = response.token;
+        console.log('✅ Login successful:', {
+          hasToken: !!response.token,
+          hasUser: !!response.user,
+          expires_at: response.expires_at,
+          expires_in: response.expires_in,
+        });
 
-        // Then update atoms
-        setAuthToken(token);
+        // Store auth data
+        setAuthToken(response.token);
         setUser(response.user);
         setIsAuthenticated(true);
 
@@ -41,15 +130,19 @@ export const useAuth = () => {
           setSavedCredentials({
             username: credentials.username,
             password: credentials.password,
-            rememberMe,
+            rememberMe: true,
           });
         } else {
-          // Clear saved credentials if remember me is turned off
           setSavedCredentials(null);
         }
 
-        // Fetch subscription stats after successful login
-        await fetchSubscriptionStats();
+        // Fetch user-specific data after successful login
+        await Promise.all([
+          fetchAndSetSubscriptionStats(),
+          fetchAndSetNutritionProfile(),
+          fetchAndSetFavoriteIds(),
+          fetchAndSetActivePlan(),
+        ]);
 
         addToast({
           message: 'Login successful!',
@@ -59,41 +152,102 @@ export const useAuth = () => {
 
         return response;
       } catch (error: any) {
-        console.error('❌ Login failed:', error);
-        setIsAuthenticated(false);
+        if (__DEV__) {
+          console.error('❌ Login failed:', error);
+        }
+
+        const errorMessage =
+          error.response?.data?.message ||
+          'Login failed. Please check your credentials and try again.';
+
         addToast({
-          message: error.response?.data?.message || 'Login failed',
+          message: errorMessage,
           type: 'error',
           duration: 5000,
         });
+
         throw error;
       }
     },
     [
       setAuthToken,
       setUser,
+      setTokenExpiration,
       setIsAuthenticated,
       setSavedCredentials,
       addToast,
-      fetchSubscriptionStats,
+      fetchAndSetSubscriptionStats,
+      fetchAndSetNutritionProfile,
+      fetchAndSetFavoriteIds,
+      fetchAndSetActivePlan,
     ],
   );
 
   const logout = useCallback(async () => {
     try {
+      console.log('🚪 Logging out...');
+
       await AsyncStorage.removeItem('authToken');
       await AsyncStorage.removeItem('user');
 
-      setIsAuthenticated(false);
-
-      // Don't clear savedCredentials on logout if rememberMe was true
-      // This allows for quick login next time
-    } catch (error) {
+      // Clear all auth-related data
       setAuthToken(null);
       setUser(null);
+      setTokenExpiration(null);
       setIsAuthenticated(false);
+
+      // Clear all user-specific data on logout
+      setSubscriptionStats({
+        status: null,
+        name: null,
+        expire_date: null,
+        paid_date: null,
+        total_price: null,
+        subscription_id: null,
+        product_id: null,
+        allowed_category_ids: [],
+      });
+      setFavoriteIds([]);
+      setActivePlan(null);
+
+      console.log('✅ Logout successful');
+
+      addToast({
+        message: 'You have been logged out successfully.',
+        type: 'info',
+        duration: 3000,
+      });
+    } catch (error) {
+      if (__DEV__) {
+        console.error('❌ Logout error:', error);
+      }
+      setAuthToken(null);
+      setUser(null);
+      setTokenExpiration(null);
+      setIsAuthenticated(false);
+      setSubscriptionStats({
+        status: null,
+        name: null,
+        expire_date: null,
+        paid_date: null,
+        total_price: null,
+        subscription_id: null,
+        product_id: null,
+        allowed_category_ids: [],
+      });
+      setFavoriteIds([]);
+      setActivePlan(null);
     }
-  }, [setAuthToken, setUser, setIsAuthenticated]);
+  }, [
+    setAuthToken,
+    setUser,
+    setTokenExpiration,
+    setIsAuthenticated,
+    setSubscriptionStats,
+    setFavoriteIds,
+    setActivePlan,
+    addToast,
+  ]);
 
   const updateProfile = useCallback(
     async (data: any) => {
@@ -122,25 +276,133 @@ export const useAuth = () => {
 
         return updatedProfile;
       } catch (error: any) {
+        if (__DEV__) {
+          console.error('❌ Update profile failed:', error);
+        }
+
+        const errorMessage =
+          error.response?.data?.message ||
+          'Failed to update profile. Please try again.';
+
         addToast({
-          message: error.response?.data?.message || 'Failed to update profile',
+          message: errorMessage,
           type: 'error',
           duration: 5000,
         });
+
         throw error;
       }
     },
     [user, setUser, addToast],
   );
 
+  const forgotPassword = useCallback(
+    async (data: ForgotPasswordRequest) => {
+      try {
+        const response = await authService.forgotPassword(data);
+
+        addToast({
+          message: 'Password reset email sent successfully!',
+          type: 'success',
+          duration: 5000,
+        });
+
+        return response;
+      } catch (error: any) {
+        if (__DEV__) {
+          console.error('❌ Forgot password failed:', error);
+        }
+
+        const errorMessage =
+          error.response?.data?.message ||
+          'Failed to send password reset email. Please try again.';
+
+        addToast({
+          message: errorMessage,
+          type: 'error',
+          duration: 5000,
+        });
+
+        throw error;
+      }
+    },
+    [addToast],
+  );
+
+  const resetPassword = useCallback(
+    async (data: ResetPasswordRequest) => {
+      try {
+        const response = await authService.resetPassword(data);
+
+        addToast({
+          message: 'Password reset successfully!',
+          type: 'success',
+          duration: 3000,
+        });
+
+        return response;
+      } catch (error: any) {
+        if (__DEV__) {
+          console.error('❌ Reset password failed:', error);
+        }
+
+        const errorMessage =
+          error.response?.data?.message ||
+          'Failed to reset password. Please try again.';
+
+        addToast({
+          message: errorMessage,
+          type: 'error',
+          duration: 5000,
+        });
+
+        throw error;
+      }
+    },
+    [addToast],
+  );
+
+  const changePassword = useCallback(
+    async (data: ChangePasswordRequest) => {
+      try {
+        const response = await authService.changePassword(data);
+
+        addToast({
+          message: 'Password changed successfully!',
+          type: 'success',
+          duration: 3000,
+        });
+
+        return response;
+      } catch (error: any) {
+        if (__DEV__) {
+          console.error('❌ Change password failed:', error);
+        }
+
+        const errorMessage =
+          error.response?.data?.message ||
+          'Failed to change password. Please try again.';
+
+        addToast({
+          message: errorMessage,
+          type: 'error',
+          duration: 5000,
+        });
+
+        throw error;
+      }
+    },
+    [addToast],
+  );
+
   const checkAuthStatus = useCallback(async () => {
     try {
       if (authToken && user) {
         // Check if token is expired
-        if (isTokenExpired(authToken)) {
+        if (isTokenExpiredCombined(authToken, tokenExpiration)) {
           console.log('❌ Token expired, logging out');
           await logout();
-          return;
+          return false;
         }
 
         setIsAuthenticated(true);
@@ -148,29 +410,60 @@ export const useAuth = () => {
         // Verify token is still valid by making a test request
         try {
           await userService.getProfile();
+          // Fetch user-specific data for authenticated users
+          await Promise.all([
+            fetchAndSetSubscriptionStats(),
+            fetchAndSetNutritionProfile(),
+            fetchAndSetFavoriteIds(),
+            fetchAndSetActivePlan(),
+          ]);
+          return true;
         } catch (error) {
           console.log('❌ Token is invalid, logging out');
           await logout();
+          return false;
         }
       } else {
         console.log('❌ No stored auth data found');
         setIsAuthenticated(false);
+        return false;
       }
     } catch (error) {
-      console.error('❌ Error checking auth status:', error);
+      if (__DEV__) {
+        console.error('❌ Error checking auth status:', error);
+      }
       setIsAuthenticated(false);
+      return false;
     }
-  }, [authToken, user, setIsAuthenticated, logout]);
+  }, [
+    authToken,
+    user,
+    tokenExpiration,
+    setIsAuthenticated,
+    logout,
+    fetchAndSetSubscriptionStats,
+    fetchAndSetNutritionProfile,
+    fetchAndSetFavoriteIds,
+    fetchAndSetActivePlan,
+  ]);
 
   return {
     user,
     authToken,
+    tokenExpiration,
     isAuthenticated,
     savedCredentials,
-    isTokenValid: authToken ? !isTokenExpired(authToken) : false,
+    isTokenValid: authToken
+      ? !isTokenExpiredCombined(authToken, tokenExpiration)
+      : false,
+    // Authentication functions
     login,
     logout,
     updateProfile,
     checkAuthStatus,
+    // Password reset functions
+    forgotPassword,
+    resetPassword,
+    changePassword,
   };
 };

@@ -1,92 +1,158 @@
 import 'react-native-gesture-handler';
-import React, { useEffect } from 'react';
-import { StatusBar, LogBox } from 'react-native';
+import React, { Suspense, useEffect, useRef } from 'react';
+import { Alert, Platform, StatusBar } from 'react-native';
 import { Provider, useAtom } from 'jotai';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { ToastContainer } from './src/components/feedback/Toast';
-import { ErrorBoundary } from './src/components/feedback/ErrorBoundary';
 import { LoadingOverlay } from './src/components/feedback/LoadingOverlay';
-import { colors } from './src/theme';
-import { useAuth } from './src/hooks/useAuth';
 import { setupIcons } from '@/utils/iconSetup';
 import { eventBus } from '@/utils/eventBus';
 import { isAuthenticatedAtom, addToastAtom } from '@/store';
-
-// Ignore specific warnings
-LogBox.ignoreLogs([
-  'useInsertionEffect',
-  'ReactDOM.render is no longer supported',
-]);
+import { NavigationContainerRef } from '@react-navigation/native';
+import { RootStackParamList } from '@/types';
+import { useSubscriptionStatusChecker } from '@/hooks/useSubscriptionStatusChecker';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AppErrorBoundary } from '@/components/feedback/AppErrorBoundary';
 
 const AppContent: React.FC = () => {
-  const { checkAuthStatus } = useAuth();
   const [, setIsAuthenticated] = useAtom(isAuthenticatedAtom);
   const [, addToast] = useAtom(addToastAtom);
-  const [loading, setLoading] = React.useState(true);
+  const navigationRef =
+    useRef<NavigationContainerRef<RootStackParamList>>(null);
+
+  // Initialize subscription status checker with 10-minute intervals
+  const { performCheck, forceCheck, getDebugInfo, isChecking } =
+    useSubscriptionStatusChecker({
+      intervalMinutes: 10, // Check every 10 minutes
+      enableLogs: __DEV__, // Enable debug logs only in development
+      checkOnAppForeground: true, // Check when app comes to foreground
+      checkOnAuthentication: true, // Check when user authenticates
+    });
 
   useEffect(() => {
-    // Handle authentication errors (e.g., expired tokens)
-    const authErrorListener = (message: string) => {
-      // Display error message to user
-      addToast({
-        message: message || 'Session expired. Please log in again.',
-        type: 'error',
-        duration: 5000,
-      });
+    const authErrorListener = async (message: string) => {
+      try {
+        console.log('🔐 Auth error received:', message);
 
-      // Update authentication state to trigger navigation to login
-      setIsAuthenticated(false);
+        addToast({
+          message: message || 'Please log in again.',
+          type: 'error',
+          duration: 5000,
+        });
+
+        setIsAuthenticated(false);
+      } catch (error) {
+        console.error('Error handling auth error:', error);
+        // Fallback: directly set auth state
+        setIsAuthenticated(false);
+      }
     };
 
-    // Register event listener
-    eventBus.on('AUTH_ERROR', authErrorListener);
+    const subscriptionUpdateListener = (status: string) => {
+      try {
+        if (__DEV__) {
+          console.log('📱 Subscription status updated:', status);
+        }
 
-    // Clean up event listener on unmount
+        if (status === 'expired') {
+          addToast({
+            message: 'Your subscription has expired. Please renew to continue.',
+            type: 'warning',
+            duration: 8000,
+          });
+        }
+      } catch (error) {
+        console.error('Error handling subscription update:', error);
+      }
+    };
+
+    const networkErrorListener = (message: string) => {
+      try {
+        addToast({
+          message: message || 'Network connection issue. Please try again.',
+          type: 'error',
+          duration: 4000,
+        });
+      } catch (error) {
+        console.error('Error handling network error:', error);
+      }
+    };
+
+    // Register listeners with error handling
+    try {
+      eventBus.on('AUTH_ERROR', authErrorListener);
+      eventBus.on('SUBSCRIPTION_UPDATED', subscriptionUpdateListener);
+      eventBus.on('NETWORK_ERROR', networkErrorListener);
+    } catch (error) {
+      console.error('Failed to register event bus listeners:', error);
+    }
+
     return () => {
-      eventBus.off('AUTH_ERROR', authErrorListener);
+      try {
+        eventBus.off('AUTH_ERROR', authErrorListener);
+        eventBus.off('SUBSCRIPTION_UPDATED', subscriptionUpdateListener);
+        eventBus.off('NETWORK_ERROR', networkErrorListener);
+      } catch (error) {
+        console.error('Failed to unregister event bus listeners:', error);
+      }
     };
   }, [setIsAuthenticated, addToast]);
 
   useEffect(() => {
     const initialize = async () => {
       try {
-        // Setup icons
         await setupIcons();
-
-        // Check auth status
-        await checkAuthStatus();
+        console.log('✅ App initialization completed');
       } catch (error) {
-        console.error('Error initializing app:', error);
-      } finally {
-        setLoading(false);
+        if (__DEV__) {
+          console.error('❌ Error initializing app:', error);
+        }
       }
     };
 
     initialize();
   }, []);
 
-  if (loading) {
-    return <LoadingOverlay visible={true} message="Loading..." />;
-  }
+  // Add development helper functions
+  useEffect(() => {
+    if (__DEV__) {
+      // Make subscription checker functions available globally for debugging
+      (global as any).subscriptionChecker = {
+        forceCheck,
+        getDebugInfo,
+        performCheck,
+        isChecking,
+      };
+
+      console.log(
+        '🛠️ Development: Subscription checker methods available globally',
+      );
+      console.log('Usage: global.subscriptionChecker.forceCheck()');
+      console.log('Check status: global.subscriptionChecker.isChecking');
+    }
+  }, [forceCheck, getDebugInfo, performCheck, isChecking]);
 
   return (
-    <>
+    <SafeAreaProvider>
       <StatusBar
         barStyle="dark-content"
-        backgroundColor={colors.background.light}
+        backgroundColor="transparent"
+        translucent={Platform.OS === 'android'}
       />
-      <AppNavigator />
+      <AppNavigator navigationRef={navigationRef} />
       <ToastContainer />
-    </>
+    </SafeAreaProvider>
   );
 };
 
 const App: React.FC = () => {
   return (
     <Provider>
-      <ErrorBoundary>
-        <AppContent />
-      </ErrorBoundary>
+      <AppErrorBoundary>
+        <Suspense fallback={<LoadingOverlay message="Loading..." />}>
+          <AppContent />
+        </Suspense>
+      </AppErrorBoundary>
     </Provider>
   );
 };

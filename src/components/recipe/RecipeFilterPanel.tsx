@@ -6,10 +6,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   Switch,
+  Alert,
+  TextInput,
 } from 'react-native';
 import { RangeSlider } from 'react-native-product-sliders';
 import Icon from 'react-native-vector-icons/Feather';
 import { Button } from '../forms/Button';
+import { useNutrition } from '../../hooks/useNutrition';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { RecipeFilters } from '../../types/recipe';
 import { RECIPE_CATEGORIES } from '@/constants';
@@ -25,6 +28,28 @@ const SORT_OPTIONS = [
   { id: 'oldest', name: 'Oldest' },
   { id: 'timeAsc', name: 'Cooking Time (Low to High)' },
   { id: 'timeDesc', name: 'Cooking Time (High to Low)' },
+  { id: 'ratingAsc', name: 'Rating (Low to High)' },
+  { id: 'ratingDesc', name: 'Rating (High to Low)' },
+];
+
+// Generate year options (current year and previous 10 years)
+const currentYear = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: 11 }, (_, i) => currentYear - i);
+
+// Month options
+const MONTH_OPTIONS = [
+  { value: 1, label: 'January' },
+  { value: 2, label: 'February' },
+  { value: 3, label: 'March' },
+  { value: 4, label: 'April' },
+  { value: 5, label: 'May' },
+  { value: 6, label: 'June' },
+  { value: 7, label: 'July' },
+  { value: 8, label: 'August' },
+  { value: 9, label: 'September' },
+  { value: 10, label: 'October' },
+  { value: 11, label: 'November' },
+  { value: 12, label: 'December' },
 ];
 
 interface RecipeFilterPanelProps {
@@ -36,33 +61,22 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
   filters,
   onApply,
 }) => {
+  const { nutritionProfile } = useNutrition();
   const [localFilters, setLocalFilters] = useState<RecipeFilters>(filters);
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [ingredientInput, setIngredientInput] = useState('');
 
   useEffect(() => {
     setLocalFilters(filters);
-    setShowFavoritesOnly(!!filters.favorites);
   }, [filters]);
 
   const handleReset = useCallback(() => {
-    const resetFilters = {};
-    setLocalFilters(resetFilters);
-    setShowFavoritesOnly(false);
-
-    onApply({});
-  }, []);
+    setLocalFilters({ sort: 'newest' });
+    onApply({ sort: 'newest' });
+  }, [onApply]);
 
   const handleApply = useCallback(() => {
-    const updatedFilters = { ...localFilters };
-
-    if (showFavoritesOnly) {
-      updatedFilters.favorites = true;
-    } else {
-      updatedFilters.favorites = undefined;
-    }
-
-    onApply(updatedFilters);
-  }, [localFilters, showFavoritesOnly, onApply]);
+    onApply(localFilters);
+  }, [localFilters, onApply]);
 
   const updateFilter = useCallback(
     (key: keyof RecipeFilters, value: any) => {
@@ -74,6 +88,90 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
     },
     [localFilters],
   );
+
+  const handleAddIngredient = useCallback(() => {
+    const trimmedIngredient = ingredientInput.trim();
+    if (!trimmedIngredient) return;
+
+    const currentIngredients = localFilters.ingredients || [];
+
+    // Check if ingredient already exists (case-insensitive)
+    const exists = currentIngredients.some(
+      ing => ing.toLowerCase() === trimmedIngredient.toLowerCase(),
+    );
+
+    if (exists) {
+      Alert.alert('Duplicate', 'This ingredient is already in the list');
+      return;
+    }
+
+    const newIngredients = [...currentIngredients, trimmedIngredient];
+    updateFilter('ingredients', newIngredients);
+    setIngredientInput('');
+  }, [ingredientInput, localFilters.ingredients, updateFilter]);
+
+  // Remove ingredient from the list
+  const handleRemoveIngredient = useCallback(
+    (ingredientToRemove: string) => {
+      const currentIngredients = localFilters.ingredients || [];
+      const newIngredients = currentIngredients.filter(
+        ing => ing !== ingredientToRemove,
+      );
+      updateFilter(
+        'ingredients',
+        newIngredients.length > 0 ? newIngredients : undefined,
+      );
+    },
+    [localFilters.ingredients, updateFilter],
+  );
+
+  const handleUseProfileMacros = useCallback(() => {
+    if (!nutritionProfile) {
+      Alert.alert(
+        'No Nutrition Profile',
+        'Please create a nutrition profile first to use this feature.',
+        [{ text: 'OK' }],
+      );
+      return;
+    }
+
+    // Check if target macros exist
+    const targetMacros = nutritionProfile.targetMacros;
+
+    if (!targetMacros) {
+      Alert.alert(
+        'No Macros Available',
+        'Your nutrition profile does not have macro targets set.',
+        [{ text: 'OK' }],
+      );
+      return;
+    }
+
+    // Get meals per day from activity goals, default to 3 if not set
+    const mealsPerDay = nutritionProfile.activityGoals?.mealsPerDay || 3;
+
+    // Calculate per-meal targets by dividing daily macros by meals per day
+    const proteinPerMeal = Math.ceil(targetMacros.protein / mealsPerDay);
+    const carbsPerMeal = Math.ceil(targetMacros.carbohydrates / mealsPerDay);
+    const fatPerMeal = Math.ceil(targetMacros.fats / mealsPerDay);
+
+    // Set only max values to per-meal targets, keep min at undefined (defaults to 0)
+    setLocalFilters(prev => ({
+      ...prev,
+      proteinMin: undefined,
+      proteinMax: proteinPerMeal,
+      carbsMin: undefined,
+      carbsMax: carbsPerMeal,
+      fatMin: undefined,
+      fatMax: fatPerMeal,
+    }));
+
+    Alert.alert(
+      'Profile Macros Applied',
+      `Per-meal targets (${mealsPerDay} meals/day):\nProtein: ${proteinPerMeal}g\nCarbs: ${carbsPerMeal}g\nFat: ${fatPerMeal}g`,
+      [{ text: 'OK' }],
+    );
+  }, [nutritionProfile]);
 
   const toggleCategorySelection = useCallback(
     (category: string) => {
@@ -220,32 +318,159 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
     [localFilters],
   );
 
+  const renderYearSelector = useCallback(() => {
+    return (
+      <View>
+        <View style={styles.chipContainer}>
+          <TouchableOpacity
+            style={[styles.chip, !localFilters.year && styles.chipSelected]}
+            onPress={() => updateFilter('year', undefined)}>
+            <Text
+              style={[
+                styles.chipText,
+                !localFilters.year && styles.chipTextSelected,
+              ]}>
+              All Years
+            </Text>
+          </TouchableOpacity>
+          {YEAR_OPTIONS.map(year => (
+            <TouchableOpacity
+              key={year}
+              style={[
+                styles.chip,
+                localFilters.year === year && styles.chipSelected,
+              ]}
+              onPress={() => updateFilter('year', year)}>
+              <Text
+                style={[
+                  styles.chipText,
+                  localFilters.year === year && styles.chipTextSelected,
+                ]}>
+                {year}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    );
+  }, [localFilters.year, updateFilter]);
+
+  const renderMonthSelector = useCallback(() => {
+    return (
+      <View>
+        <View style={styles.chipContainer}>
+          <TouchableOpacity
+            style={[styles.chip, !localFilters.month && styles.chipSelected]}
+            onPress={() => updateFilter('month', undefined)}>
+            <Text
+              style={[
+                styles.chipText,
+                !localFilters.month && styles.chipTextSelected,
+              ]}>
+              All Months
+            </Text>
+          </TouchableOpacity>
+          {MONTH_OPTIONS.map(month => (
+            <TouchableOpacity
+              key={month.value}
+              style={[
+                styles.chip,
+                localFilters.month === month.value && styles.chipSelected,
+              ]}
+              onPress={() => updateFilter('month', month.value)}>
+              <Text
+                style={[
+                  styles.chipText,
+                  localFilters.month === month.value && styles.chipTextSelected,
+                ]}>
+                {month.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    );
+  }, [localFilters.month, updateFilter]);
+
   return (
     <View style={styles.container}>
-      {/* Action Buttons at the top */}
+      {/* Header with action buttons */}
       <View style={styles.header}>
         <Button
           title="Reset"
           onPress={handleReset}
           variant="outline"
-          size="small"
           style={styles.resetButton}
-          icon={<Icon name="refresh-cw" size={16} color={colors.primary} />}
+          icon={<Icon name="rotate-ccw" size={16} color={colors.primary} />}
         />
         <Button
           title="Apply Filters"
           onPress={handleApply}
-          size="small"
-          variant="primary"
           style={styles.applyButton}
           icon={<Icon name="check" size={16} color={colors.white} />}
         />
       </View>
 
-      <ScrollView
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Search by Ingredients */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Search by Ingredients</Text>
+          <View style={styles.ingredientInputContainer}>
+            <TextInput
+              style={styles.ingredientInput}
+              placeholder="e.g., chicken, tomatoes, garlic"
+              value={ingredientInput}
+              onChangeText={setIngredientInput}
+              onSubmitEditing={handleAddIngredient}
+              returnKeyType="done"
+            />
+            <TouchableOpacity
+              style={styles.addIngredientButton}
+              onPress={handleAddIngredient}
+              disabled={!ingredientInput.trim()}>
+              <Icon
+                name="plus"
+                size={20}
+                color={
+                  ingredientInput.trim() ? colors.primary : colors.gray[400]
+                }
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Display ingredient chips */}
+          {localFilters.ingredients && localFilters.ingredients.length > 0 && (
+            <View style={styles.ingredientChipsContainer}>
+              {localFilters.ingredients.map((ingredient, index) => (
+                <View key={index} style={styles.ingredientChip}>
+                  <Text style={styles.ingredientChipText}>{ingredient}</Text>
+                  <TouchableOpacity
+                    onPress={() => handleRemoveIngredient(ingredient)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Icon name="x" size={16} color={colors.white} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <Text style={styles.ingredientHint}>
+            Add multiple ingredients to find recipes that contain all of them
+          </Text>
+        </View>
+
+        {/* Filter by Year */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Filter by Year</Text>
+          {renderYearSelector()}
+        </View>
+
+        {/* Month Filter */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Filter by Month</Text>
+          {renderMonthSelector()}
+        </View>
+
         {/* Recipe Categories */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Meal Type</Text>
@@ -254,10 +479,69 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
 
         {/* Nutrition Ranges */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Nutrition</Text>
-          {renderSlider('Protein', 'proteinMin', 'proteinMax', [0, 50])}
-          {renderSlider('Carbs', 'carbsMin', 'carbsMax', [0, 70])}
-          {renderSlider('Fat', 'fatMin', 'fatMax', [0, 50])}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Nutrition</Text>
+            <TouchableOpacity
+              style={styles.profileMacrosButton}
+              onPress={handleUseProfileMacros}
+              disabled={!nutritionProfile}>
+              <Icon
+                name="activity"
+                size={16}
+                color={nutritionProfile ? colors.primary : colors.gray[400]}
+              />
+              <Text
+                style={[
+                  styles.profileMacrosText,
+                  !nutritionProfile && styles.profileMacrosTextDisabled,
+                ]}>
+                Use Profile Macros
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {renderSlider('Protein', 'proteinMin', 'proteinMax', [0, 100])}
+          {renderSlider('Carbs', 'carbsMin', 'carbsMax', [0, 150])}
+          {renderSlider('Fat', 'fatMin', 'fatMax', [0, 100])}
+        </View>
+
+        {/* Dietary Preferences Toggle */}
+        <View style={styles.section}>
+          <View style={styles.dietaryPreferencesContainer}>
+            <View style={styles.dietaryPreferencesContent}>
+              <Icon
+                name="shield"
+                size={20}
+                color={
+                  localFilters.useDietaryPreferences
+                    ? colors.primary
+                    : colors.text.secondary
+                }
+              />
+              <View style={styles.dietaryPreferencesTextContainer}>
+                <Text style={styles.dietaryPreferencesTitle}>
+                  Use Dietary Preferences
+                </Text>
+                <Text style={styles.dietaryPreferencesSubtitle}>
+                  Filter recipes based on your dietary preferences
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={localFilters.useDietaryPreferences || false}
+              onValueChange={value =>
+                updateFilter('useDietaryPreferences', value ? true : undefined)
+              }
+              trackColor={{
+                false: colors.gray[300],
+                true: colors.primary + '60',
+              }}
+              thumbColor={
+                localFilters.useDietaryPreferences
+                  ? colors.primary
+                  : colors.gray[50]
+              }
+            />
+          </View>
         </View>
 
         {/* Time Range */}
@@ -270,28 +554,6 @@ export const RecipeFilterPanel: React.FC<RecipeFilterPanelProps> = ({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Sort By</Text>
           {renderSortOptions()}
-        </View>
-
-        {/* Favorites Switch */}
-        <View style={styles.switchSection}>
-          <View style={styles.switchLabelContainer}>
-            <Icon
-              name="heart"
-              size={18}
-              color={colors.primary}
-              style={styles.switchIcon}
-            />
-            <Text style={styles.switchLabel}>Show favorites only</Text>
-          </View>
-          <Switch
-            value={showFavoritesOnly}
-            onValueChange={setShowFavoritesOnly}
-            trackColor={{
-              false: colors.gray[300],
-              true: colors.primary + '70',
-            }}
-            thumbColor={showFavoritesOnly ? colors.primary : colors.gray[100]}
-          />
         </View>
       </ScrollView>
     </View>
@@ -321,11 +583,65 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border.light,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
   sectionTitle: {
     ...typography.h6,
     color: colors.text.primary,
     marginBottom: spacing.md,
     fontWeight: typography.fontWeights.semibold,
+  },
+  profileMacrosButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary + '10',
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+  },
+  profileMacrosText: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontWeight: typography.fontWeights.medium,
+    marginLeft: spacing.xs,
+  },
+  profileMacrosTextDisabled: {
+    color: colors.gray[400],
+  },
+  dietaryPreferencesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.gray[50],
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border.light,
+  },
+  dietaryPreferencesContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  dietaryPreferencesTextContainer: {
+    marginLeft: spacing.sm,
+    flex: 1,
+  },
+  dietaryPreferencesTitle: {
+    ...typography.bodyRegular,
+    fontWeight: typography.fontWeights.semibold,
+    color: colors.text.primary,
+    marginBottom: 2,
+  },
+  dietaryPreferencesSubtitle: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
   },
   chipContainer: {
     flexDirection: 'row',
@@ -431,30 +747,57 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: typography.fontWeights.medium,
   },
-  switchSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
-  },
-  switchLabelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  switchIcon: {
-    marginRight: spacing.sm,
-  },
-  switchLabel: {
-    ...typography.bodyRegular,
-    color: colors.text.primary,
-    fontWeight: typography.fontWeights.medium,
-  },
   resetButton: {
     flex: 1,
   },
   applyButton: {
     flex: 2,
+  },
+  ingredientInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.gray[50],
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    paddingHorizontal: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  ingredientInput: {
+    flex: 1,
+    ...typography.bodyRegular,
+    color: colors.text.primary,
+    paddingVertical: spacing.sm,
+  },
+  addIngredientButton: {
+    padding: spacing.xs,
+  },
+  ingredientChipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+    gap: spacing.xs,
+  },
+  ingredientChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.xs,
+    paddingLeft: spacing.sm,
+    paddingRight: spacing.xs,
+    gap: spacing.xs,
+  },
+  ingredientChipText: {
+    ...typography.bodySmall,
+    color: colors.white,
+    fontWeight: typography.fontWeights.medium,
+  },
+  ingredientHint: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+    fontStyle: 'italic',
   },
 });

@@ -3,59 +3,83 @@ import { useAtom } from 'jotai';
 import {
   recipesAtom,
   selectedRecipeAtom,
-  recipeFiltersAtom,
   favoriteRecipeIdsAtom,
   addToastAtom,
+  recipeFiltersAtom,
 } from '../store';
-import { recipeService } from '../services/recipe';
-import { favoriteService } from '../services/favorite';
-import { RecipeFilters } from '../types/recipe';
+import { recipeService } from '../services/recipeService';
+import { Recipe, RecipeFilters } from '../types/recipe';
 
 export const useRecipes = () => {
   const [recipes, setRecipes] = useAtom(recipesAtom);
   const [selectedRecipe, setSelectedRecipe] = useAtom(selectedRecipeAtom);
   const [filters, setFilters] = useAtom(recipeFiltersAtom);
-  const [favoriteIds, setFavoriteIds] = useAtom(favoriteRecipeIdsAtom);
+  const [favoriteIds] = useAtom(favoriteRecipeIdsAtom);
   const [, addToast] = useAtom(addToastAtom);
 
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchRecipes = useCallback(
-    async (appliedFilters?: RecipeFilters, reset = false) => {
-      if (loading || (!hasMore && !reset)) return;
+    async (appliedFilters?: RecipeFilters | null, reset = false) => {
+      if (loading && !reset && !refreshing) return;
 
       try {
         setLoading(true);
-        const currentPage = reset ? 0 : page;
+        const currentPage = reset ? 0 : page + 1;
+        const filtersToUse = appliedFilters || filters;
 
         const response = await recipeService.getRecipes({
-          ...filters,
-          ...appliedFilters,
+          ...filtersToUse,
           page: currentPage,
-          pageSize: 20,
+          pageSize: 18,
         });
 
+        // Sync favorite status with global state
+        const recipesWithFavoriteStatus = response.data.map(
+          (recipe: Recipe) => ({
+            ...recipe,
+            is_favorite: favoriteIds.includes(recipe._id),
+          }),
+        );
+
         if (reset) {
-          setRecipes(response.data);
+          setRecipes(recipesWithFavoriteStatus);
+          setPage(0);
         } else {
-          setRecipes([...recipes, ...response.data]);
+          // Prevent duplicates
+          const existingIds = new Set(recipes.map(r => r._id));
+          const newRecipes = recipesWithFavoriteStatus.filter(
+            (recipe: Recipe) => !existingIds.has(recipe._id),
+          );
+          setRecipes(prev => [...prev, ...newRecipes]);
+          setPage(currentPage);
         }
 
         setHasMore(response.hasMore);
-        setPage(currentPage + 1);
       } catch (error: any) {
         addToast({
           message: error.response?.data?.message || 'Failed to fetch recipes',
           type: 'error',
           duration: 5000,
         });
+        setHasMore(false);
       } finally {
         setLoading(false);
       }
     },
-    [recipes, filters, page, hasMore, loading, setRecipes, addToast],
+    [
+      recipes,
+      filters,
+      page,
+      loading,
+      refreshing,
+      setRecipes,
+      addToast,
+      favoriteIds,
+    ],
   );
 
   const fetchRecipe = useCallback(
@@ -63,8 +87,15 @@ export const useRecipes = () => {
       try {
         setLoading(true);
         const recipe = await recipeService.getRecipe(slug);
-        setSelectedRecipe(recipe);
-        return recipe;
+
+        // Sync favorite status with global state
+        const recipeWithFavoriteStatus = {
+          ...recipe,
+          is_favorite: favoriteIds.includes(recipe._id),
+        };
+
+        setSelectedRecipe(recipeWithFavoriteStatus);
+        return recipeWithFavoriteStatus;
       } catch (error: any) {
         addToast({
           message: error.response?.data?.message || 'Failed to fetch recipe',
@@ -76,77 +107,22 @@ export const useRecipes = () => {
         setLoading(false);
       }
     },
-    [setSelectedRecipe, addToast],
+    [setSelectedRecipe, addToast, favoriteIds],
   );
 
-  const toggleFavorite = useCallback(
-    async (recipeId: string) => {
-      try {
-        const { isFavorite } = await favoriteService.toggleFavorite(recipeId);
+  const loadMoreRecipes = useCallback(() => {
+    if (!loading && hasMore) {
+      fetchRecipes();
+    }
+  }, [loading, hasMore, fetchRecipes]);
 
-        if (isFavorite) {
-          setFavoriteIds([...favoriteIds, recipeId]);
-        } else {
-          setFavoriteIds(favoriteIds.filter(id => id !== recipeId));
-        }
-
-        // Update the recipe in the list
-        setRecipes(
-          recipes.map(recipe =>
-            recipe._id === recipeId
-              ? { ...recipe, is_favorite: isFavorite }
-              : recipe,
-          ),
-        );
-
-        // Update selected recipe if it's the same
-        if (selectedRecipe?._id === recipeId) {
-          setSelectedRecipe({ ...selectedRecipe, is_favorite: isFavorite });
-        }
-
-        addToast({
-          message: isFavorite ? 'Added to favorites' : 'Removed from favorites',
-          type: 'success',
-          duration: 3000,
-        });
-      } catch (error: any) {
-        addToast({
-          message: error.response?.data?.message || 'Failed to update favorite',
-          type: 'error',
-          duration: 5000,
-        });
-      }
+  const refreshRecipes = useCallback(
+    async (appliedFilters?: RecipeFilters) => {
+      setRefreshing(true);
+      await fetchRecipes(appliedFilters || filters, true);
+      setRefreshing(false);
     },
-    [
-      recipes,
-      selectedRecipe,
-      favoriteIds,
-      setRecipes,
-      setSelectedRecipe,
-      setFavoriteIds,
-      addToast,
-    ],
-  );
-
-  const searchRecipes = useCallback(
-    async (query: string) => {
-      try {
-        setLoading(true);
-        const response = await recipeService.searchRecipes(query);
-        setRecipes(response.data);
-        setHasMore(response.hasMore);
-        setPage(1);
-      } catch (error: any) {
-        addToast({
-          message: error.response?.data?.message || 'Search failed',
-          type: 'error',
-          duration: 5000,
-        });
-      } finally {
-        setLoading(false);
-      }
-    },
-    [setRecipes, addToast],
+    [fetchRecipes, filters],
   );
 
   const applyFilters = useCallback(
@@ -161,13 +137,13 @@ export const useRecipes = () => {
     recipes,
     selectedRecipe,
     filters,
-    favoriteIds,
     loading,
+    refreshing,
     hasMore,
     fetchRecipes,
     fetchRecipe,
-    toggleFavorite,
-    searchRecipes,
+    loadMoreRecipes,
+    refreshRecipes,
     applyFilters,
   };
 };

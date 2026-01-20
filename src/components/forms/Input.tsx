@@ -165,34 +165,40 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     backgroundColor: colors.white,
     minHeight: 48,
+    paddingHorizontal: spacing.md,
   },
   multilineContainer: {
     alignItems: 'flex-start',
     minHeight: 100,
     paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   disabledContainer: {
     backgroundColor: colors.gray[50],
   },
   iconContainer: {
     padding: spacing.sm,
+    marginHorizontal: -spacing.xs, // Adjust for proper icon spacing
   },
   input: {
     flex: 1,
     ...typography.bodyRegular,
     color: colors.text.primary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    minHeight: 20, // Minimum height for text
+    paddingVertical: 0, // Remove default padding
+    paddingHorizontal: 0, // Remove default padding since container handles it
   },
   inputWithLeftIcon: {
-    paddingLeft: 0,
+    marginLeft: spacing.sm,
   },
   inputWithRightIcon: {
-    paddingRight: 0,
+    marginRight: spacing.sm,
   },
   multilineInput: {
-    paddingTop: spacing.sm,
-    height: '100%',
+    textAlignVertical: 'top',
+    paddingTop: spacing.xs, // Small top padding for multiline
+    paddingBottom: spacing.xs, // Small bottom padding for multiline
+    minHeight: 80, // Ensure adequate height for multiline
   },
   errorText: {
     ...typography.bodySmall,

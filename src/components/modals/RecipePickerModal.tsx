@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { RecipeFilterPanel } from '../recipe/RecipeFilterPanel';
 import { colors, typography, spacing } from '../../theme';
 import { Recipe, RecipeFilters } from '../../types/recipe';
 import { useRecipes } from '../../hooks/useRecipes';
+import { getFilterCount } from '@/utils/recipeUtils';
 
 interface RecipePickerModalProps {
   visible: boolean;
@@ -30,14 +31,8 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const {
-    recipes,
-    filters,
-    loading,
-    searchRecipes,
-    fetchRecipes,
-    applyFilters,
-  } = useRecipes();
+  const { recipes, filters, loading, fetchRecipes, applyFilters } =
+    useRecipes();
 
   useEffect(() => {
     if (visible) {
@@ -47,19 +42,23 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
 
   const loadRecipes = () => {
     if (searchQuery.trim()) {
-      searchRecipes(searchQuery);
+      const newFilters: RecipeFilters = {
+        ...filters,
+        search: searchQuery.trim(),
+      };
+      applyFilters(newFilters);
     } else {
       fetchRecipes(filters, true);
     }
   };
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      searchRecipes(searchQuery);
-    } else {
-      fetchRecipes(filters, true);
-    }
-  };
+  const handleSearch = useCallback(() => {
+    const newFilters: RecipeFilters = {
+      ...filters,
+      search: searchQuery.trim() || undefined,
+    };
+    applyFilters(newFilters);
+  }, [searchQuery, filters, applyFilters]);
 
   const handleApplyFilters = (newFilters: RecipeFilters) => {
     applyFilters(newFilters);
@@ -70,21 +69,11 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
     setShowFilters(!showFilters);
   };
 
-  const getFilterCount = () => {
-    let count = 0;
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        count++;
-      }
-    });
-    return count;
-  };
-
   const isSelected = (recipe: Recipe) => {
     return selectedRecipes.some(r => r._id === recipe._id);
   };
 
-  const filterCount = getFilterCount();
+  const filterCount = getFilterCount(filters);
 
   if (showFilters) {
     return (
@@ -118,6 +107,13 @@ export const RecipePickerModal: React.FC<RecipePickerModalProps> = ({
             value={searchQuery}
             onChangeText={setSearchQuery}
             leftIcon="search"
+            rightIcon={searchQuery ? 'x' : undefined}
+            onRightIconPress={() => {
+              setSearchQuery('');
+              const newFilters = { ...filters };
+              delete newFilters.search;
+              applyFilters(newFilters);
+            }}
             onSubmitEditing={handleSearch}
             returnKeyType="search"
             containerStyle={styles.searchInput}

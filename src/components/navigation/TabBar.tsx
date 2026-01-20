@@ -9,22 +9,35 @@ import {
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, typography, spacing, shadows } from '../../theme';
+import { TAB_BAR_CONFIG } from '../../constants/navigation';
+import { useNavigationHelpers } from '@/hooks/useNavigation';
+import { MainTabParamList } from '@/types';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export const TabBar: React.FC<BottomTabBarProps> = ({
   state,
   descriptors,
   navigation,
 }) => {
-  const tabIcons: { [key: string]: string } = {
-    Dashboard: 'home',
-    Recipes: 'book',
-    'Meal Plans': 'calendar',
-    Favorites: 'heart',
-    Account: 'user',
-  };
+  const { navigateToMainTab } = useNavigationHelpers();
+  const insets = useSafeAreaInsets();
+
+  // Calculate proper bottom padding for Android
+  const height = Platform.select({
+    ios: 80,
+    android: insets.bottom > 30 ? 90 : 70,
+  });
+  const bottomPadding = Platform.select({
+    ios: 24,
+    android: insets.bottom,
+  });
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { height: height, paddingBottom: bottomPadding },
+      ]}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const label =
@@ -35,7 +48,10 @@ export const TabBar: React.FC<BottomTabBarProps> = ({
             : route.name;
 
         const isFocused = state.index === index;
-        const icon = tabIcons[route.name] || 'circle';
+        // Type-safe icon lookup with fallback
+        const icon =
+          (TAB_BAR_CONFIG.ICONS as Record<string, string>)[route.name] ||
+          'circle';
 
         const onPress = () => {
           const event = navigation.emit({
@@ -45,7 +61,7 @@ export const TabBar: React.FC<BottomTabBarProps> = ({
           });
 
           if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
+            navigateToMainTab(route.name as keyof MainTabParamList);
           }
         };
 
@@ -88,8 +104,6 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     backgroundColor: colors.white,
-    height: Platform.OS === 'ios' ? 80 : 64,
-    paddingBottom: Platform.OS === 'ios' ? 24 : spacing.xs,
     ...shadows.sm,
   },
   tab: {

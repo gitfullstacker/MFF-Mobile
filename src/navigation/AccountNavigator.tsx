@@ -1,71 +1,35 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import { View, Text, StyleSheet } from 'react-native';
-import { AccountStackParamList } from './types';
-import AccountScreen from '../screens/main/AccountScreen';
-import ProfileScreen from '../screens/main/ProfileScreen';
-import PreferencesScreen from '../screens/main/PreferencesScreen';
-import SubscriptionScreen from '../screens/main/SubscriptionScreen';
-import DownloadsScreen from '../screens/main/DownloadsScreen';
-import SupportScreen from '../screens/main/SupportScreen';
-import TicketsScreen from '../screens/main/TicketsScreen';
-import CreateTicketScreen from '../screens/main/CreateTicketScreen';
-import AboutScreen from '../screens/main/AboutScreen';
-import { PageContainer } from '../components/layout/PageContainer';
-import { Header } from '../components/navigation/Header';
-import { colors, typography, spacing } from '../theme';
-
-// Temporary placeholder component for screens not yet created
-const PlaceholderScreen: React.FC<{ title: string }> = ({ title }) => {
-  return (
-    <PageContainer safeArea={false}>
-      <Header title={title} showBack={true} />
-      <View style={styles.container}>
-        <Text style={styles.text}>This screen is coming soon!</Text>
-      </View>
-    </PageContainer>
-  );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-  },
-  text: {
-    ...typography.h5,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-});
-
-// Placeholder screens for features not yet implemented
-const TicketDetailScreen = () => <PlaceholderScreen title="Ticket Details" />;
-const PrivacyScreen = () => <PlaceholderScreen title="Privacy Policy" />;
-const TermsScreen = () => <PlaceholderScreen title="Terms of Service" />;
+import { AccountStackParamList } from '../types/navigation';
+import { SCREEN_NAMES, NAVIGATION_OPTIONS } from '../constants/navigation';
+import AccountScreen from '../screens/account/AccountScreen';
+import ProfileScreen from '../screens/account/ProfileScreen';
+import DownloadsScreen from '../screens/account/DownloadsScreen';
+import TicketListScreen from '../screens/support/TicketListScreen';
+import TicketCreateScreen from '../screens/support/TicketCreateScreen';
+import AboutScreen from '../screens/account/AboutScreen';
+import PrivacyScreen from '@/screens/account/PrivacyScreen';
+import TermsScreen from '@/screens/account/TermsScreen';
+import TicketDetailScreen from '@/screens/support/TicketDetailScreen';
+import NutritionScreen from '@/screens/account/NutritionScreen';
+import DietaryPreferencesScreen from '@/screens/account/DietaryPreferencesScreen';
 
 const Stack = createStackNavigator<AccountStackParamList>();
 
 export const AccountNavigator = () => {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}>
-      <Stack.Screen name="AccountMain" component={AccountScreen} />
-      <Stack.Screen name="Profile" component={ProfileScreen} />
-      <Stack.Screen name="Preferences" component={PreferencesScreen} />
-      <Stack.Screen name="Subscription" component={SubscriptionScreen} />
-      <Stack.Screen name="Downloads" component={DownloadsScreen} />
-      <Stack.Screen name="Support" component={SupportScreen} />
-      <Stack.Screen name="Tickets" component={TicketsScreen} />
-      <Stack.Screen name="CreateTicket" component={CreateTicketScreen} />
-      <Stack.Screen name="TicketDetail" component={TicketDetailScreen} />
-      <Stack.Screen name="About" component={AboutScreen} />
-      <Stack.Screen name="Privacy" component={PrivacyScreen} />
-      <Stack.Screen name="Terms" component={TermsScreen} />
+    <Stack.Navigator screenOptions={NAVIGATION_OPTIONS.DEFAULT_SCREEN_OPTIONS}>
+      <Stack.Screen name={SCREEN_NAMES.ACCOUNT.MAIN} component={AccountScreen} />
+      <Stack.Screen name={SCREEN_NAMES.ACCOUNT.PROFILE} component={ProfileScreen} />
+      <Stack.Screen name={SCREEN_NAMES.ACCOUNT.NUTRITION} component={NutritionScreen} />
+      <Stack.Screen name={SCREEN_NAMES.ACCOUNT.DIETARY_PREFERENCES} component={DietaryPreferencesScreen} />
+      <Stack.Screen name={SCREEN_NAMES.ACCOUNT.DOWNLOADS} component={DownloadsScreen} />
+      <Stack.Screen name={SCREEN_NAMES.ACCOUNT.TICKETS} component={TicketListScreen} />
+      <Stack.Screen name={SCREEN_NAMES.ACCOUNT.CREATE_TICKET} component={TicketCreateScreen} />
+      <Stack.Screen name={SCREEN_NAMES.ACCOUNT.TICKET_DETAIL} component={TicketDetailScreen} />
+      <Stack.Screen name={SCREEN_NAMES.ACCOUNT.ABOUT} component={AboutScreen} />
+      <Stack.Screen name={SCREEN_NAMES.ACCOUNT.PRIVACY} component={PrivacyScreen} />
+      <Stack.Screen name={SCREEN_NAMES.ACCOUNT.TERMS} component={TermsScreen} />
     </Stack.Navigator>
   );
 };
