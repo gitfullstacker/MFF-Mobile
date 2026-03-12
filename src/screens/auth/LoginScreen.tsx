@@ -8,6 +8,7 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
+  Linking,
 } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -21,6 +22,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import Icon from 'react-native-vector-icons/Feather';
 import { useNavigationHelpers } from '@/hooks/useNavigation';
+import { SIGNUP_URL } from '@env';
 
 // Strictly define the form data structure
 type LoginFormData = {
@@ -186,6 +188,16 @@ const LoginScreen: React.FC = () => {
               loading={loading}
               disabled={loading}
             />
+
+            <TouchableOpacity
+              style={styles.signUpContainer}
+              onPress={() => Linking.openURL(SIGNUP_URL)}
+              activeOpacity={0.7}>
+              <Text style={styles.signUpText}>
+                Don't have an account?{' '}
+                <Text style={styles.signUpLink}>Sign up</Text>
+              </Text>
+            </TouchableOpacity>
           </View>
         </ScrollContainer>
       </KeyboardAvoidingView>
@@ -267,6 +279,18 @@ const styles = StyleSheet.create({
   },
   signInButton: {
     marginBottom: spacing.lg,
+  },
+  signUpContainer: {
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  signUpText: {
+    ...typography.bodyRegular,
+    color: colors.text.secondary,
+  },
+  signUpLink: {
+    color: colors.primary,
+    fontWeight: '600',
   },
 });
 
