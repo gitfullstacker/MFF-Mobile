@@ -636,13 +636,6 @@ const RecipeDetailScreen: React.FC = () => {
             </View>
           </Section>
 
-          {/* Print Button - ADDED BELOW NUTRITION INFORMATION */}
-          <Button
-            title="Print Recipe"
-            onPress={() => setShowPrintModal(true)}
-            icon={<Icon name="printer" size={18} color={colors.white} />}
-          />
-
           {/* Tab Navigation */}
           <View
             style={styles.tabContainer}
