@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -50,11 +51,16 @@
               android:resource="@xml/file_paths" />
       </provider>
 
+      <!-- FCM default notification channel (Android 8+) -->
       <meta-data
-          android:name="com.klaviyo.push_channel_name"
-          android:value="MFF Notifications" />
+          android:name="com.google.firebase.messaging.default_notification_channel_id"
+          android:value="default"
+          tools:replace="android:value" />
+
+      <!-- FCM default notification icon (optional - uses app icon if not set) -->
       <meta-data
-          android:name="com.klaviyo.push_channel_description"
-          android:value="Notifications from Macro Friendly Food" />
+          android:name="com.google.firebase.messaging.default_notification_icon"
+          android:resource="@mipmap/ic_launcher" />
+
     </application>
 </manifest>

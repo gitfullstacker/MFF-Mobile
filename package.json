@@ -22,7 +22,6 @@
     "axios": "^1.9.0",
     "date-fns": "^4.1.0",
     "jotai": "^2.12.4",
-    "klaviyo-react-native-sdk": "^2.3.0",
     "react": "19.0.0",
     "react-hook-form": "^7.56.3",
     "react-native": "0.79.2",

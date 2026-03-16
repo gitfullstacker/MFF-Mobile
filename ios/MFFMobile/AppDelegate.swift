@@ -2,7 +2,6 @@ import UIKit
 import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
-import KlaviyoSwift
 import FirebaseCore
 import FirebaseMessaging
 import UserNotifications
@@ -21,12 +20,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     // Initialize Firebase
     FirebaseApp.configure()
     
-    // Set notification delegate
+    // Set notification delegates
     UNUserNotificationCenter.current().delegate = self
     Messaging.messaging().delegate = self
     
-    // Initialize Klaviyo with your public API key
-    KlaviyoSDK().initialize(with: "YOUR_KLAVIYO_PUBLIC_API_KEY")
+    // Register for remote notifications
+    application.registerForRemoteNotifications()
     
     let delegate = ReactNativeDelegate()
     let factory = RCTReactNativeFactory(delegate: delegate)
@@ -46,28 +45,68 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     return true
   }
   
-  // Register for remote notifications - pass token to Firebase (swizzling disabled)
+  // Register for remote notifications - pass APNs token to Firebase
   func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
     Messaging.messaging().apnsToken = deviceToken
   }
   
-  // Handle foreground notifications
+  // Handle failed registration for remote notifications
+  func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+    print("❌ Failed to register for remote notifications: \(error.localizedDescription)")
+  }
+  
+  // Handle foreground notifications - show banner even when app is in foreground
   func userNotificationCenter(
     _ center: UNUserNotificationCenter,
     willPresent notification: UNNotification,
     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
   ) {
+    let userInfo = notification.request.content.userInfo
+    
+    // Let Firebase Messaging handle the notification
+    Messaging.messaging().appDidReceiveMessage(userInfo)
+    
+    // Show notification banner, sound, and badge even in foreground
     completionHandler([.banner, .sound, .badge])
   }
   
-  // Handle notification tap - track Klaviyo opened push
+  // Handle notification tap - forward to React Native via RNFirebaseMessaging
   func userNotificationCenter(
     _ center: UNUserNotificationCenter,
     didReceive response: UNNotificationResponse,
     withCompletionHandler completionHandler: @escaping () -> Void
   ) {
     let userInfo = response.notification.request.content.userInfo
-    let _ = KlaviyoSDK().handle(notificationResponse: response, withCompletionHandler: completionHandler)
+    
+    // Let Firebase Messaging handle the notification tap
+    Messaging.messaging().appDidReceiveMessage(userInfo)
+    
+    completionHandler()
+  }
+  
+  // Handle incoming data messages (silent notifications)
+  func application(
+    _ application: UIApplication,
+    didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+    fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+  ) {
+    Messaging.messaging().appDidReceiveMessage(userInfo)
+    completionHandler(.newData)
+  }
+  
+  // FCM token refresh callback
+  func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+    if let token = fcmToken {
+      print("🔑 FCM Token: \(token.prefix(20))...")
+    }
+    
+    // Post notification so RNFirebaseMessaging can pick it up
+    let dataDict: [String: String] = ["token": fcmToken ?? ""]
+    NotificationCenter.default.post(
+      name: Notification.Name("FCMToken"),
+      object: nil,
+      userInfo: dataDict
+    )
   }
 }
 
