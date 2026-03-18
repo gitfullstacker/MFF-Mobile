@@ -8,3 +8,6 @@
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
 # Add any project specific keep options here:
+
+# pdfbox JPX/JPEG2000 optional dependency - not included, safe to ignore
+-dontwarn com.gemalto.jp2.**

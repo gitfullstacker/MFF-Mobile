@@ -31,7 +31,7 @@ export const notificationService = {
     return apiClient.post(`/notifications/${notificationId}/mark-read`);
   },
 
-  async markAllAsRead(): Promise<void> {
+  async markAllAsRead(): Promise<{ marked: number }> {
     return apiClient.post('/notifications/mark-all-read');
   },
 };
