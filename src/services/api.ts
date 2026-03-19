@@ -1,11 +1,11 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '@env';
+import { API_BASE_URL, NODE_ENV } from '@env';
 import { eventBus } from '@/utils/eventBus';
 
 console.log('🌍 Environment Debug:', {
   API_BASE_URL_from_env: API_BASE_URL,
-  NODE_ENV: process.env.NODE_ENV,
+  NODE_ENV: NODE_ENV,
   typeof_API_BASE_URL: typeof API_BASE_URL,
 });
 

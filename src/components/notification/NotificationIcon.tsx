@@ -56,7 +56,7 @@ export const NotificationIcon: React.FC<NotificationIconProps> = ({
 
   // Fetch notifications when modal opens
   useEffect(() => {
-    if (modalVisible && notifications.length === 0) {
+    if (modalVisible) {
       fetchNotifications({}, true);
     }
   }, [modalVisible]);
@@ -105,7 +105,6 @@ export const NotificationIcon: React.FC<NotificationIconProps> = ({
             await Linking.openURL(fullUrl);
           } else {
             console.error('Cannot open URL:', fullUrl);
-            // Optionally show a toast message to the user
           }
         } else {
           console.warn('No link available for notification:', notification._id);
@@ -120,7 +119,6 @@ export const NotificationIcon: React.FC<NotificationIconProps> = ({
   const handleMarkAllAsRead = useCallback(async () => {
     try {
       await markAllAsRead();
-      // Optionally refresh the list to show updated state
       await fetchUnreadCount();
     } catch (error) {
       console.error('Error marking all as read:', error);
@@ -159,46 +157,50 @@ export const NotificationIcon: React.FC<NotificationIconProps> = ({
   }, []);
 
   const renderNotificationItem = useCallback(
-    ({ item }: { item: Notification }) => (
-      <TouchableOpacity
-        style={[
-          styles.notificationItem,
-          !item.is_read && styles.unreadNotification,
-        ]}
-        onPress={() => handleNotificationPress(item)}
-        activeOpacity={0.7}>
-        <View style={styles.notificationIcon}>
-          <MaterialIcon
-            name="campaign"
-            size={20}
-            color={!item.is_read ? colors.primary : colors.text.secondary}
-          />
-        </View>
+    ({ item }: { item: Notification }) => {
+      const notificationBody = item.body || item.message;
 
-        <View style={styles.notificationContent}>
-          <Text
-            style={[
-              styles.notificationTitle,
-              !item.is_read && styles.unreadTitle,
-            ]}
-            numberOfLines={2}>
-            {item.title}
-          </Text>
+      return (
+        <TouchableOpacity
+          style={[
+            styles.notificationItem,
+            !item.is_read && styles.unreadNotification,
+          ]}
+          onPress={() => handleNotificationPress(item)}
+          activeOpacity={0.7}>
+          <View style={styles.notificationIcon}>
+            <MaterialIcon
+              name="campaign"
+              size={20}
+              color={!item.is_read ? colors.primary : colors.text.secondary}
+            />
+          </View>
 
-          {item.message && (
-            <Text style={styles.notificationMessage} numberOfLines={2}>
-              {item.message}
+          <View style={styles.notificationContent}>
+            <Text
+              style={[
+                styles.notificationTitle,
+                !item.is_read && styles.unreadTitle,
+              ]}
+              numberOfLines={2}>
+              {item.title}
             </Text>
-          )}
 
-          <Text style={styles.notificationTime}>
-            {formatNotificationTime(item.created_at)}
-          </Text>
-        </View>
+            {notificationBody ? (
+              <Text style={styles.notificationMessage} numberOfLines={2}>
+                {notificationBody}
+              </Text>
+            ) : null}
 
-        {!item.is_read && <View style={styles.unreadIndicator} />}
-      </TouchableOpacity>
-    ),
+            <Text style={styles.notificationTime}>
+              {formatNotificationTime(item.created_at)}
+            </Text>
+          </View>
+
+          {!item.is_read && <View style={styles.unreadIndicator} />}
+        </TouchableOpacity>
+      );
+    },
     [handleNotificationPress, formatNotificationTime],
   );
 

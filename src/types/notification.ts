@@ -5,8 +5,6 @@ export interface Notification {
   message?: string;
   link: string;
   mobile_link: string;
-  image_url?: string;
-  is_subscriber_only?: boolean;
   push_sent?: boolean;
   user_id: string;
   is_read: boolean;
