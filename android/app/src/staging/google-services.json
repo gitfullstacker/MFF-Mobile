@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "193459511507",
+    "project_id": "macro-friendly-food-app-b0f1c",
+    "storage_bucket": "macro-friendly-food-app-b0f1c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:193459511507:android:62bb6d3f31e8abb46fb426",
+        "android_client_info": {
+          "package_name": "com.macrofriendlyfood.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtSDBdjcBmIVL3X1Y5WXqQv8f0C1CvBw8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

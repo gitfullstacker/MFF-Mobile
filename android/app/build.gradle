@@ -1,7 +1,6 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
-apply plugin: "com.google.gms.google-services"
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
 
 /**
@@ -23,7 +22,7 @@ react {
     //   The list of variants to that are debuggable. For those we're going to
     //   skip the bundling of the JS bundle and the assets. By default is just 'debug'.
     //   If you add flavors like lite, prod, etc. you'll have to list your debuggableVariants.
-    // debuggableVariants = ["liteDebug", "prodDebug"]
+    debuggableVariants = ["stagingDebug", "productionDebug"]
 
     /* Bundling */
     //   A list containing the node command and its flags. Default is just 'node'.
@@ -77,15 +76,26 @@ def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdk rootProject.ext.compileSdkVersion
+    compileSdkVersion rootProject.ext.compileSdkVersion
 
     namespace "com.macrofriendlyfood.mobile"
     defaultConfig {
         applicationId "com.macrofriendlyfood.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 30
-        versionName "1.30.0"
+        versionCode 31
+        versionName "1.31.0"
+    }
+    flavorDimensions = ["environment"]
+    productFlavors {
+        staging {
+            dimension "environment"
+            resValue "string", "app_name", "MFF Mobile"
+        }
+        production {
+            dimension "environment"
+            resValue "string", "app_name", "MFF Mobile"
+        }
     }
     signingConfigs {
         debug {
@@ -115,6 +125,8 @@ android {
         }
     }
 }
+
+apply plugin: "com.google.gms.google-services"
 
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
