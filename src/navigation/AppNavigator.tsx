@@ -10,6 +10,7 @@ import { MainNavigator } from './MainNavigator';
 import { RecipeNavigator } from './RecipeNavigator';
 import { MealPlanNavigator } from './MealPlanNavigator';
 import { AccountNavigator } from './AccountNavigator';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -19,6 +20,8 @@ interface AppNavigatorProps {
 
 export const AppNavigator: React.FC<AppNavigatorProps> = ({ navigationRef }) => {
   const [isAuthenticated] = useAtom(isAuthenticatedAtom);
+
+  usePushNotifications({ navigationRef });
 
   const linking = {
     prefixes: ['macrofriendlyfood://'],

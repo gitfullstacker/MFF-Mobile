@@ -42,16 +42,8 @@ export const NotificationIcon: React.FC<NotificationIconProps> = ({
 
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Fetch unread count on mount and set up periodic refresh
   useEffect(() => {
     fetchUnreadCount();
-
-    // Set up periodic refresh every 30 seconds
-    const interval = setInterval(() => {
-      fetchUnreadCount();
-    }, 30000);
-
-    return () => clearInterval(interval);
   }, [fetchUnreadCount]);
 
   // Fetch notifications when modal opens
