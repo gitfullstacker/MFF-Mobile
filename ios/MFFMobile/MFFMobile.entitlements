@@ -2,8 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- REMOVED: com.apple.developer.associated-domains -->
-	<!-- This ensures web URLs will NOT open the app -->
-	<!-- Only the custom scheme macrofriendlyfood:// will work -->
+	<key>aps-environment</key>
+	<string>development</string>
 </dict>
 </plist>
