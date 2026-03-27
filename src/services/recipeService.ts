@@ -35,13 +35,11 @@ export const recipeService = {
     pageSize: number = 10,
   ): Promise<{
     data: RecipeComment[];
-    pagination: {
-      page: number;
-      perPage: number;
-      total: number;
-      totalPages: number;
-      hasMore: boolean;
-    };
+    page: number;
+    perPage: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
   }> {
     const params = new URLSearchParams({
       page: page.toString(),

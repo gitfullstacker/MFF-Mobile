@@ -195,7 +195,7 @@ const RecipeDetailScreen: React.FC = () => {
         currentPage,
         10,
       );
-      const { data: reviewsData, pagination } = response;
+      const { data: reviewsData, hasMore } = response;
 
       if (reset) {
         setReviews(reviewsData);
@@ -209,7 +209,8 @@ const RecipeDetailScreen: React.FC = () => {
       }
 
       setReviewsPage(currentPage);
-      setHasMoreReviews(pagination.hasMore);
+      console.log(response);
+      setHasMoreReviews(hasMore);
     } catch (error) {
       if (__DEV__) {
         console.error('Error loading reviews:', error);
