@@ -24,7 +24,10 @@ export const AppNavigator: React.FC<AppNavigatorProps> = ({ navigationRef }) => 
   usePushNotifications({ navigationRef });
 
   const linking = {
-    prefixes: ['macrofriendlyfood://'],
+    prefixes: [
+      'macrofriendlyfood://',
+      'https://macrofriendlyfood.app',
+    ],
     config: {
       screens: {
         [SCREEN_NAMES.ROOT.AUTH]: {
