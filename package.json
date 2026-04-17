@@ -6,7 +6,7 @@
     "android:staging": "cross-env ENVFILE=.env.staging react-native run-android --mode=stagingDebug",
     "android:production": "cross-env ENVFILE=.env.production react-native run-android --mode=productionRelease",
     "ios:staging": "cross-env ENVFILE=.env.staging react-native run-ios --scheme MFFMobile",
-    "ios:production": "cross-env ENVFILE=.env.production react-native run-ios --scheme MFFMobile --configuration Release",
+    "ios:production": "cross-env ENVFILE=.env.production react-native run-ios --scheme MFFMobile",
     "build:android:production": "cross-env ENVFILE=.env.production npx react-native build-android --mode=productionRelease",
     "build:android:staging": "cross-env ENVFILE=.env.staging npx react-native build-android --mode=stagingRelease"
   },
