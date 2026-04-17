@@ -66,7 +66,7 @@ const AboutScreen: React.FC = () => {
             resizeMode="contain"
           />
           <Text style={styles.appName}>Macro Friendly Food</Text>
-          <Text style={styles.appVersion}>Version 1.33.0</Text>
+          <Text style={styles.appVersion}>Version 1.34.0</Text>
           <Text style={styles.appDescription}>
             Your comprehensive nutrition tracking and meal planning companion.
             Achieve your health goals with smart macro tracking and delicious
