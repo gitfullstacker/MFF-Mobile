@@ -211,7 +211,7 @@ const AccountScreen: React.FC = () => {
         <Section>{dangerMenuItems.map(renderMenuItem)}</Section>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Version 1.34.0</Text>
+          <Text style={styles.footerText}>Version 1.35.0</Text>
         </View>
       </ScrollView>
     </PageContainer>
